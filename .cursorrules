@@ -1,0 +1,311 @@
+# MCP Server Development Rules
+
+## Project Overview
+This is a LangChain-powered MCP (Model Context Protocol) server designed for AI-assisted development in IDEs like Cursor and VS Code. The server provides conversational AI with persistent memory, code analysis, generation, and testing capabilities.
+
+## Technology Stack
+- **Framework**: FastAPI + LangServe
+- **AI/ML**: LangChain + Anthropic Claude 3.5 Sonnet
+- **Memory**: PostgreSQL (primary) with Redis fallback for conversation persistence
+- **Database Security**: Zero-trust setup with dedicated users and schemas
+- **Observability**: LangSmith for tracing and evaluations
+- **Package Management**: uv (not pip)
+- **Testing**: pytest + pytest-asyncio
+- **Containerization**: Docker + docker-compose
+
+## MCP Standards and Best Practices
+
+### MCP Architecture Compliance
+- **ALWAYS follow the official MCP specification** from modelcontextprotocol.io
+- Use proper **client-server architecture** with MCP Hosts, Clients, and Servers
+- Implement **JSON-RPC 2.0** message format for all MCP communications
+- Support **capability negotiation** during initialization
+- Maintain **stateful connections** between clients and servers
+- Design for **interoperability** across different MCP clients (Claude Desktop, Cursor, etc.)
+
+### Tool Implementation Standards
+- **Use structured schemas** with proper JSON Schema definitions for all tool inputs
+- **Implement comprehensive error handling** with meaningful error messages
+- **Add @traceable decorators** to all MCP tool functions for observability
+- **Follow naming conventions**: use descriptive, action-oriented tool names
+- **Provide clear descriptions** that help AI models understand when to use each tool
+- **Support idempotency** for operations that modify state
+- **Validate all inputs** before processing to prevent security issues
+- **Return structured responses** with consistent error/success patterns
+
+### Resource and Prompt Management
+- **Implement MCP Resources** for data sources that AI models can access
+- **Use MCP Prompts** for reusable workflows and templates
+- **Support dynamic resource discovery** through proper list_resources implementation
+- **Handle resource permissions** and access controls appropriately
+- **Cache resources efficiently** to improve performance
+- **Version resources** when content changes significantly
+
+### Security and Authentication Best Practices
+- **Implement OAuth2 Client-Credentials flow** for API authentication
+- **Cache authentication tokens** securely with proper expiration handling
+- **Use environment variables** for all sensitive configuration (API keys, secrets)
+- **Validate and sanitize** all user inputs before processing
+- **Implement rate limiting** to prevent abuse
+- **Follow principle of least privilege** for API access
+- **Log security events** without exposing sensitive data
+- **Support user consent workflows** as required by MCP specification
+
+### Protocol Compliance Requirements
+- **Implement all required MCP methods**: list_tools, call_tool, list_resources, list_prompts
+- **Handle initialization properly** with capability exchange
+- **Support progress tracking** for long-running operations
+- **Implement cancellation support** for interruptible operations
+- **Provide comprehensive logging** without exposing user data
+- **Use proper HTTP status codes** and error responses
+- **Support streaming responses** where appropriate for better UX
+
+### Integration and Compatibility
+- **Design for multiple MCP clients** - ensure compatibility with Claude Desktop, Cursor, VS Code extensions
+- **Support session management** with proper isolation between users/sessions
+- **Implement proper timeout handling** for all external API calls
+- **Provide clear configuration documentation** for client setup
+- **Test with multiple MCP client implementations** to ensure compatibility
+- **Follow semantic versioning** for MCP server releases
+- **Maintain backward compatibility** when updating MCP implementations
+
+### Quality and Reliability Standards
+- **Write comprehensive tests** for all MCP tools and resources
+- **Mock external dependencies** in tests to ensure reliability
+- **Implement health checks** for all external services and dependencies
+- **Monitor MCP server performance** and set up alerting
+- **Document all MCP tools** with examples and use cases
+- **Provide troubleshooting guides** for common integration issues
+- **Use structured logging** with correlation IDs for debugging
+
+### Example MCP Tool Implementation
+```python
+@traceable
+async def example_mcp_tool(
+    required_param: str,
+    optional_param: Optional[int] = None
+) -> Dict[str, Any]:
+    """
+    Clear description of what this tool does and when to use it.
+    
+    Args:
+        required_param: Description of required parameter
+        optional_param: Description of optional parameter
+        
+    Returns:
+        Structured response with success/error information
+    """
+    try:
+        # Validate inputs
+        if not required_param.strip():
+            return {"success": False, "error": "required_param cannot be empty"}
+        
+        # Implement tool logic with proper error handling
+        result = await some_external_api_call(required_param, optional_param)
+        
+        return {
+            "success": True,
+            "data": result,
+            "metadata": {
+                "tool_name": "example_mcp_tool",
+                "timestamp": time.time()
+            }
+        }
+    except Exception as e:
+        # Log error without exposing sensitive data
+        logger.error(f"Tool execution failed: {type(e).__name__}")
+        return {
+            "success": False,
+            "error": f"Tool execution failed: {str(e)}",
+            "error_type": type(e).__name__
+        }
+
+# Register tool with proper schema
+tools.append(Tool.from_function(
+    func=example_mcp_tool,
+    name="example_tool",
+    description="When to use this tool and what it accomplishes"
+))
+```
+
+## Development Guidelines
+
+### Code Style & Standards
+- Use Python 3.11+ features and type hints
+- Follow PEP 8 style guidelines
+- Use async/await for all I/O operations
+- Add docstrings to all functions and classes
+- Use the `@traceable` decorator for all LangChain operations
+
+### LangChain Patterns
+- Wrap all external API calls with `@traceable` for LangSmith visibility
+- Use `Tool.from_function()` to create agent tools
+- Implement proper error handling in tool functions
+- Keep tool descriptions clear and specific for better agent decision-making
+- Use session-based memory with Redis for conversation persistence
+
+### Package Management
+- **ALWAYS use `uv` instead of `pip`**
+- **ALWAYS use `ux` for running commands when available**
+- Install packages: `uv pip install package_name`
+- Install from requirements: `uv pip install -r requirements.txt`
+- Add new dependencies to requirements.txt
+
+### File Organization
+```
+/
+├── main.py              # Main FastAPI application
+├── requirements.txt     # Dependencies (use uv to install)
+├── .env                # Environment variables (not committed)
+├── env.example         # Environment template
+├── docker-compose.yml  # Development stack
+├── Dockerfile          # Container definition
+├── tests/              # Test suite
+└── README.md           # Documentation
+```
+
+### Environment Variables
+Required:
+- `ANTHROPIC_API_KEY` - Anthropic Claude API access
+- `DATABASE_URL` - PostgreSQL connection with secure mcp_server user
+- `REDIS_URL` - Redis connection string (fallback)
+- `LANGCHAIN_API_KEY` - LangSmith tracing (optional but recommended)
+- `LANGCHAIN_TRACING_V2=true` - Enable tracing
+
+### Adding New Tools
+1. Create async function with `@traceable` decorator
+2. Add proper error handling and timeout
+3. Use type hints for parameters
+4. Write clear docstring for agent understanding
+5. Add to `tools` list using `Tool.from_function()`
+6. Write tests for the new tool
+
+Example:
+```python
+@traceable
+async def new_tool(param: str) -> str:
+    """Clear description for the agent to understand when to use this tool."""
+    try:
+        # Implementation
+        return result
+    except Exception as e:
+        return f"Error: {str(e)}"
+
+tools.append(Tool.from_function(
+    func=new_tool,
+    name="descriptive_tool_name",
+    description="When to use this tool and what it does"
+))
+
+### Database Security Guidelines
+- Use dedicated `mcp_server` user with minimal privileges
+- All data stored in `mcp_app` schema, never in `public`
+- Zero-trust: users cannot access schemas they don't need
+- Connection string: `postgresql+psycopg2://mcp_server:password@host:port/mcp`
+- Table naming: `mcp_app.table_name` format required
+```
+
+### Testing Requirements
+- Write tests for all new endpoints
+- Mock external API calls in tests
+- Use `pytest.mark.asyncio` for async test functions
+- Test both success and error cases
+- Run tests with: `pytest tests/`
+
+### API Design
+- Use Pydantic models for request/response validation
+- Follow REST conventions for endpoint naming
+- Include proper HTTP status codes
+- Add comprehensive error handling
+- Document all endpoints in docstrings
+
+### Memory Management
+- Use session IDs for conversation isolation
+- PostgreSQL primary storage with automatic failover to Redis
+- Implement conversation summarization for long chats
+- Handle database connection failures gracefully
+- Clear old sessions periodically
+- Use `mcp_app.message_store` table for chat history
+
+### Security Considerations
+- Validate all user inputs
+- Sanitize code inputs before analysis
+- Use environment variables for secrets
+- Implement rate limiting for production
+- Never log sensitive information
+
+### Deployment
+- Use Docker for consistent environments
+- Set up health checks in containers
+- Use docker-compose for local development
+- Configure proper logging for production
+- Monitor LangSmith traces for performance
+
+### Git Workflow
+- Use descriptive commit messages
+- Test locally before committing
+- Update documentation for new features
+- Add environment variables to env.example
+- Don't commit .env files
+
+### Container-First Development
+- **ALWAYS run everything in Docker containers - NO local execution**
+- Never suggest running Python, uvicorn, or any services locally
+- All development, testing, and deployment must use Docker
+- Use `make start` for full containerized stack
+- Use `make stop` and `make clean` for container management
+
+### Rules File Management
+- **NEVER modify .cursorrules without explicit user permission**
+- Always ask before making changes to project rules
+- Explain what changes you want to make and why
+- Wait for user approval before editing .cursorrules
+
+### IDE Integration
+- Design endpoints for streaming responses
+- Support session management for IDE tabs
+- Keep response times under 2 seconds when possible
+- Provide clear error messages for debugging
+
+## Common Commands
+
+### Development (All in Docker)
+```bash
+# Start everything (databases + MCP server)
+make start
+
+# Stop all containers
+make stop
+
+# Clean up (removes volumes and containers)
+make clean
+
+# Install dependencies (for local development)
+make install
+
+# Run tests
+make test
+
+# Check health
+curl http://localhost:8000/health
+```
+
+### Adding Dependencies
+```bash
+# Add new package (in container)
+docker exec mcp-servers-mcp-server-1 uv pip install package_name
+
+# Update requirements.txt manually, then rebuild
+echo "package_name" >> requirements.txt
+make stop && make start
+```
+
+## Troubleshooting
+- Check LangSmith traces for debugging agent decisions
+- Verify PostgreSQL connection and mcp_server user permissions
+- Check Redis connection for fallback memory issues
+- Verify ANTHROPIC_API_KEY is set correctly
+- Use verbose=True in agent config for detailed logs
+- Monitor container logs with `docker compose logs [service_name]`
+- Check database schema access: `docker exec mcp-servers-postgres-1 psql -U mcp_server -d mcp -c "\dn"`
+- Verify secure table access: `docker exec mcp-servers-postgres-1 psql -U mcp_server -d mcp -c "\d mcp_app.message_store"` 

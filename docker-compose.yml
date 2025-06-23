@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # PostgreSQL Database (for future conversation history if needed)
   postgres:
@@ -69,6 +67,33 @@ services:
     depends_on:
       redis:
         condition: service_healthy
+
+  # MCP Server
+  mcp-server:
+    build: .
+    container_name: mcp-servers-mcp-server-1
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql+psycopg2://mcp_server:mcp_secure_password_change_in_production@postgres:5432/mcp
+      - REDIS_URL=redis://redis:6379
+      - JUSTIFI_CLIENT_ID=${JUSTIFI_CLIENT_ID}
+      - JUSTIFI_CLIENT_SECRET=${JUSTIFI_CLIENT_SECRET}
+      - JUSTIFI_BASE_URL=${JUSTIFI_BASE_URL}
+      - LANGCHAIN_TRACING_V2=true
+      - LANGCHAIN_API_KEY=${LANGCHAIN_API_KEY:-}
+    networks:
+      - mcp_network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
 
 volumes:
   postgres_data:

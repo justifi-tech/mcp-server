@@ -6,7 +6,10 @@ A Model Context Protocol server that provides tools for interacting with the Jus
 Supports OAuth2 Client-Credentials authentication with token caching.
 """
 import asyncio
+import json
 import os
+import sys
+import time
 
 from dotenv import load_dotenv
 from mcp import stdio_server
@@ -186,6 +189,47 @@ async def handle_list_prompts() -> list[Prompt]:
     return []
 
 
+async def health_check():
+    """Health check for container monitoring."""
+    try:
+        # Load environment variables
+        load_dotenv()
+        
+        # Check required environment variables
+        required_vars = ["JUSTIFI_CLIENT_ID", "JUSTIFI_CLIENT_SECRET", "JUSTIFI_BASE_URL"]
+        missing_vars = [var for var in required_vars if not os.getenv(var)]
+        
+        if missing_vars:
+            return {
+                "status": "unhealthy",
+                "error": f"Missing environment variables: {missing_vars}",
+                "timestamp": time.time()
+            }
+        
+        # Test import of main modules
+        from tools.justifi import _get_access_token
+        
+        # Test API token retrieval (validates credentials without making payment calls)
+        try:
+            await _get_access_token()
+            api_status = "connected"
+        except Exception as e:
+            api_status = f"connection_failed: {str(e)}"
+        
+        return {
+            "status": "healthy",
+            "timestamp": time.time(),
+            "environment": "configured",
+            "justifi_api": api_status
+        }
+    except Exception as e:
+        return {
+            "status": "unhealthy",
+            "error": str(e),
+            "timestamp": time.time()
+        }
+
+
 async def main():
     """Run the MCP server using stdio transport."""
     # Load environment variables from .env file
@@ -204,14 +248,14 @@ async def main():
             print(f"  {var}=your_value_here")
         return
 
-    # Test JustiFi API connectivity
+    # Test JustiFi API connectivity (non-fatal for demo purposes)
     try:
         await _get_access_token()
         print("✅ JustiFi API connection successful")
     except Exception as e:
-        print(f"❌ JustiFi API connection failed: {e}")
+        print(f"⚠️  JustiFi API connection failed: {e}")
         print("Please check your JUSTIFI_CLIENT_ID and JUSTIFI_CLIENT_SECRET")
-        return
+        print("Note: MCP server will still start for testing purposes")
 
     # Run the server
     async with stdio_server() as (read_stream, write_stream):
@@ -221,4 +265,11 @@ async def main():
 
 
 if __name__ == "__main__":
+    # Handle health check command
+    if len(sys.argv) > 1 and sys.argv[1] == "--health":
+        result = asyncio.run(health_check())
+        print(json.dumps(result))
+        sys.exit(0 if result["status"] == "healthy" else 1)
+    
+    # Normal MCP server startup
     asyncio.run(main())

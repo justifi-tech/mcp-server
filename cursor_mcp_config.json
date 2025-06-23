@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "justifi": {
+      "command": "python",
+      "args": ["/Users/nhalm/dev/mcp-servers/main.py"],
+      "env": {
+        "JUSTIFI_CLIENT_ID": "your_client_id_here",
+        "JUSTIFI_CLIENT_SECRET": "your_client_secret_here",
+        "JUSTIFI_BASE_URL": "https://api.justifi.ai/v1"
+      }
+    }
+  }
+}

@@ -62,6 +62,117 @@ make mcp-test
 make test
 ```
 
+## 🏢 Production Deployment
+
+### Single-Tenant Architecture
+
+This MCP server follows a **single-tenant deployment model** where each customer runs their own isolated instance. This provides:
+
+- ✅ **Maximum Security** - Your API credentials never leave your infrastructure
+- ✅ **Complete Isolation** - No shared resources or data between customers
+- ✅ **Full Control** - You manage your own deployment and updates
+- ✅ **Zero Trust** - No external services have access to your credentials
+
+### Deployment Options
+
+#### Option 1: Local Development (Recommended)
+```bash
+# 1. Clone the repository
+git clone <repository-url>
+cd mcp-servers
+
+# 2. Set up your credentials
+cp env.example .env
+# Edit .env with your JustiFi API credentials
+
+# 3. Install and test
+make install
+make test
+make mcp-test
+```
+
+#### Option 2: Docker Container (For AI Client Integration)
+```bash
+# 1. Create your environment file
+cat > .env << EOF
+JUSTIFI_CLIENT_ID=your_actual_client_id
+JUSTIFI_CLIENT_SECRET=your_actual_client_secret
+JUSTIFI_BASE_URL=https://api.justifi.ai/v1
+EOF
+
+# 2. Build container (for AI client to execute)
+docker build --target production -t justifi-mcp .
+
+# 3. Configure your AI client to run the container
+# (See Cursor configuration examples below)
+```
+
+#### Option 3: Kubernetes Deployment
+```yaml
+# justifi-mcp-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: justifi-mcp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: justifi-mcp
+  template:
+    metadata:
+      labels:
+        app: justifi-mcp
+    spec:
+      containers:
+      - name: justifi-mcp
+        image: justifi-mcp:latest
+        env:
+        - name: JUSTIFI_CLIENT_ID
+          valueFrom:
+            secretKeyRef:
+              name: justifi-credentials
+              key: client-id
+        - name: JUSTIFI_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: justifi-credentials
+              key: client-secret
+```
+
+### Security Best Practices
+
+#### Credential Management
+```bash
+# Store credentials securely
+chmod 600 .env
+
+# Use environment-specific credentials
+# Development: sandbox API keys
+# Production: live API keys
+
+# Never commit credentials to version control
+echo ".env" >> .gitignore
+```
+
+#### Container Security
+```bash
+# Run as non-root user
+docker run --user 1000:1000 --env-file .env justifi-mcp
+
+# Use read-only filesystem
+docker run --read-only --env-file .env justifi-mcp
+
+# Limit resources
+docker run --memory=256m --cpus=0.5 --env-file .env justifi-mcp
+```
+
+#### Network Security
+- MCP uses stdio transport - no network ports exposed
+- Server runs in isolated process
+- No inbound network connections required
+- All API calls go directly from your infrastructure to JustiFi
+
 ## 🔗 Cursor Integration
 
 ### Configuration
@@ -77,6 +188,22 @@ Add this to your Cursor MCP configuration:
         "JUSTIFI_CLIENT_ID": "your_client_id",
         "JUSTIFI_CLIENT_SECRET": "your_client_secret"
       }
+    }
+  }
+}
+```
+
+### Alternative: Container-based Configuration
+```json
+{
+  "mcpServers": {
+    "justifi": {
+      "command": "docker",
+      "args": [
+        "run", "--rm", "-i", 
+        "--env-file", "/path/to/your/.env",
+        "justifi-mcp:latest"
+      ]
     }
   }
 }

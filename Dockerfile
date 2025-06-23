@@ -29,20 +29,30 @@ ENV PYTHONUNBUFFERED=1
 # Default command for development (can be overridden)
 CMD ["python", "main.py"]
 
-# Production stage (minimal)
+# Production stage (minimal and secure)
 FROM base as production
 
-# Copy only necessary application files
-COPY main.py .
-COPY tools/ ./tools/
-COPY .env* ./
+# Create non-root user for security
+RUN groupadd -r mcpuser && useradd -r -g mcpuser mcpuser
 
-# Make the main script executable
-RUN chmod +x main.py
+# Copy only necessary application files with proper ownership
+COPY --chown=mcpuser:mcpuser main.py .
+COPY --chown=mcpuser:mcpuser tools/ ./tools/
+
+# Don't copy .env files - they should be provided at runtime
+# COPY .env* ./
+
+# Create necessary directories with proper permissions
+RUN mkdir -p /tmp && chown mcpuser:mcpuser /tmp
 
 # Set environment variables
 ENV PYTHONPATH=/app
 ENV PYTHONUNBUFFERED=1
+
+# Switch to non-root user
+USER mcpuser
+
+# Health check will be added to main.py instead
 
 # Default command runs the MCP server via stdio
 CMD ["python", "main.py"] 

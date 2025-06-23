@@ -34,6 +34,13 @@ help:
 	@echo ""
 	@echo "Note: MCP server runs via stdio transport, not as a web service."
 	@echo "Configure Cursor to connect to: python main.py"
+	@echo ""
+	@echo "Production:"
+	@echo "  prod-build  - Build production container"
+	@echo "  prod-start  - Start production container"
+	@echo "  prod-stop   - Stop production container"
+	@echo "  prod-health - Check production container health"
+	@echo "  prod-logs   - View production container logs"
 
 # Environment check
 env-check:
@@ -123,6 +130,38 @@ mcp-test: env-check
 	@echo "Note: This will run the MCP server in stdio mode."
 	@echo "Use Ctrl+C to stop the server."
 	python main.py
+
+# Production deployment commands
+prod-build: env-check
+	@echo "🔨 Building production container..."
+	docker build --target production -t justifi-mcp:latest .
+	@echo "✅ Production container built"
+
+prod-start: env-check prod-build
+	@echo "🚀 Starting production container..."
+	docker-compose -f docker-compose.prod.yml up -d
+	@echo "✅ Production container started"
+	@echo "📊 Health check: make prod-health"
+	@echo "📋 Logs: make prod-logs"
+
+prod-stop:
+	@echo "🛑 Stopping production container..."
+	docker-compose -f docker-compose.prod.yml down
+	@echo "✅ Production container stopped"
+
+prod-health:
+	@echo "🩺 Checking production container health..."
+	@docker exec justifi-mcp-server python main.py --health 2>/dev/null | jq . || echo "❌ Container not running or unhealthy"
+
+prod-logs:
+	@echo "📋 Production container logs:"
+	docker logs justifi-mcp-server --tail=50 -f
+
+prod-clean:
+	@echo "🧹 Cleaning production containers and images..."
+	docker-compose -f docker-compose.prod.yml down -v --remove-orphans
+	docker rmi justifi-mcp:latest 2>/dev/null || true
+	@echo "✅ Production environment cleaned"
 
 # Quick setup for new developers
 setup: env-check install dev-start

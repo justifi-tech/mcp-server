@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+  justifi-mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: justifi-mcp-server
+    
+    # Environment configuration
+    env_file: .env
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PYTHONPATH=/app
+    
+    # Security hardening
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:noexec,nosuid,size=100m
+    user: "1000:1000"
+    
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+        reservations:
+          memory: 128M
+          cpus: '0.25'
+    
+    # Network isolation
+    networks:
+      - justifi-network
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "python", "main.py", "--health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    
+    # Restart policy
+    restart: unless-stopped
+    
+    # Logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    
+    # Standard I/O for MCP protocol
+    stdin_open: true
+    tty: true
+
+networks:
+  justifi-network:
+    driver: bridge
+    internal: false  # Allow outbound to JustiFi API
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16 

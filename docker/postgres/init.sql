@@ -1,17 +1,23 @@
 -- PostgreSQL initialization script for MCP Server
 -- Zero-trust security setup with least privilege access
 
--- Create dedicated database for MCP
-CREATE DATABASE mcp;
+-- Create dedicated database for MCP (only if it doesn't exist)
+SELECT 'CREATE DATABASE mcp'
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'mcp')\gexec
 
 -- Connect to the mcp database to set up schema and user
 \c mcp;
 
--- Create dedicated schema for MCP application
-CREATE SCHEMA mcp_app;
+-- Create dedicated schema for MCP application (only if it doesn't exist)
+CREATE SCHEMA IF NOT EXISTS mcp_app;
 
--- Create restricted user for MCP server application
-CREATE USER mcp_server WITH PASSWORD 'mcp_secure_password_change_in_production';
+-- Create restricted user for MCP server application (only if it doesn't exist)
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'mcp_server') THEN
+        CREATE USER mcp_server WITH PASSWORD 'mcp_secure_password_change_in_production';
+    END IF;
+END $$;
 
 -- Revoke all default privileges from mcp_server on public schema
 REVOKE ALL ON SCHEMA public FROM mcp_server;
@@ -36,24 +42,29 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA mcp_app GRANT USAGE, SELECT ON SEQUENCES TO m
 -- Note: postgres still has superuser privileges but we're being explicit
 REVOKE ALL ON SCHEMA mcp_app FROM postgres;
 
--- Create the message_store table in the mcp_app schema
-CREATE TABLE mcp_app.message_store (
+-- Create the message_store table in the mcp_app schema (only if it doesn't exist)
+CREATE TABLE IF NOT EXISTS mcp_app.message_store (
     id SERIAL PRIMARY KEY,
     session_id TEXT NOT NULL,
     message JSONB NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Create index for performance
-CREATE INDEX idx_message_store_session_id ON mcp_app.message_store(session_id);
-CREATE INDEX idx_message_store_created_at ON mcp_app.message_store(created_at);
+-- Create index for performance (only if they don't exist)
+CREATE INDEX IF NOT EXISTS idx_message_store_session_id ON mcp_app.message_store(session_id);
+CREATE INDEX IF NOT EXISTS idx_message_store_created_at ON mcp_app.message_store(created_at);
 
 -- Grant specific table privileges to mcp_server
 GRANT SELECT, INSERT, UPDATE, DELETE ON mcp_app.message_store TO mcp_server;
 GRANT USAGE, SELECT ON SEQUENCE mcp_app.message_store_id_seq TO mcp_server;
 
 -- Additional security: Create a read-only user for monitoring/analytics (optional)
-CREATE USER mcp_readonly WITH PASSWORD 'mcp_readonly_password_change_in_production';
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'mcp_readonly') THEN
+        CREATE USER mcp_readonly WITH PASSWORD 'mcp_readonly_password_change_in_production';
+    END IF;
+END $$;
 GRANT CONNECT ON DATABASE mcp TO mcp_readonly;
 GRANT USAGE ON SCHEMA mcp_app TO mcp_readonly;
 GRANT SELECT ON ALL TABLES IN SCHEMA mcp_app TO mcp_readonly;

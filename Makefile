@@ -1,11 +1,11 @@
-.PHONY: help install start stop clean test dev-start dev-stop dev-clean mcp-test env-check
+.PHONY: help install start stop clean test dev-start dev-stop dev-clean mcp-test env-check lint format type-check security check-all build-dev
 
 # Default target
 help:
 	@echo "JustiFi MCP Server - Available Commands:"
 	@echo ""
 	@echo "Setup:"
-	@echo "  install     - Install dependencies using uv"
+	@echo "  install     - Build development container with dependencies"
 	@echo "  env-check   - Verify .env file exists"
 	@echo ""
 	@echo "Development:"
@@ -19,8 +19,18 @@ help:
 	@echo "  clean       - Clean all volumes and containers"
 	@echo ""
 	@echo "Testing:"
-	@echo "  test        - Run unit tests"
+	@echo "  test        - Run unit tests (in container)"
 	@echo "  mcp-test    - Test MCP server directly"
+	@echo ""
+	@echo "Code Quality (All in Docker):"
+	@echo "  format      - Auto-format code with black and ruff"
+	@echo "  lint        - Run ruff linter"
+	@echo "  type-check  - Run mypy type checking"
+	@echo "  security    - Run bandit security scan"
+	@echo "  check-all   - Run all code quality checks"
+	@echo ""
+	@echo "Build:"
+	@echo "  build-dev   - Build development container"
 	@echo ""
 	@echo "Note: MCP server runs via stdio transport, not as a web service."
 	@echo "Configure Cursor to connect to: python main.py"
@@ -35,11 +45,15 @@ env-check:
 	fi
 	@echo "✅ .env file exists"
 
-# Install dependencies
-install:
-	@echo "Installing dependencies with uv..."
-	uv pip install -r requirements.txt
-	@echo "✅ Dependencies installed"
+# Build development container with all tools
+build-dev: env-check
+	@echo "🔨 Building development container..."
+	docker-compose -f docker-compose.lint.yml build linter
+	@echo "✅ Development container built"
+
+# Install dependencies (build container)
+install: build-dev
+	@echo "✅ Dependencies installed in container"
 
 # Development: databases only
 dev-start: env-check
@@ -74,13 +88,34 @@ stop:
 clean:
 	@echo "Cleaning all volumes and containers..."
 	docker-compose down -v --remove-orphans
+	docker-compose -f docker-compose.lint.yml down -v --remove-orphans
 	@echo "✅ All volumes and containers cleaned"
 
-# Testing
-test:
-	@echo "Running unit tests..."
-	pytest tests/ -v
-	@echo "✅ Tests completed"
+# Testing (in container)
+test: env-check
+	@echo "🧪 Running unit tests in container..."
+	docker-compose -f docker-compose.lint.yml run --rm linter sh -c "pytest tests/ -v && echo '✅ Tests completed'"
+
+# Code Quality Targets (All in Docker)
+format: env-check
+	@echo "🎨 Formatting code in container..."
+	docker-compose -f docker-compose.lint.yml run --rm formatter
+
+lint: env-check
+	@echo "🔍 Running ruff linter in container..."
+	docker-compose -f docker-compose.lint.yml run --rm ruff
+
+type-check: env-check
+	@echo "🔍 Running mypy type checking in container..."
+	docker-compose -f docker-compose.lint.yml run --rm mypy
+
+security: env-check
+	@echo "🔒 Running bandit security scan in container..."
+	docker-compose -f docker-compose.lint.yml run --rm bandit
+
+check-all: env-check
+	@echo "🔍 Running all code quality checks in container..."
+	docker-compose -f docker-compose.lint.yml run --rm check-all
 
 # Test MCP server directly
 mcp-test: env-check

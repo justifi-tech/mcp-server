@@ -2,6 +2,12 @@ mcp
 httpx
 pydantic
 python-dotenv
+langsmith
 pytest
 pytest-asyncio
-respx 
+respx
+# Code quality and linting tools
+black
+ruff
+mypy
+bandit 

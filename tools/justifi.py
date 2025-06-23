@@ -4,25 +4,32 @@ JustiFi MCP Integration - Payment Processing Tools
 This module provides MCP tools for interacting with the JustiFi payments API.
 Supports OAuth2 Client-Credentials auth with token caching.
 """
+
 from __future__ import annotations
 
-import asyncio
 import os
 import time
-from typing import Any, Dict, Optional
+from typing import Any
 
 import httpx
-from pydantic import BaseModel, Field
 from langsmith import traceable
+from pydantic import BaseModel
 
 
 class _TokenCache(BaseModel):
     """Simple in-memory OAuth token cache."""
-    token: Optional[str] = None
+
+    token: str | None = None
     expires_at: float = 0.0  # epoch seconds
 
 
 _TOKEN_CACHE = _TokenCache()
+
+
+def _clear_token_cache() -> None:
+    """Clear the token cache (useful for testing)."""
+    global _TOKEN_CACHE
+    _TOKEN_CACHE = _TokenCache()
 
 
 async def _get_access_token() -> str:
@@ -52,10 +59,10 @@ async def _request(
     method: str,
     path: str,
     *,
-    params: Optional[Dict[str, Any]] = None,
-    data: Optional[Dict[str, Any]] = None,
-    idempotency_key: Optional[str] = None,
-) -> Dict[str, Any]:
+    params: dict[str, Any] | None = None,
+    data: dict[str, Any] | None = None,
+    idempotency_key: str | None = None,
+) -> dict[str, Any]:
     """Internal helper to call JustiFi API."""
     token = await _get_access_token()
     base_url = os.getenv("JUSTIFI_BASE_URL", "https://api.justifi.ai/v1")
@@ -72,10 +79,12 @@ async def _request(
             method.upper(), url, headers=headers, params=params, json=data
         )
         resp.raise_for_status()
-        return resp.json()
+        result: dict[str, Any] = resp.json()
+        return result
 
 
 # ---------------- Public MCP Tools ----------------
+
 
 @traceable
 async def create_payment(
@@ -83,7 +92,7 @@ async def create_payment(
     currency: str,
     idempotency_key: str,
     **kwargs: Any,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Create a new payment in JustiFi.
 
@@ -106,7 +115,7 @@ async def create_payment(
 
 
 @traceable
-async def retrieve_payment(payment_id: str) -> Dict[str, Any]:
+async def retrieve_payment(payment_id: str) -> dict[str, Any]:
     """Retrieve a payment by its ID."""
     return await _request("GET", f"/payments/{payment_id}")
 
@@ -114,11 +123,11 @@ async def retrieve_payment(payment_id: str) -> Dict[str, Any]:
 @traceable
 async def list_payments(
     limit: int = 25,
-    after_cursor: Optional[str] = None,
-    before_cursor: Optional[str] = None,
-) -> Dict[str, Any]:
+    after_cursor: str | None = None,
+    before_cursor: str | None = None,
+) -> dict[str, Any]:
     """List payments with cursor-based pagination."""
-    params: Dict[str, Any] = {"limit": limit}
+    params: dict[str, Any] = {"limit": limit}
     if after_cursor:
         params["after_cursor"] = after_cursor
     if before_cursor:
@@ -129,9 +138,9 @@ async def list_payments(
 @traceable
 async def refund_payment(
     payment_id: str,
-    amount_cents: Optional[int] = None,
-    idempotency_key: Optional[str] = None,
-) -> Dict[str, Any]:
+    amount_cents: int | None = None,
+    idempotency_key: str | None = None,
+) -> dict[str, Any]:
     """
     Issue a refund for a specific payment.
 
@@ -140,7 +149,7 @@ async def refund_payment(
         amount_cents: Optional partial-refund amount; defaults to full amount.
         idempotency_key: Optional key to make the request idempotent.
     """
-    payload: Dict[str, Any] = {}
+    payload: dict[str, Any] = {}
     if amount_cents is not None:
         payload["amount"] = amount_cents
     return await _request(
@@ -148,4 +157,4 @@ async def refund_payment(
         f"/payments/{payment_id}/refunds",
         data=payload,
         idempotency_key=idempotency_key,
-    ) 
+    )

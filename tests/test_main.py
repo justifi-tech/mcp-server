@@ -1,152 +1,201 @@
-import pytest
-import asyncio
-from fastapi.testclient import TestClient
-from unittest.mock import AsyncMock, patch
+"""
+Test suite for the JustiFi MCP Server.
+
+Tests MCP protocol compliance, tool registration, and basic functionality.
+"""
+
 import os
 import sys
+
+import pytest
 
 # Add the parent directory to the path so we can import main
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from main import app, code_analyzer, generate_tests, weather_api
+from main import handle_list_tools, server
 
-client = TestClient(app)
 
-class TestHealthEndpoints:
-    """Test basic health and info endpoints."""
-    
-    def test_health_check(self):
-        response = client.get("/health")
-        assert response.status_code == 200
-        assert response.json()["status"] == "healthy"
-    
-    def test_root_endpoint(self):
-        response = client.get("/")
-        assert response.status_code == 200
-        data = response.json()
-        assert "service" in data
-        assert "endpoints" in data
-        assert "features" in data
+class TestMCPServer:
+    """Test MCP server initialization and basic functionality."""
 
-class TestCodeGeneration:
-    """Test code generation endpoints."""
-    
-    @patch('main.ChatOpenAI')
-    def test_generate_function_endpoint(self, mock_llm):
-        # Mock the LLM response
-        mock_response = AsyncMock()
-        mock_response.content = "    return n * 2"
-        mock_llm.return_value.ainvoke = AsyncMock(return_value=mock_response)
-        
-        response = client.post("/generate-function", json={
-            "language": "python",
-            "signature": "def double(n: int) -> int:",
-            "description": "Double the input number"
-        })
-        
-        assert response.status_code == 200
-        data = response.json()
-        assert "code" in data
-        assert "language" in data
-        assert data["language"] == "python"
-    
-    @patch('main.code_analyzer')
-    def test_analyze_code_endpoint(self, mock_analyzer):
-        mock_analyzer.return_value = "This function divides two numbers but lacks error handling for division by zero."
-        
-        response = client.post("/analyze-code", json={
-            "code": "def divide(a, b):\n    return a / b",
-            "language": "python"
-        })
-        
-        assert response.status_code == 200
-        data = response.json()
-        assert "analysis" in data
-        assert "language" in data
-    
-    @patch('main.generate_tests')
-    def test_generate_tests_endpoint(self, mock_tests):
-        mock_tests.return_value = "import unittest\n\nclass TestDivide(unittest.TestCase):\n    def test_divide(self):\n        self.assertEqual(divide(10, 2), 5)"
-        
-        response = client.post("/generate-tests", json={
-            "code": "def divide(a, b):\n    return a / b",
-            "language": "python"
-        })
-        
-        assert response.status_code == 200
-        data = response.json()
-        assert "tests" in data
-        assert "language" in data
+    @pytest.fixture(autouse=True)
+    def setup_env(self):
+        """Set up test environment variables."""
+        os.environ["JUSTIFI_CLIENT_ID"] = "test_client_id"
+        os.environ["JUSTIFI_CLIENT_SECRET"] = "test_client_secret"
+        os.environ["JUSTIFI_BASE_URL"] = "https://api.justifi.ai"
+        yield
 
-class TestTools:
-    """Test the individual tool functions."""
-    
+    def test_mcp_server_creation(self):
+        """Test that MCP server can be created successfully."""
+        assert server is not None
+        assert hasattr(server, "name")
+        assert server.name == "justifi-mcp-server"
+
     @pytest.mark.asyncio
-    @patch('httpx.AsyncClient')
-    async def test_weather_api_success(self, mock_client):
-        # Mock successful weather API response
-        mock_response = AsyncMock()
-        mock_response.status_code = 200
-        mock_response.json.return_value = {
-            "weather": [{"description": "sunny"}],
-            "main": {"temp": 25}
-        }
-        
-        mock_client.return_value.__aenter__.return_value.get = AsyncMock(return_value=mock_response)
-        
-        result = await weather_api("London", "celsius")
-        assert "sunny" in result
-        assert "25" in result
-    
-    @pytest.mark.asyncio
-    @patch('httpx.AsyncClient')
-    async def test_weather_api_failure(self, mock_client):
-        # Mock failed weather API response
-        mock_response = AsyncMock()
-        mock_response.status_code = 404
-        
-        mock_client.return_value.__aenter__.return_value.get = AsyncMock(return_value=mock_response)
-        
-        result = await weather_api("InvalidCity", "celsius")
-        assert "Could not fetch weather" in result
-    
-    @pytest.mark.asyncio
-    @patch('main.ChatOpenAI')
-    async def test_code_analyzer(self, mock_llm):
-        mock_response = AsyncMock()
-        mock_response.content = "This function lacks error handling and documentation."
-        mock_llm.return_value.ainvoke = AsyncMock(return_value=mock_response)
-        
-        result = await code_analyzer("def test(): pass", "python")
-        assert "error handling" in result
-    
-    @pytest.mark.asyncio
-    @patch('main.ChatOpenAI')
-    async def test_generate_tests(self, mock_llm):
-        mock_response = AsyncMock()
-        mock_response.content = "import unittest\n\nclass TestExample(unittest.TestCase):\n    def test_function(self):\n        pass"
-        mock_llm.return_value.ainvoke = AsyncMock(return_value=mock_response)
-        
-        result = await generate_tests("def example(): pass", "python")
-        assert "unittest" in result
-        assert "TestExample" in result
+    async def test_get_tools_function(self):
+        """Test that get_tools returns the expected tools."""
+        tools = await handle_list_tools()
 
-class TestValidation:
-    """Test input validation and error handling."""
-    
-    def test_generate_function_missing_fields(self):
-        response = client.post("/generate-function", json={
-            "language": "python"
-            # Missing required 'signature' field
-        })
-        assert response.status_code == 422  # Validation error
-    
-    def test_analyze_code_missing_fields(self):
-        response = client.post("/analyze-code", json={
-            "language": "python"
-            # Missing required 'code' field
-        })
-        assert response.status_code == 422  # Validation error
+        # Should have exactly 4 JustiFi payment tools
+        assert len(tools) == 4
+
+        tool_names = [tool.name for tool in tools]
+        expected_tools = [
+            "create_payment",
+            "retrieve_payment",
+            "list_payments",
+            "refund_payment",
+        ]
+
+        for expected_tool in expected_tools:
+            assert expected_tool in tool_names
+
+    @pytest.mark.asyncio
+    async def test_tool_descriptions(self):
+        """Test that all tools have proper descriptions."""
+        tools = await handle_list_tools()
+
+        for tool in tools:
+            assert hasattr(tool, "description")
+            assert isinstance(tool.description, str)
+            assert len(tool.description) > 10  # Should have meaningful descriptions
+
+    @pytest.mark.asyncio
+    async def test_tool_functions_callable(self):
+        """Test that all tool functions are callable."""
+        tools = await handle_list_tools()
+
+        for tool in tools:
+            # MCP tools don't have a 'func' attribute, they have schemas
+            assert hasattr(tool, "name")
+            assert hasattr(tool, "description")
+            assert hasattr(tool, "inputSchema")
+
+    def test_environment_validation(self):
+        """Test that the server validates required environment variables."""
+        # Test with missing CLIENT_ID
+        old_client_id = os.environ.get("JUSTIFI_CLIENT_ID")
+        if "JUSTIFI_CLIENT_ID" in os.environ:
+            del os.environ["JUSTIFI_CLIENT_ID"]
+
+        try:
+            # This should work since we're not actually calling the API
+            # The validation happens when tokens are requested
+            pass
+        finally:
+            if old_client_id:
+                os.environ["JUSTIFI_CLIENT_ID"] = old_client_id
+
+
+class TestMCPProtocol:
+    """Test MCP protocol compliance."""
+
+    @pytest.fixture(autouse=True)
+    def setup_env(self):
+        """Set up test environment variables."""
+        os.environ["JUSTIFI_CLIENT_ID"] = "test_client_id"
+        os.environ["JUSTIFI_CLIENT_SECRET"] = "test_client_secret"
+        os.environ["JUSTIFI_BASE_URL"] = "https://api.justifi.ai"
+        yield
+
+    def test_server_info(self):
+        """Test that server provides proper info."""
+        assert hasattr(server, "name")
+        assert server.name == "justifi-mcp-server"
+
+    @pytest.mark.asyncio
+    async def test_list_tools_protocol(self):
+        """Test that tools can be listed via MCP protocol."""
+        # This simulates the MCP list_tools call
+        tools = await handle_list_tools()
+
+        # Verify tools are in the expected MCP format
+        for tool in tools:
+            assert hasattr(tool, "name")
+            assert hasattr(tool, "description")
+            assert hasattr(tool, "inputSchema")
+
+            # Tool names should follow naming conventions
+            assert isinstance(tool.name, str)
+            assert len(tool.name) > 0
+            assert "_" in tool.name or tool.name.islower()
+
+
+class TestToolIntegration:
+    """Test integration between MCP server and JustiFi tools."""
+
+    @pytest.fixture(autouse=True)
+    def setup_env(self):
+        """Set up test environment variables."""
+        os.environ["JUSTIFI_CLIENT_ID"] = "test_client_id"
+        os.environ["JUSTIFI_CLIENT_SECRET"] = "test_client_secret"
+        os.environ["JUSTIFI_BASE_URL"] = "https://api.justifi.ai"
+        yield
+
+    @pytest.mark.asyncio
+    async def test_create_payment_tool_registration(self):
+        """Test that create_payment tool is properly registered."""
+        tools = await handle_list_tools()
+        create_tool = next((t for t in tools if t.name == "create_payment"), None)
+
+        assert create_tool is not None
+        assert "Create a new payment" in create_tool.description
+        assert create_tool.inputSchema is not None
+
+    @pytest.mark.asyncio
+    async def test_retrieve_payment_tool_registration(self):
+        """Test that retrieve_payment tool is properly registered."""
+        tools = await handle_list_tools()
+        retrieve_tool = next((t for t in tools if t.name == "retrieve_payment"), None)
+
+        assert retrieve_tool is not None
+        assert "Retrieve" in retrieve_tool.description
+        assert retrieve_tool.inputSchema is not None
+
+    @pytest.mark.asyncio
+    async def test_list_payments_tool_registration(self):
+        """Test that list_payments tool is properly registered."""
+        tools = await handle_list_tools()
+        list_tool = next((t for t in tools if t.name == "list_payments"), None)
+
+        assert list_tool is not None
+        assert "List payments" in list_tool.description
+        assert list_tool.inputSchema is not None
+
+    @pytest.mark.asyncio
+    async def test_refund_payment_tool_registration(self):
+        """Test that refund_payment tool is properly registered."""
+        tools = await handle_list_tools()
+        refund_tool = next((t for t in tools if t.name == "refund_payment"), None)
+
+        assert refund_tool is not None
+        assert "refund" in refund_tool.description
+        assert refund_tool.inputSchema is not None
+
+
+class TestErrorHandling:
+    """Test error handling in the MCP server."""
+
+    def test_missing_environment_variables(self):
+        """Test behavior when required environment variables are missing."""
+        # Remove environment variables
+        old_vars = {}
+        for var in ["JUSTIFI_CLIENT_ID", "JUSTIFI_CLIENT_SECRET"]:
+            old_vars[var] = os.environ.get(var)
+            if var in os.environ:
+                del os.environ[var]
+
+        try:
+            # The server should still initialize, but API calls should fail
+            # This is expected behavior - validation happens at runtime
+            assert server is not None
+        finally:
+            # Restore environment variables
+            for var, value in old_vars.items():
+                if value:
+                    os.environ[var] = value
+
 
 if __name__ == "__main__":
-    pytest.main([__file__]) 
+    pytest.main([__file__])

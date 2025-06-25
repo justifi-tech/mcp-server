@@ -1,0 +1,11 @@
+include README.md
+include LICENSE
+include pyproject.toml
+include requirements.txt
+recursive-include tools *.py
+recursive-include tests *.py
+recursive-include docs *.md *.rst
+recursive-include docker *.sql
+recursive-exclude * __pycache__
+recursive-exclude * *.py[co]
+recursive-exclude * .pytest_cache 

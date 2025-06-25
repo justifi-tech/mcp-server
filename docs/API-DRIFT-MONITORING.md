@@ -23,10 +23,15 @@ The API drift monitoring system automatically detects changes in the JustiFi Ope
 ┌─────────────────────────────────────────────────────────────────┐
 │                   Drift Analysis Engine                        │
 │                                                                 │
-│  • Compare stored vs latest OpenAPI specs                      │
+│  CI Script (scripts/ci-drift-check.py):                        │
+│  • Download and compare OpenAPI specs                          │
 │  • Monitor 10 endpoints used by our MCP tools                  │
 │  • Detect additions, removals, and modifications               │
-│  • Generate detailed change reports                            │
+│  • Set GitHub Actions outputs for workflow decisions           │
+│                                                                 │
+│  Local Script (scripts/check-api-drift.py):                    │
+│  • Same analysis logic for development use                     │
+│  • Interactive output and optional spec updates                │
 └─────────────────────────────────────────────────────────────────┘
          │
          ▼
@@ -39,6 +44,12 @@ The API drift monitoring system automatically detects changes in the JustiFi Ope
 │  • Continue monitoring        • Block spec updates             │
 └─────────────────────────────────────────────────────────────────┘
 ```
+
+### Key Architecture Benefits
+- **Clean separation**: CI logic in dedicated scripts, not inline YAML
+- **Maintainable**: Python code is easier to test and debug than YAML
+- **Reusable**: Same analysis logic for both CI and local development
+- **Testable**: Scripts can be run and tested independently
 
 ## Monitored Endpoints
 
@@ -67,12 +78,18 @@ Our drift monitoring tracks these 10 endpoints that correspond to our MCP tools:
 ### GitHub Actions Workflow
 - **File**: `.github/workflows/api-drift-monitor.yml`
 - **Purpose**: Automated weekly monitoring with GitHub issue creation
+- **Architecture**: Clean workflow that calls dedicated CI script
 - **Triggers**:
   - Weekly schedule (Mondays at 9 AM UTC)
   - Manual workflow dispatch
   - Changes to endpoint inventory or stored spec
 
-### Local Script
+### CI Script
+- **File**: `scripts/ci-drift-check.py`
+- **Purpose**: CI/CD-optimized drift detection with GitHub Actions integration
+- **Features**: GitHub Actions outputs, error codes, automated spec saving
+
+### Local Development Script
 - **File**: `scripts/check-api-drift.py`
 - **Purpose**: Local development and testing of drift detection
 - **Usage**:
@@ -151,12 +168,12 @@ schedule:
 1. **Checkout repository** with fetch-depth=2 for comparisons
 2. **Set up Python 3.11** environment
 3. **Install dependencies** (requests, pyyaml, deepdiff)
-4. **Download latest OpenAPI spec** from JustiFi
-5. **Compare specifications** using Python analysis script
-6. **Read drift analysis results** into GitHub Actions variables
-7. **Update stored spec** if no critical changes (auto-commit)
-8. **Create GitHub issue** if critical changes detected
-9. **Post success comment** if all checks pass
+4. **Run API drift analysis** using `scripts/ci-drift-check.py`
+5. **Update stored spec** if no critical changes (auto-commit)
+6. **Create GitHub issue** if critical changes detected
+7. **Post success comment** if all checks pass
+
+The workflow is now much cleaner with the complex analysis logic extracted to a dedicated CI script.
 
 ### Issue Creation
 When critical changes are detected, the workflow creates a GitHub issue with:

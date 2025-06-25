@@ -142,6 +142,30 @@ check-all: env-check
 	@echo "🔍 Running all code quality checks in dev container..."
 	docker-compose run --rm dev sh -c "ruff check . && mypy . && bandit -r ."
 
+# Pre-commit setup
+pre-commit-install: env-check
+	@echo "🔧 Installing pre-commit hooks..."
+	docker-compose run --rm dev pre-commit install
+	@echo "✅ Pre-commit hooks installed"
+
+pre-commit-run: env-check
+	@echo "🔍 Running pre-commit on all files..."
+	docker-compose run --rm dev pre-commit run --all-files
+
+# Modern Python development
+install-dev: env-check
+	@echo "📦 Installing development dependencies..."
+	docker-compose run --rm dev uv pip install -e ".[dev]"
+	@echo "✅ Development dependencies installed"
+
+test-coverage: env-check
+	@echo "🧪 Running tests with coverage..."
+	docker-compose run --rm dev pytest tests/ --cov=tools --cov-report=html --cov-report=term-missing
+
+docs-serve: env-check
+	@echo "📚 Starting documentation server..."
+	docker-compose run --rm -p 8080:8080 dev mkdocs serve -a 0.0.0.0:8080
+
 # Note: shell command moved above to avoid duplication
 
 # Test MCP server directly

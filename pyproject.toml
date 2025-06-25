@@ -9,6 +9,44 @@ description = "JustiFi MCP Server for payment processing integration"
 authors = [{name = "MCP Development Team"}]
 license = {text = "MIT"}
 requires-python = ">=3.11"
+dependencies = [
+    "mcp",
+    "httpx",
+    "pydantic",
+    "python-dotenv",
+    "langsmith",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-asyncio", 
+    "pytest-cov",
+    "respx",
+    "black",
+    "ruff",
+    "mypy",
+    "bandit",
+    "watchdog",
+    "pre-commit",
+    "types-requests",
+]
+test = [
+    "pytest",
+    "pytest-asyncio",
+    "pytest-cov",
+    "respx",
+]
+api = [
+    "requests",
+    "pyyaml", 
+    "deepdiff",
+]
+docs = [
+    "mkdocs",
+    "mkdocs-material",
+    "mkdocs-mermaid2-plugin",
+]
 
 [tool.black]
 line-length = 88
@@ -44,11 +82,25 @@ select = [
     "B",  # flake8-bugbear
     "C4", # flake8-comprehensions
     "UP", # pyupgrade
+    "D",  # pydocstyle
+    "N",  # pep8-naming
+    "S",  # bandit
+    "T20", # flake8-print
+    "RET", # flake8-return
+    "SIM", # flake8-simplify
+    "PTH", # flake8-use-pathlib
 ]
 ignore = [
     "E501",  # line too long, handled by black
     "B008",  # do not perform function calls in argument defaults
     "C901",  # too complex
+    "D100",  # Missing docstring in public module
+    "D101",  # Missing docstring in public class
+    "D102",  # Missing docstring in public method
+    "D103",  # Missing docstring in public function
+    "D104",  # Missing docstring in public package
+    "S101",  # Use of assert detected (OK in tests)
+    "T20",   # Print statements (OK for debugging)
 ]
 
 # Allow unused variables when underscore-prefixed.

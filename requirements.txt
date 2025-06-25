@@ -12,4 +12,8 @@ ruff
 mypy
 bandit
 # Development tools
-watchdog 
+watchdog
+# API drift detection
+requests
+pyyaml
+deepdiff 

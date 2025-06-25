@@ -22,6 +22,8 @@ help:
 	@echo "Testing:"
 	@echo "  test        - Run unit tests (in container)"
 	@echo "  mcp-test    - Test MCP server directly"
+	@echo "  drift-check - Check for JustiFi API changes"
+	@echo "  drift-update - Check for API changes and update spec"
 	@echo ""
 	@echo "Code Quality (All in dev container):"
 	@echo "  format      - Auto-format code with black and ruff"
@@ -148,6 +150,16 @@ mcp-test: env-check
 	@echo "Note: This will run the MCP server in stdio mode."
 	@echo "Use Ctrl+C to stop the server."
 	python main.py
+
+# Check for JustiFi API drift
+drift-check: env-check
+	@echo "🔍 Checking for JustiFi API changes..."
+	docker-compose run --rm dev python scripts/check-api-drift.py
+
+# Check for API drift and update spec if no breaking changes
+drift-update: env-check
+	@echo "🔍 Checking for JustiFi API changes and updating spec..."
+	docker-compose run --rm dev python scripts/check-api-drift.py --update-spec
 
 # Production deployment commands (standalone Docker)
 prod-build: env-check

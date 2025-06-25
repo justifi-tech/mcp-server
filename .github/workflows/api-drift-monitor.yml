@@ -1,0 +1,305 @@
+name: JustiFi API Drift Monitor
+
+on:
+  schedule:
+    # Run every Monday at 9 AM UTC (weekly check)
+    - cron: '0 9 * * 1'
+  workflow_dispatch:
+    # Allow manual triggering
+  push:
+    paths:
+      # Run when our endpoint inventory changes
+      - 'docs/endpoint-inventory.md'
+      - 'docs/justifi-openapi.yaml'
+
+jobs:
+  api-drift-check:
+    runs-on: ubuntu-latest
+    name: Monitor JustiFi OpenAPI Spec Changes
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2  # Need previous commit for comparison
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          pip install requests pyyaml deepdiff
+      
+      - name: Download latest JustiFi OpenAPI spec
+        id: download-spec
+        run: |
+          echo "Downloading latest JustiFi OpenAPI specification..."
+          curl -s -o justifi-openapi-latest.yaml \
+            "https://docs.justifi.tech/redocusaurus/plugin-redoc-0.yaml"
+          
+          if [ ! -f justifi-openapi-latest.yaml ]; then
+            echo "❌ Failed to download OpenAPI spec"
+            exit 1
+          fi
+          
+          echo "✅ Downloaded latest OpenAPI spec ($(wc -l < justifi-openapi-latest.yaml) lines)"
+      
+      - name: Compare with stored spec
+        id: compare-specs
+        run: |
+          # Create comparison script
+          cat > compare_specs.py << 'EOF'
+          import yaml
+          import json
+          import sys
+          from deepdiff import DeepDiff
+          from pathlib import Path
+          
+          # Our implemented endpoints that we need to monitor
+          MONITORED_ENDPOINTS = {
+              # Payment endpoints (5 tools)
+              "POST /payments": "create_payment",
+              "GET /payments/{id}": "retrieve_payment", 
+              "GET /payments": "list_payments",
+              "POST /payments/{id}/refunds": "refund_payment",
+              "GET /payments/{id}/refunds": "list_refunds",
+              
+              # Payment method endpoints (2 tools)
+              "POST /payment_methods": "create_payment_method",
+              "GET /payment_methods/{token}": "retrieve_payment_method",
+              
+              # Payout endpoints (2 tools)
+              "GET /payouts/{id}": "retrieve_payout",
+              "GET /payouts": "list_payouts",
+              
+              # Balance transaction endpoints (1 tool)
+              "GET /balance_transactions": "list_balance_transactions"
+          }
+          
+          def load_openapi_spec(file_path):
+              """Load and parse OpenAPI spec"""
+              try:
+                  with open(file_path, 'r') as f:
+                      return yaml.safe_load(f)
+              except Exception as e:
+                  print(f"❌ Error loading {file_path}: {e}")
+                  return None
+          
+          def extract_endpoint_info(spec, endpoint_key):
+              """Extract endpoint information from OpenAPI spec"""
+              if not spec or 'paths' not in spec:
+                  return None
+                  
+              method, path = endpoint_key.split(' ', 1)
+              method = method.lower()
+              
+              # Handle parameterized paths
+              openapi_path = path.replace('{id}', '{payment_id}').replace('{token}', '{payment_method_token}')
+              
+              # Try exact match first
+              if openapi_path in spec['paths']:
+                  path_info = spec['paths'][openapi_path]
+                  if method in path_info:
+                      return path_info[method]
+              
+              # Try to find similar paths
+              for spec_path in spec['paths']:
+                  if spec_path.replace('{payment_id}', '{id}').replace('{payment_method_token}', '{token}') == path:
+                      path_info = spec['paths'][spec_path]
+                      if method in path_info:
+                          return path_info[method]
+              
+              return None
+          
+          def main():
+              # Load specs
+              stored_spec = load_openapi_spec('docs/justifi-openapi.yaml')
+              latest_spec = load_openapi_spec('justifi-openapi-latest.yaml')
+              
+              if not stored_spec or not latest_spec:
+                  print("❌ Failed to load OpenAPI specs")
+                  sys.exit(1)
+              
+              print("🔍 Analyzing OpenAPI spec changes...")
+              
+              # Check for changes in our monitored endpoints
+              changes_found = False
+              critical_changes = []
+              warnings = []
+              
+              for endpoint, tool_name in MONITORED_ENDPOINTS.items():
+                  print(f"\n📍 Checking {endpoint} ({tool_name})...")
+                  
+                  stored_endpoint = extract_endpoint_info(stored_spec, endpoint)
+                  latest_endpoint = extract_endpoint_info(latest_spec, endpoint)
+                  
+                  if stored_endpoint is None and latest_endpoint is None:
+                      warnings.append(f"⚠️  {endpoint} not found in either spec")
+                      continue
+                  
+                  if stored_endpoint is None and latest_endpoint is not None:
+                      critical_changes.append(f"🆕 NEW: {endpoint} was added to the API")
+                      changes_found = True
+                      continue
+                  
+                  if stored_endpoint is not None and latest_endpoint is None:
+                      critical_changes.append(f"🚨 REMOVED: {endpoint} was removed from the API")
+                      changes_found = True
+                      continue
+                  
+                  # Compare endpoint details
+                  if stored_endpoint != latest_endpoint:
+                      diff = DeepDiff(stored_endpoint, latest_endpoint, ignore_order=True)
+                      if diff:
+                          changes_found = True
+                          critical_changes.append(f"🔄 CHANGED: {endpoint} has modifications")
+                          print(f"   Changes: {json.dumps(diff, indent=2, default=str)}")
+                  else:
+                      print(f"   ✅ No changes detected")
+              
+              # Generate summary
+              print(f"\n{'='*50}")
+              print("📊 DRIFT ANALYSIS SUMMARY")
+              print(f"{'='*50}")
+              
+              if not changes_found:
+                  print("✅ No changes detected in monitored endpoints")
+                  print("🎯 All 10 JustiFi MCP tools remain compatible")
+              else:
+                  print(f"⚠️  {len(critical_changes)} changes detected!")
+                  
+                  if critical_changes:
+                      print("\n🚨 CRITICAL CHANGES:")
+                      for change in critical_changes:
+                          print(f"   {change}")
+                  
+                  if warnings:
+                      print("\n⚠️  WARNINGS:")
+                      for warning in warnings:
+                          print(f"   {warning}")
+                  
+                  print("\n📋 RECOMMENDED ACTIONS:")
+                  print("   1. Review the changes above")
+                  print("   2. Update affected MCP tools if needed")
+                  print("   3. Run the full test suite: make test")
+                  print("   4. Update docs/justifi-openapi.yaml with latest spec")
+              
+              # Set GitHub Actions output
+              with open('drift_summary.txt', 'w') as f:
+                  if changes_found:
+                      f.write("CHANGES_DETECTED=true\n")
+                      f.write(f"CRITICAL_CHANGES={len(critical_changes)}\n")
+                      f.write("SUMMARY=API changes detected in monitored endpoints\n")
+                  else:
+                      f.write("CHANGES_DETECTED=false\n")
+                      f.write("CRITICAL_CHANGES=0\n")
+                      f.write("SUMMARY=No changes detected - all tools remain compatible\n")
+              
+              # Exit with error code if critical changes found
+              if critical_changes:
+                  sys.exit(1)
+          
+          if __name__ == "__main__":
+              main()
+          EOF
+          
+          # Run the comparison
+          python compare_specs.py
+      
+      - name: Read drift analysis results
+        id: drift-results
+        run: |
+          if [ -f drift_summary.txt ]; then
+            while IFS= read -r line; do
+              echo "$line" >> $GITHUB_OUTPUT
+            done < drift_summary.txt
+          fi
+      
+      - name: Update stored spec if no critical changes
+        if: steps.drift-results.outputs.CHANGES_DETECTED == 'false'
+        run: |
+          echo "📝 Updating stored OpenAPI spec..."
+          cp justifi-openapi-latest.yaml docs/justifi-openapi.yaml
+          
+          # Check if there are any changes to commit
+          if git diff --quiet docs/justifi-openapi.yaml; then
+            echo "No changes to commit"
+          else
+            git config --local user.email "action@github.com"
+            git config --local user.name "GitHub Action"
+            git add docs/justifi-openapi.yaml
+            git commit -m "chore: update JustiFi OpenAPI spec (no breaking changes)"
+            git push
+          fi
+      
+      - name: Create GitHub Issue for Critical Changes
+        if: steps.drift-results.outputs.CHANGES_DETECTED == 'true' && steps.drift-results.outputs.CRITICAL_CHANGES != '0'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            
+            // Read the full analysis output
+            let analysisOutput = '';
+            try {
+              analysisOutput = fs.readFileSync('drift_summary.txt', 'utf8');
+            } catch (error) {
+              analysisOutput = 'Error reading analysis results';
+            }
+            
+            const issueTitle = `🚨 JustiFi API Changes Detected - Review Required`;
+            const issueBody = `
+            # JustiFi API Drift Detection Alert
+            
+            **Date:** ${new Date().toISOString().split('T')[0]}
+            **Critical Changes:** ${process.env.CRITICAL_CHANGES || 'Unknown'}
+            
+            ## Summary
+            The weekly API drift monitor has detected changes in the JustiFi OpenAPI specification that may affect our MCP tools.
+            
+            ## Affected Tools
+            Our JustiFi MCP server implements 10 tools across these endpoints:
+            - **Payment Tools (5):** create_payment, retrieve_payment, list_payments, refund_payment, list_refunds
+            - **Payment Method Tools (2):** create_payment_method, retrieve_payment_method  
+            - **Payout Tools (2):** retrieve_payout, list_payouts
+            - **Balance Tools (1):** list_balance_transactions
+            
+            ## Recommended Actions
+            1. **Review Changes:** Compare the latest OpenAPI spec with our stored version
+            2. **Test Compatibility:** Run \`make test\` to verify all 36 tests still pass
+            3. **Update Tools:** Modify affected MCP tools if needed
+            4. **Update Documentation:** Update endpoint inventory and tool descriptions
+            5. **Update Stored Spec:** Replace \`docs/justifi-openapi.yaml\` with latest version
+            
+            ## Testing Checklist
+            - [ ] All 36 tests pass (\`make test\`)
+            - [ ] Real API integration still works (\`make dev\` + manual testing)
+            - [ ] No new security vulnerabilities (\`make security\`)
+            - [ ] Updated documentation reflects any changes
+            
+            ## Files to Review
+            - \`docs/justifi-openapi.yaml\` - Update with latest spec
+            - \`docs/endpoint-inventory.md\` - Update endpoint analysis
+            - \`tools/justifi/\` - Update affected tool implementations
+            - \`tests/\` - Add tests for any new functionality
+            
+            ---
+            *This issue was automatically created by the API Drift Monitor workflow.*
+            `;
+            
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: issueTitle,
+              body: issueBody,
+              labels: ['api-drift', 'breaking-change', 'high-priority']
+            });
+      
+      - name: Post success comment
+        if: steps.drift-results.outputs.CHANGES_DETECTED == 'false'
+        run: |
+          echo "✅ API Drift Monitor: No breaking changes detected"
+          echo "🎯 All 10 JustiFi MCP tools remain fully compatible"
+          echo "📝 Stored OpenAPI spec updated automatically" 

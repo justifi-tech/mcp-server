@@ -1,8 +1,12 @@
 # Use Python 3.11 slim image for smaller size
-FROM python:3.11-slim as base
+FROM python:3.11-slim AS base
 
 # Set working directory
 WORKDIR /app
+
+# Set Python environment variables to prevent cache files
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
 
 # Install uv for fast package management
 RUN pip install uv
@@ -13,24 +17,23 @@ COPY requirements.txt .
 # Install dependencies using uv
 RUN uv pip install --system -r requirements.txt
 
-# Development stage with linting tools
-FROM base as development
+# Development stage with auto-restart capability
+FROM base AS development
 
-# Copy application code
+# Install watchdog for auto-restart functionality
+RUN uv pip install --system watchdog
+
+# Copy application code (will be overridden by volume mount in development)
 COPY . .
-
-# Make the main script executable
-RUN chmod +x main.py
 
 # Set environment variables
 ENV PYTHONPATH=/app
-ENV PYTHONUNBUFFERED=1
 
-# Default command for development (can be overridden)
-CMD ["python", "main.py"]
+# Default command with auto-restart using watchmedo
+CMD ["watchmedo", "auto-restart", "--directory", "/app", "--patterns", "*.py", "--recursive", "--", "python", "main.py"]
 
 # Production stage (minimal and secure)
-FROM base as production
+FROM base AS production
 
 # Create non-root user for security
 RUN groupadd -r mcpuser && useradd -r -g mcpuser mcpuser
@@ -39,15 +42,11 @@ RUN groupadd -r mcpuser && useradd -r -g mcpuser mcpuser
 COPY --chown=mcpuser:mcpuser main.py .
 COPY --chown=mcpuser:mcpuser tools/ ./tools/
 
-# Don't copy .env files - they should be provided at runtime
-# COPY .env* ./
-
 # Create necessary directories with proper permissions
 RUN mkdir -p /tmp && chown mcpuser:mcpuser /tmp
 
 # Set environment variables
 ENV PYTHONPATH=/app
-ENV PYTHONUNBUFFERED=1
 
 # Switch to non-root user
 USER mcpuser

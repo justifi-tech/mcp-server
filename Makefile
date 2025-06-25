@@ -9,9 +9,10 @@ help:
 	@echo "  env-check   - Verify .env file exists"
 	@echo ""
 	@echo "Development:"
-	@echo "  dev-start   - Start databases only (for local MCP development)"
-	@echo "  dev-stop    - Stop development databases"
+	@echo "  dev-start   - Start unified dev container with databases"
+	@echo "  dev-stop    - Stop development environment"
 	@echo "  dev-clean   - Clean development environment"
+	@echo "  shell       - Open interactive shell in dev container"
 	@echo ""
 	@echo "Full Stack:"
 	@echo "  start       - Start databases and management UIs"
@@ -22,7 +23,7 @@ help:
 	@echo "  test        - Run unit tests (in container)"
 	@echo "  mcp-test    - Test MCP server directly"
 	@echo ""
-	@echo "Code Quality (All in Docker):"
+	@echo "Code Quality (All in dev container):"
 	@echo "  format      - Auto-format code with black and ruff"
 	@echo "  lint        - Run ruff linter"
 	@echo "  type-check  - Run mypy type checking"
@@ -35,9 +36,10 @@ help:
 	@echo "Note: MCP server runs via stdio transport, not as a web service."
 	@echo "Configure Cursor to connect to: python main.py"
 	@echo ""
-	@echo "Production:"
+	@echo "Production (standalone Docker):"
 	@echo "  prod-build  - Build production container"
-	@echo "  prod-start  - Start production container"
+	@echo "  prod-run    - Run production container interactively"
+	@echo "  prod-start  - Start production container in background"
 	@echo "  prod-stop   - Stop production container"
 	@echo "  prod-health - Check production container health"
 	@echo "  prod-logs   - View production container logs"
@@ -55,28 +57,43 @@ env-check:
 # Build development container with all tools
 build-dev: env-check
 	@echo "🔨 Building development container..."
-	docker-compose -f docker-compose.lint.yml build linter
+	docker-compose build dev
 	@echo "✅ Development container built"
 
 # Install dependencies (build container)
 install: build-dev
 	@echo "✅ Dependencies installed in container"
 
-# Development: databases only
+# Development: unified container with databases
 dev-start: env-check
-	@echo "Starting development databases..."
-	docker-compose -f docker-compose.dev.yml up -d
-	@echo "✅ Development databases started"
-	@echo "📊 PgAdmin: http://localhost:5050 (admin@example.com / admin)"
+	@echo "Starting development environment..."
+	docker-compose up -d postgres redis pgadmin redis-commander
+	@echo "✅ Development environment started"
+	@echo "📊 PgAdmin: http://localhost:8080 (admin@justifi.local / admin123)"
+	@echo "📊 Redis Commander: http://localhost:8082"
+	@echo "🔧 Interactive shell: make shell"
+	@echo "🚀 Auto-restart MCP server: make mcp-dev"
+
+# Start MCP server with auto-restart on file changes
+mcp-dev: env-check
+	@echo "🚀 Starting MCP server with auto-restart..."
+	@echo "💡 Server will automatically restart when Python files change"
+	@echo "🛑 Press Ctrl+C to stop"
+	docker-compose up mcp-dev
+
+# Interactive development shell
+shell: env-check
+	@echo "🐚 Opening interactive development shell..."
+	docker-compose run --rm dev bash
 
 dev-stop:
-	@echo "Stopping development databases..."
-	docker-compose -f docker-compose.dev.yml down
-	@echo "✅ Development databases stopped"
+	@echo "Stopping development environment..."
+	docker-compose down
+	@echo "✅ Development environment stopped"
 
 dev-clean:
 	@echo "Cleaning development environment..."
-	docker-compose -f docker-compose.dev.yml down -v --remove-orphans
+	docker-compose down -v --remove-orphans
 	@echo "✅ Development environment cleaned"
 
 # Full stack: databases + management UIs
@@ -95,34 +112,35 @@ stop:
 clean:
 	@echo "Cleaning all volumes and containers..."
 	docker-compose down -v --remove-orphans
-	docker-compose -f docker-compose.lint.yml down -v --remove-orphans
 	@echo "✅ All volumes and containers cleaned"
 
-# Testing (in container)
+# Testing (in dev container)
 test: env-check
-	@echo "🧪 Running unit tests in container..."
-	docker-compose -f docker-compose.lint.yml run --rm linter sh -c "pytest tests/ -v && echo '✅ Tests completed'"
+	@echo "🧪 Running unit tests in dev container..."
+	docker-compose run --rm dev pytest tests/ -v
 
-# Code Quality Targets (All in Docker)
+# Code Quality Targets (All in dev container)
 format: env-check
-	@echo "🎨 Formatting code in container..."
-	docker-compose -f docker-compose.lint.yml run --rm formatter
+	@echo "🎨 Formatting code in dev container..."
+	docker-compose run --rm dev sh -c "black . && ruff check --fix --select I ."
 
 lint: env-check
-	@echo "🔍 Running ruff linter in container..."
-	docker-compose -f docker-compose.lint.yml run --rm ruff
+	@echo "🔍 Running ruff linter in dev container..."
+	docker-compose run --rm dev ruff check .
 
 type-check: env-check
-	@echo "🔍 Running mypy type checking in container..."
-	docker-compose -f docker-compose.lint.yml run --rm mypy
+	@echo "🔍 Running mypy type checking in dev container..."
+	docker-compose run --rm dev mypy .
 
 security: env-check
-	@echo "🔒 Running bandit security scan in container..."
-	docker-compose -f docker-compose.lint.yml run --rm bandit
+	@echo "🔒 Running bandit security scan in dev container..."
+	docker-compose run --rm dev bandit -r .
 
 check-all: env-check
-	@echo "🔍 Running all code quality checks in container..."
-	docker-compose -f docker-compose.lint.yml run --rm check-all
+	@echo "🔍 Running all code quality checks in dev container..."
+	docker-compose run --rm dev sh -c "ruff check . && mypy . && bandit -r ."
+
+# Note: shell command moved above to avoid duplication
 
 # Test MCP server directly
 mcp-test: env-check
@@ -131,22 +149,34 @@ mcp-test: env-check
 	@echo "Use Ctrl+C to stop the server."
 	python main.py
 
-# Production deployment commands
+# Production deployment commands (standalone Docker)
 prod-build: env-check
 	@echo "🔨 Building production container..."
 	docker build --target production -t justifi-mcp:latest .
 	@echo "✅ Production container built"
 
+prod-run: env-check prod-build
+	@echo "🚀 Running production container..."
+	@echo "Note: This will run interactively. Use Ctrl+C to stop."
+	docker run -it --name justifi-mcp-server \
+		--env-file .env \
+		--rm \
+		justifi-mcp:latest
+
 prod-start: env-check prod-build
-	@echo "🚀 Starting production container..."
-	docker-compose -f docker-compose.prod.yml up -d
+	@echo "🚀 Starting production container in background..."
+	docker run -d --name justifi-mcp-server \
+		--env-file .env \
+		--restart unless-stopped \
+		justifi-mcp:latest
 	@echo "✅ Production container started"
 	@echo "📊 Health check: make prod-health"
 	@echo "📋 Logs: make prod-logs"
 
 prod-stop:
 	@echo "🛑 Stopping production container..."
-	docker-compose -f docker-compose.prod.yml down
+	@docker stop justifi-mcp-server 2>/dev/null || true
+	@docker rm justifi-mcp-server 2>/dev/null || true
 	@echo "✅ Production container stopped"
 
 prod-health:
@@ -155,12 +185,13 @@ prod-health:
 
 prod-logs:
 	@echo "📋 Production container logs:"
-	docker logs justifi-mcp-server --tail=50 -f
+	@docker logs justifi-mcp-server --tail=50 -f 2>/dev/null || echo "❌ Container not running"
 
 prod-clean:
 	@echo "🧹 Cleaning production containers and images..."
-	docker-compose -f docker-compose.prod.yml down -v --remove-orphans
-	docker rmi justifi-mcp:latest 2>/dev/null || true
+	@docker stop justifi-mcp-server 2>/dev/null || true
+	@docker rm justifi-mcp-server 2>/dev/null || true
+	@docker rmi justifi-mcp:latest 2>/dev/null || true
 	@echo "✅ Production environment cleaned"
 
 # Quick setup for new developers

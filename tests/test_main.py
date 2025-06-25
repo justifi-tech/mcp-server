@@ -37,8 +37,8 @@ class TestMCPServer:
         """Test that get_tools returns the expected tools."""
         tools = await handle_list_tools()
 
-        # Should have exactly 4 JustiFi payment tools
-        assert len(tools) == 4
+        # Should have exactly 10 JustiFi tools (v1.1 expansion)
+        assert len(tools) == 10
 
         tool_names = [tool.name for tool in tools]
         expected_tools = [

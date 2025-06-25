@@ -1,117 +1,276 @@
-# JustiFi MCP Server - Deployment Guide
+# JustiFi MCP Server - Production Deployment Guide
 
-This guide provides detailed instructions for deploying the JustiFi MCP server in various environments using the single-tenant architecture model.
+This guide covers deploying the JustiFi MCP server in production environments using standalone Docker containers (no docker-compose required).
 
-## 🏗️ Architecture Overview
+## 🏗️ Production Architecture
 
-### Single-Tenant Model
-Each customer runs their own isolated instance of the MCP server with their own JustiFi API credentials. This ensures:
+The production setup uses:
+- **Standalone Docker container** for the MCP server
+- **Environment variables** for configuration
+- **Non-root user** for security
+- **Health checks** for monitoring
+- **Restart policies** for reliability
 
-- **Security Isolation**: Credentials never leave customer infrastructure
-- **Compliance**: Meets strict security requirements for financial data
-- **Customization**: Each customer can modify their instance as needed
-- **Reliability**: No shared infrastructure points of failure
+## 📋 Prerequisites
 
-### Communication Flow
-```
-AI Client (Cursor) ←→ MCP Server (Your Infrastructure) ←→ JustiFi API
-```
+1. **Docker** installed on your production server
+2. **JustiFi API credentials** (Client ID and Secret)
+3. **Environment file** with production settings
 
-## 🚀 Quick Start (Development)
+## 🚀 Quick Deployment
 
-### Prerequisites
-- Python 3.11+
-- Git
-- JustiFi API credentials (sandbox for development)
+### 1. Prepare Environment
 
-### Setup
+Create a production `.env` file:
+
 ```bash
-# 1. Clone repository
-git clone <repository-url>
-cd mcp-servers
+# Required JustiFi API credentials
+JUSTIFI_CLIENT_ID=your_production_client_id
+JUSTIFI_CLIENT_SECRET=your_production_client_secret
 
-# 2. Create environment file
-cp env.example .env
-
-# 3. Edit .env with your credentials
-JUSTIFI_CLIENT_ID=your_sandbox_client_id
-JUSTIFI_CLIENT_SECRET=your_sandbox_client_secret
+# Optional configuration
 JUSTIFI_BASE_URL=https://api.justifi.ai/v1
-
-# 4. Install and test
-make install
-make test
-make mcp-test
+LANGCHAIN_TRACING_V2=false
+LANGCHAIN_API_KEY=your_langsmith_key  # Optional for observability
 ```
 
-### Cursor Configuration
+### 2. Build Production Container
+
+```bash
+# Build the production image
+make prod-build
+
+# Or manually:
+docker build --target production -t justifi-mcp:latest .
+```
+
+### 3. Deploy Options
+
+#### Option A: Interactive Mode (for testing)
+```bash
+# Run interactively (good for testing)
+make prod-run
+
+# Or manually:
+docker run -it --name justifi-mcp-server \
+  --env-file .env \
+  --rm \
+  justifi-mcp:latest
+```
+
+#### Option B: Background Service (recommended)
+```bash
+# Start as background service
+make prod-start
+
+# Or manually:
+docker run -d --name justifi-mcp-server \
+  --env-file .env \
+  --restart unless-stopped \
+  justifi-mcp:latest
+```
+
+## 🔧 Production Management
+
+### Health Monitoring
+```bash
+# Check container health
+make prod-health
+
+# Manual health check
+docker exec justifi-mcp-server python main.py --health
+```
+
+### Log Management
+```bash
+# View logs
+make prod-logs
+
+# Follow logs in real-time
+docker logs justifi-mcp-server -f
+
+# View last 100 lines
+docker logs justifi-mcp-server --tail=100
+```
+
+### Container Management
+```bash
+# Stop the service
+make prod-stop
+
+# Restart the service
+make prod-stop && make prod-start
+
+# Clean up everything
+make prod-clean
+```
+
+## 🔒 Security Best Practices
+
+### Container Security
+- ✅ **Non-root user**: Container runs as `mcpuser`
+- ✅ **Minimal image**: Production stage only includes necessary files
+- ✅ **No secrets in image**: Environment variables provided at runtime
+- ✅ **Read-only filesystem**: Consider adding `--read-only` flag
+
+### Enhanced Security Deployment
+```bash
+docker run -d --name justifi-mcp-server \
+  --env-file .env \
+  --restart unless-stopped \
+  --read-only \
+  --tmpfs /tmp \
+  --cap-drop ALL \
+  --security-opt no-new-privileges:true \
+  justifi-mcp:latest
+```
+
+### Network Security
+```bash
+# Create isolated network
+docker network create --driver bridge justifi-network
+
+# Run with custom network
+docker run -d --name justifi-mcp-server \
+  --network justifi-network \
+  --env-file .env \
+  --restart unless-stopped \
+  justifi-mcp:latest
+```
+
+## 📊 Monitoring & Observability
+
+### Health Check Endpoint
+The container includes a built-in health check:
+```bash
+# Returns JSON with health status
+docker exec justifi-mcp-server python main.py --health
+```
+
+Example healthy response:
 ```json
 {
-  "mcpServers": {
-    "justifi": {
-      "command": "python",
-      "args": ["/absolute/path/to/mcp-servers/main.py"],
-      "env": {
-        "JUSTIFI_CLIENT_ID": "your_sandbox_client_id",
-        "JUSTIFI_CLIENT_SECRET": "your_sandbox_client_secret"
-      }
-    }
-  }
+  "status": "healthy",
+  "timestamp": 1735135200.0,
+  "environment": "configured",
+  "justifi_api": "connected"
 }
 ```
 
-## 🐳 Docker Deployment
-
-### Option 1: Simple Container
+### LangSmith Tracing (Optional)
+Enable observability with LangSmith:
 ```bash
-# Build image
-docker build -t justifi-mcp .
-
-# Create environment file
-cat > .env << EOF
-JUSTIFI_CLIENT_ID=your_client_id
-JUSTIFI_CLIENT_SECRET=your_client_secret
-JUSTIFI_BASE_URL=https://api.justifi.ai/v1
-EOF
-
-# Run container
-docker run --rm -i --env-file .env justifi-mcp
+# Add to .env file
+LANGCHAIN_TRACING_V2=true
+LANGCHAIN_API_KEY=your_langsmith_key
 ```
 
-### Option 2: Docker Compose (Recommended)
-```yaml
-# docker-compose.prod.yml
-version: '3.8'
-services:
-  justifi-mcp:
-    build: .
-    env_file: .env
-    stdin_open: true
-    tty: true
-    restart: unless-stopped
-    security_opt:
-      - no-new-privileges:true
-    read_only: true
-    tmpfs:
-      - /tmp
-    user: "1000:1000"
-```
+### Log Aggregation
+For production monitoring, consider:
+- **Fluentd/Fluent Bit** for log collection
+- **Prometheus** for metrics
+- **Grafana** for dashboards
 
+Example with log driver:
 ```bash
-# Deploy
-docker-compose -f docker-compose.prod.yml up -d
-
-# Configure Cursor to connect to container
+docker run -d --name justifi-mcp-server \
+  --env-file .env \
+  --restart unless-stopped \
+  --log-driver json-file \
+  --log-opt max-size=10m \
+  --log-opt max-file=3 \
+  justifi-mcp:latest
 ```
 
-### Cursor Configuration for Docker
+## 🔄 Updates & Rollbacks
+
+### Update Process
+```bash
+# 1. Build new image
+make prod-build
+
+# 2. Stop current container
+make prod-stop
+
+# 3. Start new container
+make prod-start
+
+# 4. Verify health
+make prod-health
+```
+
+### Blue-Green Deployment
+```bash
+# Start new version alongside old
+docker run -d --name justifi-mcp-server-new \
+  --env-file .env \
+  justifi-mcp:latest
+
+# Test new version
+docker exec justifi-mcp-server-new python main.py --health
+
+# Switch traffic (stop old, rename new)
+docker stop justifi-mcp-server
+docker rm justifi-mcp-server
+docker rename justifi-mcp-server-new justifi-mcp-server
+```
+
+## 🐛 Troubleshooting
+
+### Common Issues
+
+#### Container Won't Start
+```bash
+# Check logs for errors
+docker logs justifi-mcp-server
+
+# Common causes:
+# - Missing environment variables
+# - Invalid JustiFi credentials
+# - Port conflicts
+```
+
+#### Health Check Fails
+```bash
+# Run health check manually
+docker exec justifi-mcp-server python main.py --health
+
+# Check environment variables
+docker exec justifi-mcp-server env | grep JUSTIFI
+```
+
+#### Permission Issues
+```bash
+# Verify container runs as non-root
+docker exec justifi-mcp-server whoami
+# Should return: mcpuser
+```
+
+### Debug Mode
+```bash
+# Run with debug output
+docker run -it --name justifi-mcp-debug \
+  --env-file .env \
+  --rm \
+  justifi-mcp:latest bash
+
+# Then inside container:
+python main.py --health
+python main.py  # Run MCP server
+```
+
+## 🌐 Integration with IDEs
+
+### Cursor Configuration
+Configure Cursor to connect to the containerized MCP server:
+
 ```json
 {
   "mcpServers": {
     "justifi": {
       "command": "docker",
       "args": [
-        "exec", "-i", "mcp-servers-justifi-mcp-1", 
+        "exec", "-i", "justifi-mcp-server",
         "python", "main.py"
       ]
     }
@@ -119,322 +278,46 @@ docker-compose -f docker-compose.prod.yml up -d
 }
 ```
 
-## ☸️ Kubernetes Deployment
+### VS Code Configuration
+Similar setup for VS Code MCP extensions.
 
-### Prerequisites
-- Kubernetes cluster
-- kubectl configured
-- Container registry access
+## 📈 Scaling Considerations
 
-### Step 1: Build and Push Image
+### Horizontal Scaling
 ```bash
-# Build image
-docker build -t your-registry/justifi-mcp:v1.0.0 .
+# Run multiple instances with different names
+docker run -d --name justifi-mcp-server-1 \
+  --env-file .env justifi-mcp:latest
 
-# Push to registry
-docker push your-registry/justifi-mcp:v1.0.0
+docker run -d --name justifi-mcp-server-2 \
+  --env-file .env justifi-mcp:latest
 ```
 
-### Step 2: Create Secret
+### Resource Limits
 ```bash
-# Create credentials secret
-kubectl create secret generic justifi-credentials \
-  --from-literal=client-id=your_client_id \
-  --from-literal=client-secret=your_client_secret \
-  --from-literal=base-url=https://api.justifi.ai/v1
+# Set memory and CPU limits
+docker run -d --name justifi-mcp-server \
+  --env-file .env \
+  --memory=512m \
+  --cpus=0.5 \
+  --restart unless-stopped \
+  justifi-mcp:latest
 ```
 
-### Step 3: Deploy Application
-```yaml
-# justifi-mcp.yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: justifi-mcp
-  labels:
-    app: justifi-mcp
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: justifi-mcp
-  template:
-    metadata:
-      labels:
-        app: justifi-mcp
-    spec:
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000
-        runAsGroup: 1000
-        fsGroup: 1000
-      containers:
-      - name: justifi-mcp
-        image: your-registry/justifi-mcp:v1.0.0
-        env:
-        - name: JUSTIFI_CLIENT_ID
-          valueFrom:
-            secretKeyRef:
-              name: justifi-credentials
-              key: client-id
-        - name: JUSTIFI_CLIENT_SECRET
-          valueFrom:
-            secretKeyRef:
-              name: justifi-credentials
-              key: client-secret
-        - name: JUSTIFI_BASE_URL
-          valueFrom:
-            secretKeyRef:
-              name: justifi-credentials
-              key: base-url
-        securityContext:
-          allowPrivilegeEscalation: false
-          readOnlyRootFilesystem: true
-          capabilities:
-            drop:
-            - ALL
-        resources:
-          requests:
-            memory: "128Mi"
-            cpu: "100m"
-          limits:
-            memory: "256Mi"
-            cpu: "500m"
-        stdin: true
-        tty: true
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: justifi-mcp-service
-spec:
-  selector:
-    app: justifi-mcp
-  ports:
-  - port: 80
-    targetPort: 8080
-  type: ClusterIP
-```
+## 🔧 Environment Variables Reference
 
-```bash
-# Deploy
-kubectl apply -f justifi-mcp.yaml
-
-# Verify deployment
-kubectl get pods -l app=justifi-mcp
-kubectl logs -l app=justifi-mcp
-```
-
-### Cursor Configuration for Kubernetes
-```json
-{
-  "mcpServers": {
-    "justifi": {
-      "command": "kubectl",
-      "args": [
-        "exec", "-i", 
-        "deployment/justifi-mcp", 
-        "--", "python", "main.py"
-      ]
-    }
-  }
-}
-```
-
-## 🔒 Security Hardening
-
-### Environment Security
-```bash
-# Secure environment file
-chmod 600 .env
-chown root:root .env
-
-# Use secrets management
-# AWS: AWS Secrets Manager
-# Azure: Azure Key Vault
-# GCP: Secret Manager
-# HashiCorp: Vault
-```
-
-### Container Security
-```dockerfile
-# Multi-stage build for smaller attack surface
-FROM python:3.11-slim as builder
-WORKDIR /app
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
-FROM python:3.11-slim
-RUN groupadd -r mcpuser && useradd -r -g mcpuser mcpuser
-WORKDIR /app
-COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
-COPY --chown=mcpuser:mcpuser . .
-USER mcpuser
-CMD ["python", "main.py"]
-```
-
-### Network Security
-```bash
-# Use private container networks
-docker network create --driver bridge justifi-network
-
-# Run with network isolation
-docker run --network justifi-network --env-file .env justifi-mcp
-```
-
-## 📊 Monitoring & Observability
-
-### Health Checks
-```python
-# Add to main.py for health monitoring
-import asyncio
-import json
-import sys
-
-async def health_check():
-    """Simple health check for monitoring"""
-    try:
-        # Test environment variables
-        from tools.justifi import JustiFiClient
-        client = JustiFiClient()
-        
-        # Test API connectivity (without making actual calls)
-        health_status = {
-            "status": "healthy",
-            "timestamp": time.time(),
-            "environment": "configured"
-        }
-        return health_status
-    except Exception as e:
-        return {
-            "status": "unhealthy",
-            "error": str(e),
-            "timestamp": time.time()
-        }
-
-# Add health check endpoint for monitoring
-if len(sys.argv) > 1 and sys.argv[1] == "--health":
-    result = asyncio.run(health_check())
-    print(json.dumps(result))
-    sys.exit(0 if result["status"] == "healthy" else 1)
-```
-
-### Logging Configuration
-```python
-import logging
-import os
-
-# Configure logging for production
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.StreamHandler(),
-        logging.FileHandler('/var/log/justifi-mcp.log') if os.path.exists('/var/log') else logging.NullHandler()
-    ]
-)
-
-# Don't log sensitive information
-logging.getLogger('urllib3').setLevel(logging.WARNING)
-logging.getLogger('requests').setLevel(logging.WARNING)
-```
-
-### Monitoring with Prometheus (Optional)
-```yaml
-# prometheus-config.yml
-scrape_configs:
-  - job_name: 'justifi-mcp'
-    static_configs:
-      - targets: ['justifi-mcp-service:8080']
-    metrics_path: '/health'
-    scrape_interval: 30s
-```
-
-## 🚀 Production Checklist
-
-### Pre-Deployment
-- [ ] JustiFi production API credentials obtained
-- [ ] Environment variables configured securely
-- [ ] Container image built and scanned for vulnerabilities
-- [ ] Network security policies configured
-- [ ] Monitoring and alerting set up
-
-### Deployment
-- [ ] Deploy to staging environment first
-- [ ] Run full test suite
-- [ ] Verify AI client connectivity
-- [ ] Test all JustiFi payment operations
-- [ ] Monitor logs for errors
-
-### Post-Deployment
-- [ ] Configure backup strategy
-- [ ] Set up log rotation
-- [ ] Document rollback procedures
-- [ ] Train team on troubleshooting
-- [ ] Schedule regular security updates
-
-## 🆘 Troubleshooting
-
-### Common Issues
-
-**Container won't start**
-```bash
-# Check logs
-docker logs <container-id>
-
-# Verify environment variables
-docker exec -it <container-id> env | grep JUSTIFI
-
-# Test connectivity
-docker exec -it <container-id> python -c "from tools.justifi import JustiFiClient; print('OK')"
-```
-
-**AI client can't connect**
-```bash
-# Verify MCP server is responding
-echo '{"jsonrpc":"2.0","method":"initialize","params":{},"id":1}' | python main.py
-
-# Check file permissions
-ls -la main.py
-chmod +x main.py
-
-# Verify Python path
-which python
-python --version
-```
-
-**JustiFi API errors**
-```bash
-# Test credentials
-curl -X POST https://api.justifi.ai/v1/oauth/token \
-  -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "grant_type=client_credentials&client_id=YOUR_ID&client_secret=YOUR_SECRET"
-
-# Check API status
-curl -I https://api.justifi.ai/v1/health
-```
-
-### Debug Mode
-```bash
-# Run with debug logging
-PYTHONPATH=/app python main.py --debug
-
-# Test individual tools
-python -c "
-import asyncio
-from tools.justifi import list_payments
-result = asyncio.run(list_payments(limit=1))
-print(result)
-"
-```
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `JUSTIFI_CLIENT_ID` | ✅ | - | JustiFi API Client ID |
+| `JUSTIFI_CLIENT_SECRET` | ✅ | - | JustiFi API Client Secret |
+| `JUSTIFI_BASE_URL` | ❌ | `https://api.justifi.ai/v1` | JustiFi API Base URL |
+| `LANGCHAIN_TRACING_V2` | ❌ | `false` | Enable LangSmith tracing |
+| `LANGCHAIN_API_KEY` | ❌ | - | LangSmith API key |
 
 ## 📞 Support
 
-- **Technical Issues**: Open GitHub issue
-- **Security Concerns**: Contact security team
-- **JustiFi API**: Contact JustiFi support
-- **Deployment Help**: Check troubleshooting section above
-
----
-
-**Remember**: Each customer should run their own isolated instance for maximum security and compliance. 
+For deployment issues:
+1. Check the troubleshooting section above
+2. Review container logs: `make prod-logs`
+3. Verify environment configuration
+4. Test with interactive mode: `make prod-run` 

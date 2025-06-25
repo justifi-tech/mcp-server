@@ -18,6 +18,7 @@ from tools.justifi import (
     _get_access_token,
     create_payment,
     list_payments,
+    list_refunds,
     refund_payment,
     retrieve_payment,
 )
@@ -234,6 +235,49 @@ class TestPaymentTools:
 
     @respx.mock
     @pytest.mark.asyncio
+    async def test_list_refunds_success(self):
+        """Test successful refund listing."""
+        # Mock OAuth token
+        respx.post("https://api.justifi.ai/oauth/token").mock(
+            return_value=Response(
+                200, json={"access_token": "test_token", "expires_in": 3600}
+            )
+        )
+
+        # Mock refund listing
+        respx.get("https://api.justifi.ai/v1/payments/py_test123/refunds").mock(
+            return_value=Response(
+                200,
+                json={
+                    "data": [
+                        {
+                            "id": "rf_1",
+                            "payment_id": "py_test123",
+                            "amount": 500,
+                            "status": "succeeded",
+                        },
+                        {
+                            "id": "rf_2",
+                            "payment_id": "py_test123",
+                            "amount": 300,
+                            "status": "pending",
+                        },
+                    ],
+                    "page_info": {"has_next": False, "end_cursor": "cursor_789"},
+                },
+            )
+        )
+
+        result = await list_refunds(payment_id="py_test123", limit=25)
+        assert isinstance(result, dict)
+        assert "data" in result
+        assert len(result["data"]) == 2
+        assert result["data"][0]["id"] == "rf_1"
+        assert result["data"][1]["id"] == "rf_2"
+        assert "page_info" in result
+
+    @respx.mock
+    @pytest.mark.asyncio
     async def test_error_handling(self):
         """Test error handling in payment operations."""
         # Mock OAuth token
@@ -283,13 +327,23 @@ class TestMCPIntegration:
         from main import handle_list_tools
 
         tools = await handle_list_tools()
-        assert len(tools) == 4
+        assert len(tools) == 10  # Updated for v1.1 with 10 total tools
 
         tool_names = [tool.name for tool in tools]
+        # Payment tools
         assert "create_payment" in tool_names
         assert "retrieve_payment" in tool_names
         assert "list_payments" in tool_names
         assert "refund_payment" in tool_names
+        assert "list_refunds" in tool_names
+        # Payment method tools
+        assert "create_payment_method" in tool_names
+        assert "retrieve_payment_method" in tool_names
+        # Payout tools
+        assert "retrieve_payout" in tool_names
+        assert "list_payouts" in tool_names
+        # Balance tools
+        assert "list_balance_transactions" in tool_names
 
     @respx.mock
     @pytest.mark.asyncio

@@ -32,6 +32,18 @@ wheels/
 .pytest_cache/
 .coverage
 htmlcov/
+.tox/
+.nox/
+
+# Code quality and security reports
+bandit-report.json
+.mypy_cache/
+.ruff_cache/
+*.cover
+*.py,cover
+coverage.xml
+.nyc_output
+.hypothesis/
 
 # IDEs
 .vscode/

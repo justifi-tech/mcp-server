@@ -10,4 +10,6 @@ respx
 black
 ruff
 mypy
-bandit 
+bandit
+# Development tools
+watchdog 

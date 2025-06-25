@@ -225,24 +225,32 @@ Cursor will automatically use the JustiFi tools to process these requests.
 
 ### Development Workflow
 ```bash
-# Start databases for development
+# Start unified development environment
 make dev-start
 
-# Run the MCP server locally
-python main.py
+# Run tests (fast - no rebuilding needed)
+make test
 
-# Stop development databases
+# Code quality checks
+make lint format check-all
+
+# Interactive development
+make shell
+
+# Stop development environment
 make dev-stop
 ```
 
 ### Available Commands
 ```bash
 make help           # Show all available commands
-make install        # Install dependencies
-make dev-start      # Start databases only
-make start          # Start full stack with UIs
-make test           # Run unit tests
-make mcp-test       # Test MCP server directly
+make dev-start      # Start development environment
+make test           # Run unit tests in container
+make lint           # Check code style
+make format         # Auto-format code
+make shell          # Interactive shell in dev container
+make prod-build     # Build production container
+make prod-run       # Run production container
 make clean          # Clean all containers and volumes
 ```
 
@@ -251,19 +259,26 @@ make clean          # Clean all containers and volumes
 mcp-servers/
 ├── main.py                 # MCP server implementation
 ├── tools/
-│   ├── __init__.py
-│   └── justifi.py          # JustiFi API integration
-├── tests/
+│   └── justifi/            # Modular JustiFi API integration
+│       ├── __init__.py     # Tool exports
+│       ├── core.py         # OAuth2 + HTTP client
+│       ├── payments.py     # Payment tools
+│       ├── payment_methods.py # Payment method tools
+│       ├── payouts.py      # Payout tools
+│       └── balances.py     # Balance transaction tools
+├── tests/                  # Comprehensive test suite
 │   ├── test_main.py        # MCP server tests
-│   └── test_justifi.py     # JustiFi tools tests
-├── docker/
-│   └── postgres/
-│       └── init.sql        # Database initialization
+│   ├── test_justifi.py     # Core functionality tests
+│   ├── test_payment_methods.py
+│   ├── test_payouts.py
+│   └── test_balances.py
 ├── docs/
-│   └── PRD-JustiFi-MCP-v1.md  # Product requirements
+│   ├── PRD-JustiFi-MCP-v1.1.md # Product requirements v1.1
+│   ├── DEPLOYMENT.md       # Production deployment guide
+│   └── endpoint-inventory.md # JustiFi API analysis
 ├── requirements.txt        # Python dependencies
-├── docker-compose.yml      # Full stack
-├── docker-compose.dev.yml  # Development databases
+├── docker-compose.yml      # Unified development environment
+├── Dockerfile             # Production container
 └── Makefile               # Development commands
 ```
 

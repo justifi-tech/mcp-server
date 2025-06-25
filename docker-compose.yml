@@ -1,105 +1,99 @@
 services:
-  # PostgreSQL Database (for future conversation history if needed)
+  # Unified development container with all tools
+  dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    env_file: .env
+    working_dir: /app
+    volumes:
+      # Mount application code for live development (excludes cache dirs)
+      - .:/app
+      - /app/.venv
+      - /app/.pytest_cache
+      - /app/.mypy_cache
+      - /app/.ruff_cache
+      - /app/__pycache__
+    # Keep container running for development
+    tty: true
+    stdin_open: true
+    # Auto-restart on file changes (default behavior)
+    # Override with: docker-compose run dev bash (for interactive shell)
+    
+  # MCP Server with auto-restart for development
+  mcp-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    env_file: .env
+    working_dir: /app
+    volumes:
+      # Mount application code for live development
+      - .:/app
+      - /app/.venv
+      - /app/.pytest_cache
+      - /app/.mypy_cache
+      - /app/.ruff_cache
+      - /app/__pycache__
+    # Auto-restart MCP server on file changes (uses default CMD from Dockerfile)
+    # command: ["watchmedo", "auto-restart", "--directory=/app", "--pattern=*.py", "--recursive", "--", "python", "main.py"]
+    # For stdio MCP testing
+    stdin_open: true
+
+  # Production services (PostgreSQL, Redis, etc.)
   postgres:
-    image: postgres:15
-    container_name: mcp-servers-postgres-1
+    image: postgres:15-alpine
     environment:
       POSTGRES_DB: mcp
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-    ports:
-      - "5434:5432"  # Use 5434 to avoid conflicts with local postgres
+      POSTGRES_USER: mcp_server
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dev_password_123}
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
-    networks:
-      - mcp_network
+    ports:
+      - "5433:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d mcp"]
-      interval: 30s
-      timeout: 10s
+      test: ["CMD-SHELL", "pg_isready -U mcp_server -d mcp"]
+      interval: 10s
+      timeout: 5s
       retries: 5
 
-  # Redis Cache (for future session management if needed)
   redis:
     image: redis:7-alpine
-    container_name: mcp-servers-redis-1
     ports:
-      - "6380:6379"  # Use 6380 to avoid conflicts with local redis
-    volumes:
-      - redis_data:/data
-    networks:
-      - mcp_network
+      - "6379:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
+      interval: 10s
+      timeout: 3s
+      retries: 3
 
-  # PgAdmin for database management
-  pgadmin:
-    image: dpage/pgadmin4:latest
-    container_name: mcp-servers-pgadmin-1
-    environment:
-      PGADMIN_DEFAULT_EMAIL: admin@example.com
-      PGADMIN_DEFAULT_PASSWORD: admin
-      PGADMIN_CONFIG_SERVER_MODE: 'False'
-    ports:
-      - "5050:80"
-    volumes:
-      - pgadmin_data:/var/lib/pgadmin
-    networks:
-      - mcp_network
-    depends_on:
-      postgres:
-        condition: service_healthy
-
-  # Redis Commander for Redis management
+  # Optional: Redis Commander for Redis GUI
   redis-commander:
     image: rediscommander/redis-commander:latest
-    container_name: mcp-servers-redis-commander-1
     environment:
-      REDIS_HOSTS: redis:redis:6379
+      - REDIS_HOSTS=local:redis:6379
     ports:
       - "8082:8081"
-    networks:
-      - mcp_network
     depends_on:
-      redis:
-        condition: service_healthy
+      - redis
 
-  # MCP Server
-  mcp-server:
-    build: .
-    container_name: mcp-servers-mcp-server-1
-    ports:
-      - "8000:8000"
+  # Optional: pgAdmin for PostgreSQL GUI
+  pgadmin:
+    image: dpage/pgadmin4:latest
     environment:
-      - DATABASE_URL=postgresql+psycopg2://mcp_server:mcp_secure_password_change_in_production@postgres:5432/mcp
-      - REDIS_URL=redis://redis:6379
-      - JUSTIFI_CLIENT_ID=${JUSTIFI_CLIENT_ID}
-      - JUSTIFI_CLIENT_SECRET=${JUSTIFI_CLIENT_SECRET}
-      - JUSTIFI_BASE_URL=${JUSTIFI_BASE_URL}
-      - LANGCHAIN_TRACING_V2=true
-      - LANGCHAIN_API_KEY=${LANGCHAIN_API_KEY:-}
-    networks:
-      - mcp_network
+      PGADMIN_DEFAULT_EMAIL: admin@justifi.local
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin123}
+    ports:
+      - "8080:80"
     depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
+      - postgres
 
 volumes:
   postgres_data:
-  redis_data:
-  pgadmin_data:
 
 networks:
-  mcp_network:
-    driver: bridge 
+  default:
+    name: mcp_network 

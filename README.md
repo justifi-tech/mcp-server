@@ -225,8 +225,11 @@ Cursor will automatically use the JustiFi tools to process these requests.
 
 ### Development Workflow
 ```bash
-# Start unified development environment
+# Start development environment (databases only)
 make dev-start
+
+# Start MCP server with auto-restart (live file changes)
+make dev
 
 # Run tests (fast - no rebuilding needed)
 make test
@@ -234,7 +237,7 @@ make test
 # Code quality checks
 make lint format check-all
 
-# Interactive development
+# Interactive development shell
 make shell
 
 # Stop development environment
@@ -244,7 +247,8 @@ make dev-stop
 ### Available Commands
 ```bash
 make help           # Show all available commands
-make dev-start      # Start development environment
+make dev-start      # Start development environment (databases)
+make dev            # Start MCP server with auto-restart
 make test           # Run unit tests in container
 make lint           # Check code style
 make format         # Auto-format code

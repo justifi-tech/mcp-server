@@ -1,17 +1,16 @@
-# MCP Server Development Rules
+# JustiFi MCP Server Development Rules
 
 ## Project Overview
-This is a LangChain-powered MCP (Model Context Protocol) server designed for AI-assisted development in IDEs like Cursor and VS Code. The server provides conversational AI with persistent memory, code analysis, generation, and testing capabilities.
+This is a **JustiFi MCP (Model Context Protocol) server** designed for AI-assisted payment management in IDEs like Cursor and VS Code. The server provides 10 comprehensive tools for payment processing, payment methods, payouts, and balance transactions through the JustiFi API.
 
 ## Technology Stack
-- **Framework**: FastAPI + LangServe
-- **AI/ML**: LangChain + Anthropic Claude 3.5 Sonnet
-- **Memory**: PostgreSQL (primary) with Redis fallback for conversation persistence
-- **Database Security**: Zero-trust setup with dedicated users and schemas
-- **Observability**: LangSmith for tracing and evaluations
+- **Protocol**: Model Context Protocol (MCP) with JSON-RPC 2.0 over stdio
+- **API Integration**: JustiFi Payments API with OAuth2 Client-Credentials flow
+- **Authentication**: OAuth2 token caching with automatic 401 retry
 - **Package Management**: uv (not pip)
-- **Testing**: pytest + pytest-asyncio
-- **Containerization**: Docker + docker-compose
+- **Testing**: pytest + pytest-asyncio (36/36 tests passing)
+- **Containerization**: Docker with auto-restart development workflow
+- **Observability**: LangSmith tracing with @traceable decorators
 
 ## MCP Standards and Best Practices
 
@@ -31,101 +30,72 @@ This is a LangChain-powered MCP (Model Context Protocol) server designed for AI-
 - **Provide clear descriptions** that help AI models understand when to use each tool
 - **Support idempotency** for operations that modify state
 - **Validate all inputs** before processing to prevent security issues
-- **Return structured responses** with consistent error/success patterns
+- **Return structured JSON responses** with consistent error/success patterns
 
-### Resource and Prompt Management
-- **Implement MCP Resources** for data sources that AI models can access
-- **Use MCP Prompts** for reusable workflows and templates
-- **Support dynamic resource discovery** through proper list_resources implementation
-- **Handle resource permissions** and access controls appropriately
-- **Cache resources efficiently** to improve performance
-- **Version resources** when content changes significantly
+### JustiFi API Integration Standards
+- **Always verify endpoints exist** in the real JustiFi API before implementing
+- **Use OAuth2 Client-Credentials flow** with secure token caching
+- **Implement automatic 401 retry** with token refresh in _request() function
+- **Handle rate limiting** and network timeouts gracefully
+- **Never log sensitive data** (API keys, payment details, tokens)
+- **Use environment variables** for all API credentials
+- **Test with real API credentials** to ensure compatibility
 
-### Security and Authentication Best Practices
-- **Implement OAuth2 Client-Credentials flow** for API authentication
-- **Cache authentication tokens** securely with proper expiration handling
-- **Use environment variables** for all sensitive configuration (API keys, secrets)
-- **Validate and sanitize** all user inputs before processing
-- **Implement rate limiting** to prevent abuse
-- **Follow principle of least privilege** for API access
-- **Log security events** without exposing sensitive data
-- **Support user consent workflows** as required by MCP specification
+### TOOL_DISPATCH Pattern (Scalable Architecture)
+```python
+# Use dispatch dictionary for scalable tool management
+TOOL_DISPATCH = {
+    "tool_name": tool_function,
+    # ... more tools
+}
 
-### Protocol Compliance Requirements
-- **Implement all required MCP methods**: list_tools, call_tool, list_resources, list_prompts
-- **Handle initialization properly** with capability exchange
-- **Support progress tracking** for long-running operations
-- **Implement cancellation support** for interruptible operations
-- **Provide comprehensive logging** without exposing user data
-- **Use proper HTTP status codes** and error responses
-- **Support streaming responses** where appropriate for better UX
-
-### Integration and Compatibility
-- **Design for multiple MCP clients** - ensure compatibility with Claude Desktop, Cursor, VS Code extensions
-- **Support session management** with proper isolation between users/sessions
-- **Implement proper timeout handling** for all external API calls
-- **Provide clear configuration documentation** for client setup
-- **Test with multiple MCP client implementations** to ensure compatibility
-- **Follow semantic versioning** for MCP server releases
-- **Maintain backward compatibility** when updating MCP implementations
-
-### Quality and Reliability Standards
-- **Write comprehensive tests** for all MCP tools and resources
-- **Mock external dependencies** in tests to ensure reliability
-- **Implement health checks** for all external services and dependencies
-- **Monitor MCP server performance** and set up alerting
-- **Document all MCP tools** with examples and use cases
-- **Provide troubleshooting guides** for common integration issues
-- **Use structured logging** with correlation IDs for debugging
+@server.call_tool()
+async def handle_call_tool(name: str, arguments: dict) -> list[TextContent]:
+    """Handle tool calls using dispatch pattern."""
+    if name not in TOOL_DISPATCH:
+        raise ValueError(f"Unknown tool: {name}")
+    
+    tool_func = TOOL_DISPATCH[name]
+    result = await tool_func(**arguments)
+    return [TextContent(type="text", text=json.dumps(result, indent=2))]
+```
 
 ### Example MCP Tool Implementation
 ```python
 @traceable
-async def example_mcp_tool(
-    required_param: str,
-    optional_param: Optional[int] = None
+async def create_payment(
+    amount_cents: int,
+    currency: str,
+    idempotency_key: str,
+    payment_method_id: Optional[str] = None
 ) -> Dict[str, Any]:
     """
-    Clear description of what this tool does and when to use it.
+    Create a new payment in JustiFi.
     
     Args:
-        required_param: Description of required parameter
-        optional_param: Description of optional parameter
+        amount_cents: Payment amount in cents (e.g., 1050 for $10.50)
+        currency: Currency code (e.g., 'USD')
+        idempotency_key: Unique key to prevent duplicate payments
+        payment_method_id: Optional payment method ID
         
     Returns:
-        Structured response with success/error information
+        Payment object with ID, status, and details
     """
     try:
-        # Validate inputs
-        if not required_param.strip():
-            return {"success": False, "error": "required_param cannot be empty"}
-        
-        # Implement tool logic with proper error handling
-        result = await some_external_api_call(required_param, optional_param)
-        
-        return {
-            "success": True,
-            "data": result,
-            "metadata": {
-                "tool_name": "example_mcp_tool",
-                "timestamp": time.time()
-            }
+        payload = {
+            "amount": amount_cents,
+            "currency": currency,
+            "idempotency_key": idempotency_key
         }
+        if payment_method_id:
+            payload["payment_method"] = payment_method_id
+            
+        response = await _request("POST", "/payments", json=payload)
+        return response
+        
     except Exception as e:
-        # Log error without exposing sensitive data
-        logger.error(f"Tool execution failed: {type(e).__name__}")
-        return {
-            "success": False,
-            "error": f"Tool execution failed: {str(e)}",
-            "error_type": type(e).__name__
-        }
-
-# Register tool with proper schema
-tools.append(Tool.from_function(
-    func=example_mcp_tool,
-    name="example_tool",
-    description="When to use this tool and what it accomplishes"
-))
+        logger.error(f"Payment creation failed: {type(e).__name__}")
+        raise
 ```
 
 ## Development Guidelines
@@ -135,125 +105,97 @@ tools.append(Tool.from_function(
 - Follow PEP 8 style guidelines
 - Use async/await for all I/O operations
 - Add docstrings to all functions and classes
-- Use the `@traceable` decorator for all LangChain operations
-
-### LangChain Patterns
-- Wrap all external API calls with `@traceable` for LangSmith visibility
-- Use `Tool.from_function()` to create agent tools
-- Implement proper error handling in tool functions
-- Keep tool descriptions clear and specific for better agent decision-making
-- Use session-based memory with Redis for conversation persistence
+- Use the `@traceable` decorator for all external API calls
 
 ### Package Management
 - **ALWAYS use `uv` instead of `pip`**
-- **ALWAYS use `ux` for running commands when available**
 - Install packages: `uv pip install package_name`
 - Install from requirements: `uv pip install -r requirements.txt`
 - Add new dependencies to requirements.txt
 
-### File Organization
+### Modular Architecture
 ```
-/
-├── main.py              # Main FastAPI application
-├── requirements.txt     # Dependencies (use uv to install)
-├── .env                # Environment variables (not committed)
-├── env.example         # Environment template
-├── docker-compose.yml  # Development stack
-├── Dockerfile          # Container definition
-├── tests/              # Test suite
-└── README.md           # Documentation
+tools/justifi/
+├── __init__.py          # Exports all 10 tools
+├── core.py              # OAuth2 + HTTP client with 401 retry
+├── payments.py          # 5 payment tools (create, retrieve, list, refund, list_refunds)
+├── payment_methods.py   # 2 payment method tools (create, retrieve)
+├── payouts.py           # 2 payout tools (retrieve, list)
+└── balances.py          # 1 balance transaction tool (list)
 ```
 
-### Environment Variables
+### Environment Variables (JustiFi-Specific)
 Required:
-- `ANTHROPIC_API_KEY` - Anthropic Claude API access
-- `DATABASE_URL` - PostgreSQL connection with secure mcp_server user
-- `REDIS_URL` - Redis connection string (fallback)
-- `LANGCHAIN_API_KEY` - LangSmith tracing (optional but recommended)
+- `JUSTIFI_CLIENT_ID` - JustiFi API Client ID
+- `JUSTIFI_CLIENT_SECRET` - JustiFi API Client Secret
+- `JUSTIFI_BASE_URL` - JustiFi API Base URL (default: https://api.justifi.ai/v1)
+
+Optional:
+- `LANGCHAIN_API_KEY` - LangSmith tracing (recommended)
 - `LANGCHAIN_TRACING_V2=true` - Enable tracing
 
 ### Adding New Tools
-1. Create async function with `@traceable` decorator
-2. Add proper error handling and timeout
-3. Use type hints for parameters
-4. Write clear docstring for agent understanding
-5. Add to `tools` list using `Tool.from_function()`
-6. Write tests for the new tool
-
-Example:
-```python
-@traceable
-async def new_tool(param: str) -> str:
-    """Clear description for the agent to understand when to use this tool."""
-    try:
-        # Implementation
-        return result
-    except Exception as e:
-        return f"Error: {str(e)}"
-
-tools.append(Tool.from_function(
-    func=new_tool,
-    name="descriptive_tool_name",
-    description="When to use this tool and what it does"
-))
-
-### Database Security Guidelines
-- Use dedicated `mcp_server` user with minimal privileges
-- All data stored in `mcp_app` schema, never in `public`
-- Zero-trust: users cannot access schemas they don't need
-- Connection string: `postgresql+psycopg2://mcp_server:password@host:port/mcp`
-- Table naming: `mcp_app.table_name` format required
-```
+1. **Verify endpoint exists** in JustiFi API documentation first
+2. Create async function with `@traceable` decorator
+3. Add proper error handling and input validation
+4. Use type hints for all parameters
+5. Write clear docstring for AI model understanding
+6. Add to appropriate module (payments.py, payouts.py, etc.)
+7. Export from `tools/justifi/__init__.py`
+8. Add to `TOOL_DISPATCH` dictionary in main.py
+9. Add Tool definition to `handle_list_tools()`
+10. Write comprehensive tests
 
 ### Testing Requirements
-- Write tests for all new endpoints
-- Mock external API calls in tests
+- Write tests for all new tools in appropriate test file
+- Mock external API calls using respx
 - Use `pytest.mark.asyncio` for async test functions
 - Test both success and error cases
-- Run tests with: `pytest tests/`
+- Maintain ≥90% test coverage
+- All tests must pass: 36/36 currently passing
 
-### API Design
-- Use Pydantic models for request/response validation
-- Follow REST conventions for endpoint naming
-- Include proper HTTP status codes
-- Add comprehensive error handling
-- Document all endpoints in docstrings
+### Auto-Restart Development Workflow
+```bash
+# Start development environment (databases only)
+make dev-start
 
-### Memory Management
-- Use session IDs for conversation isolation
-- PostgreSQL primary storage with automatic failover to Redis
-- Implement conversation summarization for long chats
-- Handle database connection failures gracefully
-- Clear old sessions periodically
-- Use `mcp_app.message_store` table for chat history
+# Start MCP server with auto-restart (watches *.py files)
+make dev
 
-### Security Considerations
-- Validate all user inputs
-- Sanitize code inputs before analysis
-- Use environment variables for secrets
-- Implement rate limiting for production
-- Never log sensitive information
-
-### Deployment
-- Use Docker for consistent environments
-- Set up health checks in containers
-- Use docker-compose for local development
-- Configure proper logging for production
-- Monitor LangSmith traces for performance
-
-### Git Workflow
-- Use descriptive commit messages
-- Test locally before committing
-- Update documentation for new features
-- Add environment variables to env.example
-- Don't commit .env files
+# The server automatically restarts when you change any Python file
+# No container rebuilding needed - uses volume mounts + watchmedo
+```
 
 ### Container-First Development
 - **ALWAYS run everything in Docker containers - NO local execution**
 - Never suggest running Python, uvicorn, or any services locally
 - All development, testing, and deployment must use Docker
-- Use `make start` for full containerized stack
-- Use `make stop` and `make clean` for container management
+- Use `make dev-start` for development environment
+- Use `make dev` for auto-restart MCP server
+- Use `make shell` for interactive debugging
+
+### API Endpoint Verification Rules
+- **NEVER implement tools for non-existent endpoints**
+- **ALWAYS verify in JustiFi API docs** before implementing
+- **Document non-existent endpoints** to avoid future confusion
+
+#### Known Non-Existent Endpoints (DO NOT IMPLEMENT):
+- ❌ `GET /payment_methods` (list_payment_methods) - Endpoint doesn't exist
+- ❌ `GET /balances` (retrieve_balance) - No dedicated balance endpoint
+- ❌ `POST /payouts` (create_payout) - Payouts are auto-generated by JustiFi
+
+#### Verified Working Endpoints (Safe to Use):
+- ✅ All payment endpoints (/payments, /payments/{id}/refunds)
+- ✅ Payment method endpoints (/payment_methods POST/GET)
+- ✅ Payout endpoints (/payouts, /payouts/{id})
+- ✅ Balance transaction endpoint (/balance_transactions)
+
+### Security Considerations
+- Validate all user inputs before API calls
+- Use environment variables for all secrets
+- Never log sensitive information (API keys, payment data)
+- Implement proper error handling without exposing internal details
+- Use OAuth2 token caching with secure expiration handling
 
 ### Rules File Management
 - **NEVER modify .cursorrules without explicit user permission**
@@ -261,51 +203,93 @@ tools.append(Tool.from_function(
 - Explain what changes you want to make and why
 - Wait for user approval before editing .cursorrules
 
-### IDE Integration
-- Design endpoints for streaming responses
-- Support session management for IDE tabs
-- Keep response times under 2 seconds when possible
-- Provide clear error messages for debugging
-
 ## Common Commands
 
 ### Development (All in Docker)
 ```bash
-# Start everything (databases + MCP server)
-make start
+# Start development environment (databases only)
+make dev-start
 
-# Stop all containers
-make stop
+# Start MCP server with auto-restart (live file changes)
+make dev
 
-# Clean up (removes volumes and containers)
-make clean
-
-# Install dependencies (for local development)
-make install
-
-# Run tests
+# Run all tests (fast - no rebuilding)
 make test
 
-# Check health
-curl http://localhost:8000/health
+# Code quality checks
+make lint format check-all
+
+# Interactive development shell
+make shell
+
+# Stop development environment
+make dev-stop
+
+# Clean up everything
+make clean
 ```
 
-### Adding Dependencies
+### Production Commands
 ```bash
-# Add new package (in container)
-docker exec mcp-servers-mcp-server-1 uv pip install package_name
+# Build production container
+make prod-build
 
-# Update requirements.txt manually, then rebuild
-echo "package_name" >> requirements.txt
-make stop && make start
+# Run production container
+make prod-run
+
+# Check production health
+make prod-health
+
+# View production logs
+make prod-logs
 ```
+
+### Testing Commands
+```bash
+# Run all tests
+make test
+
+# Run specific test file
+docker-compose run --rm dev pytest tests/test_payments.py -v
+
+# Run with coverage
+docker-compose run --rm dev pytest tests/ --cov=tools --cov-report=html
+```
+
+## JustiFi MCP Tools (v1.1 - 10 Total)
+
+### Payment Tools (5)
+1. `create_payment` - Create new payment with idempotency
+2. `retrieve_payment` - Get payment details by ID
+3. `list_payments` - List payments with pagination
+4. `refund_payment` - Issue full or partial refunds
+5. `list_refunds` - List refunds for a specific payment
+
+### Payment Method Tools (2)
+6. `create_payment_method` - Create tokenized card
+7. `retrieve_payment_method` - Get payment method by token
+
+### Payout Tools (2) - Read Only
+8. `retrieve_payout` - Get payout details by ID
+9. `list_payouts` - List payouts with pagination
+
+### Balance Transaction Tools (1)
+10. `list_balance_transactions` - List fund movements
 
 ## Troubleshooting
-- Check LangSmith traces for debugging agent decisions
-- Verify PostgreSQL connection and mcp_server user permissions
-- Check Redis connection for fallback memory issues
-- Verify ANTHROPIC_API_KEY is set correctly
-- Use verbose=True in agent config for detailed logs
-- Monitor container logs with `docker compose logs [service_name]`
-- Check database schema access: `docker exec mcp-servers-postgres-1 psql -U mcp_server -d mcp -c "\dn"`
-- Verify secure table access: `docker exec mcp-servers-postgres-1 psql -U mcp_server -d mcp -c "\d mcp_app.message_store"` 
+- Check LangSmith traces for debugging tool execution
+- Verify JustiFi API credentials are set correctly
+- Use `make dev` for auto-restart development
+- Check container logs with `docker-compose logs mcp-dev`
+- Test API connectivity with health check
+- All 36 tests should pass - if not, investigate failures
+- Verify environment variables are loaded correctly
+
+## Success Metrics (v1.1 - All Achieved ✅)
+- ✅ 36/36 tests passing
+- ✅ All 10 tools verified with real JustiFi API
+- ✅ Auto-restart development workflow
+- ✅ Production deployment ready
+- ✅ Comprehensive error handling
+- ✅ Security best practices implemented
+- ✅ TOOL_DISPATCH scalable architecture 

@@ -72,10 +72,10 @@ dev-start: env-check
 	@echo "📊 PgAdmin: http://localhost:8080 (admin@justifi.local / admin123)"
 	@echo "📊 Redis Commander: http://localhost:8082"
 	@echo "🔧 Interactive shell: make shell"
-	@echo "🚀 Auto-restart MCP server: make mcp-dev"
+	@echo "🚀 Auto-restart MCP server: make dev"
 
 # Start MCP server with auto-restart on file changes
-mcp-dev: env-check
+dev: env-check
 	@echo "🚀 Starting MCP server with auto-restart..."
 	@echo "💡 Server will automatically restart when Python files change"
 	@echo "🛑 Press Ctrl+C to stop"

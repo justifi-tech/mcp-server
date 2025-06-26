@@ -1,5 +1,4 @@
-"""
-JustiFi MCP Integration Package
+"""JustiFi MCP Integration Package
 
 Re-exports all JustiFi MCP tools for easy importing.
 """
@@ -19,7 +18,6 @@ from .payment_methods import (
 from .payments import (
     create_payment,
     list_payments,
-    list_refunds,
     refund_payment,
     retrieve_payment,
 )
@@ -37,7 +35,6 @@ __all__ = [
     "retrieve_payment",
     "list_payments",
     "refund_payment",
-    "list_refunds",
     # Payment Methods
     "create_payment_method",
     "retrieve_payment_method",

@@ -140,7 +140,7 @@ security: env-check
 
 check-all: env-check
 	@echo "🔍 Running all code quality checks in dev container..."
-	docker-compose run --rm dev sh -c "ruff check . && mypy . && bandit -r ."
+	docker-compose run --rm dev sh -c "ruff check . && mypy ."
 
 # Pre-commit setup
 pre-commit-install: env-check

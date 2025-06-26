@@ -1,5 +1,4 @@
-"""
-JustiFi MCP Integration - Core Authentication & HTTP
+"""JustiFi MCP Integration - Core Authentication & HTTP
 
 Shared OAuth2 token management and HTTP request functionality
 for all JustiFi MCP tools.
@@ -62,8 +61,7 @@ async def _request(
     data: dict[str, Any] | None = None,
     idempotency_key: str | None = None,
 ) -> dict[str, Any]:
-    """
-    Internal helper to call JustiFi API with automatic token refresh on 401.
+    """Internal helper to call JustiFi API with automatic token refresh on 401.
 
     Args:
         method: HTTP method (GET, POST, etc.)
@@ -78,6 +76,7 @@ async def _request(
     Raises:
         httpx.HTTPStatusError: For HTTP errors
         RuntimeError: For missing credentials
+
     """
     base_url = os.getenv("JUSTIFI_BASE_URL", "https://api.justifi.ai/v1")
     url = f"{base_url.rstrip('/')}/{path.lstrip('/')}"

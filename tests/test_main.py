@@ -1,18 +1,23 @@
-"""
-Test suite for the JustiFi MCP Server.
+"""Test suite for the JustiFi MCP Server.
 
 Tests MCP protocol compliance, tool registration, and basic functionality.
 """
 
 import os
 import sys
+from pathlib import Path
 
 import pytest
 
 # Add the parent directory to the path so we can import main
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from main import handle_list_tools, server
+
+# Test constants - not real credentials
+TEST_CLIENT_ID = "test_client_id"
+TEST_CLIENT_SECRET = "test_client_secret"  # noqa: S105
+TEST_BASE_URL = "https://api.justifi.ai"
 
 
 class TestMCPServer:
@@ -21,9 +26,9 @@ class TestMCPServer:
     @pytest.fixture(autouse=True)
     def setup_env(self):
         """Set up test environment variables."""
-        os.environ["JUSTIFI_CLIENT_ID"] = "test_client_id"
-        os.environ["JUSTIFI_CLIENT_SECRET"] = "test_client_secret"
-        os.environ["JUSTIFI_BASE_URL"] = "https://api.justifi.ai"
+        os.environ["JUSTIFI_CLIENT_ID"] = TEST_CLIENT_ID
+        os.environ["JUSTIFI_CLIENT_SECRET"] = TEST_CLIENT_SECRET
+        os.environ["JUSTIFI_BASE_URL"] = TEST_BASE_URL
         yield
 
     def test_mcp_server_creation(self):
@@ -37,8 +42,8 @@ class TestMCPServer:
         """Test that get_tools returns the expected tools."""
         tools = await handle_list_tools()
 
-        # Should have exactly 10 JustiFi tools (v1.1 expansion)
-        assert len(tools) == 10
+        # Should have exactly 9 JustiFi tools (removed list_refunds - endpoint doesn't exist)
+        assert len(tools) == 9
 
         tool_names = [tool.name for tool in tools]
         expected_tools = [
@@ -94,9 +99,9 @@ class TestMCPProtocol:
     @pytest.fixture(autouse=True)
     def setup_env(self):
         """Set up test environment variables."""
-        os.environ["JUSTIFI_CLIENT_ID"] = "test_client_id"
-        os.environ["JUSTIFI_CLIENT_SECRET"] = "test_client_secret"
-        os.environ["JUSTIFI_BASE_URL"] = "https://api.justifi.ai"
+        os.environ["JUSTIFI_CLIENT_ID"] = TEST_CLIENT_ID
+        os.environ["JUSTIFI_CLIENT_SECRET"] = TEST_CLIENT_SECRET
+        os.environ["JUSTIFI_BASE_URL"] = TEST_BASE_URL
         yield
 
     def test_server_info(self):
@@ -128,9 +133,9 @@ class TestToolIntegration:
     @pytest.fixture(autouse=True)
     def setup_env(self):
         """Set up test environment variables."""
-        os.environ["JUSTIFI_CLIENT_ID"] = "test_client_id"
-        os.environ["JUSTIFI_CLIENT_SECRET"] = "test_client_secret"
-        os.environ["JUSTIFI_BASE_URL"] = "https://api.justifi.ai"
+        os.environ["JUSTIFI_CLIENT_ID"] = TEST_CLIENT_ID
+        os.environ["JUSTIFI_CLIENT_SECRET"] = TEST_CLIENT_SECRET
+        os.environ["JUSTIFI_BASE_URL"] = TEST_BASE_URL
         yield
 
     @pytest.mark.asyncio

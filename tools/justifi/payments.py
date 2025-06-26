@@ -1,5 +1,4 @@
-"""
-JustiFi MCP Integration - Payment Tools
+"""JustiFi MCP Integration - Payment Tools
 
 Payment processing tools for creating, retrieving, listing, and refunding payments.
 """
@@ -20,8 +19,7 @@ async def create_payment(
     idempotency_key: str,
     **kwargs: Any,
 ) -> dict[str, Any]:
-    """
-    Create a new payment in JustiFi.
+    """Create a new payment in JustiFi.
 
     Args:
         amount_cents: Amount in the smallest currency unit (e.g. 1000 = $10.00).
@@ -31,6 +29,7 @@ async def create_payment(
 
     Returns:
         JSON response from the JustiFi API.
+
     """
     payload = {"amount": amount_cents, "currency": currency, **kwargs}
     return await _request(
@@ -68,13 +67,13 @@ async def refund_payment(
     amount_cents: int | None = None,
     idempotency_key: str | None = None,
 ) -> dict[str, Any]:
-    """
-    Issue a refund for a specific payment.
+    """Issue a refund for a specific payment.
 
     Args:
         payment_id: ID of the payment to refund.
         amount_cents: Optional partial-refund amount; defaults to full amount.
         idempotency_key: Optional key to make the request idempotent.
+
     """
     payload: dict[str, Any] = {}
     if amount_cents is not None:
@@ -85,30 +84,3 @@ async def refund_payment(
         data=payload,
         idempotency_key=idempotency_key,
     )
-
-
-@traceable
-async def list_refunds(
-    payment_id: str,
-    limit: int = 25,
-    after_cursor: str | None = None,
-    before_cursor: str | None = None,
-) -> dict[str, Any]:
-    """
-    List refunds for a specific payment.
-
-    Args:
-        payment_id: ID of the payment to list refunds for.
-        limit: Number of refunds to return (default: 25).
-        after_cursor: Cursor for pagination (get refunds after this cursor).
-        before_cursor: Cursor for pagination (get refunds before this cursor).
-
-    Returns:
-        JSON response with refunds list from the JustiFi API.
-    """
-    params: dict[str, Any] = {"limit": limit}
-    if after_cursor:
-        params["after_cursor"] = after_cursor
-    if before_cursor:
-        params["before_cursor"] = before_cursor
-    return await _request("GET", f"/payments/{payment_id}/refunds", params=params)

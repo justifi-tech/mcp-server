@@ -8,13 +8,8 @@ services:
     env_file: .env
     working_dir: /app
     volumes:
-      # Mount application code for live development (excludes cache dirs)
+      # Mount application code for live development
       - .:/app
-      - /app/.venv
-      - /app/.pytest_cache
-      - /app/.mypy_cache
-      - /app/.ruff_cache
-      - /app/__pycache__
     # Keep container running for development
     tty: true
     stdin_open: true
@@ -32,11 +27,6 @@ services:
     volumes:
       # Mount application code for live development
       - .:/app
-      - /app/.venv
-      - /app/.pytest_cache
-      - /app/.mypy_cache
-      - /app/.ruff_cache
-      - /app/__pycache__
     # Auto-restart MCP server on file changes (uses default CMD from Dockerfile)
     # command: ["watchmedo", "auto-restart", "--directory=/app", "--pattern=*.py", "--recursive", "--", "python", "main.py"]
     # For stdio MCP testing

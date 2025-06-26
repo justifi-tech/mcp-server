@@ -1,5 +1,4 @@
-"""
-JustiFi MCP Integration - Balance Tools
+"""JustiFi MCP Integration - Balance Tools
 
 Tools for retrieving account balance information from JustiFi.
 """
@@ -19,8 +18,7 @@ async def list_balance_transactions(
     after_cursor: str | None = None,
     before_cursor: str | None = None,
 ) -> dict[str, Any]:
-    """
-    List balance transactions for the account.
+    """List balance transactions for the account.
 
     Args:
         limit: Number of balance transactions to return (default: 25).
@@ -29,6 +27,7 @@ async def list_balance_transactions(
 
     Returns:
         JSON response from the JustiFi API with balance transactions list.
+
     """
     params: dict[str, Any] = {"limit": limit}
     if after_cursor:

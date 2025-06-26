@@ -174,6 +174,12 @@ make dev
 - Use `make dev` for auto-restart MCP server
 - Use `make shell` for interactive debugging
 
+### Makefile Usage
+- **ALWAYS use Makefile commands instead of direct docker-compose commands**
+- Use standardized commands: `make dev`, `make test`, `make lint`, `make check-all`, etc.
+- Makefile provides consistent interfaces and handles environment setup automatically
+- Only use direct docker-compose commands if a specific Makefile target doesn't exist
+
 ### API Endpoint Verification Rules
 - **NEVER implement tools for non-existent endpoints**
 - **ALWAYS verify in JustiFi API docs** before implementing
@@ -202,6 +208,8 @@ make dev
 - Always ask before making changes to project rules
 - Explain what changes you want to make and why
 - Wait for user approval before editing .cursorrules
+- **Add project-wide rules to .cursorrules instead of using memory**
+- Use memory only for user-specific preferences or temporary context
 
 ## Common Commands
 

@@ -1,5 +1,4 @@
-"""
-Unit tests for JustiFi Payout MCP tools.
+"""Unit tests for JustiFi Payout MCP tools.
 
 Tests payout retrieval and listing functionality.
 Uses respx to mock HTTP calls - no external API calls during testing.
@@ -8,6 +7,7 @@ Uses respx to mock HTTP calls - no external API calls during testing.
 import os
 from unittest.mock import patch
 
+import httpx
 import pytest
 import respx
 from httpx import Response
@@ -17,6 +17,12 @@ from tools.justifi import (
     list_payouts,
     retrieve_payout,
 )
+
+# Test constants - not real credentials
+TEST_CLIENT_ID = "test_client_id"
+TEST_CLIENT_SECRET = "test_client_secret"  # noqa: S105
+TEST_BASE_URL = "https://api.justifi.ai/v1"
+TEST_ACCESS_TOKEN = "test_token"  # noqa: S105
 
 
 @pytest.fixture(autouse=True)
@@ -33,7 +39,7 @@ def mock_env_vars():
         os.environ,
         {
             "JUSTIFI_CLIENT_ID": "test_client_id",
-            "JUSTIFI_CLIENT_SECRET": "test_client_secret",
+            "JUSTIFI_CLIENT_SECRET": TEST_CLIENT_SECRET,
             "JUSTIFI_BASE_URL": "https://api.justifi.ai/v1",
         },
     ):
@@ -50,7 +56,7 @@ class TestPayoutTools:
         # Mock OAuth token
         respx.post("https://api.justifi.ai/oauth/token").mock(
             return_value=Response(
-                200, json={"access_token": "test_token", "expires_in": 3600}
+                200, json={"access_token": TEST_ACCESS_TOKEN, "expires_in": 3600}
             )
         )
 
@@ -83,7 +89,7 @@ class TestPayoutTools:
         # Mock OAuth token
         respx.post("https://api.justifi.ai/oauth/token").mock(
             return_value=Response(
-                200, json={"access_token": "test_token", "expires_in": 3600}
+                200, json={"access_token": TEST_ACCESS_TOKEN, "expires_in": 3600}
             )
         )
 
@@ -126,7 +132,7 @@ class TestPayoutTools:
         # Mock OAuth token
         respx.post("https://api.justifi.ai/oauth/token").mock(
             return_value=Response(
-                200, json={"access_token": "test_token", "expires_in": 3600}
+                200, json={"access_token": TEST_ACCESS_TOKEN, "expires_in": 3600}
             )
         )
 
@@ -155,7 +161,7 @@ class TestPayoutTools:
         # Mock OAuth token
         respx.post("https://api.justifi.ai/oauth/token").mock(
             return_value=Response(
-                200, json={"access_token": "test_token", "expires_in": 3600}
+                200, json={"access_token": TEST_ACCESS_TOKEN, "expires_in": 3600}
             )
         )
 
@@ -170,5 +176,5 @@ class TestPayoutTools:
             )
         )
 
-        with pytest.raises(Exception):
+        with pytest.raises(httpx.HTTPStatusError):
             await retrieve_payout(payout_id="po_nonexistent")

@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-JustiFi MCP Server
+"""JustiFi MCP Server
 
 A Model Context Protocol server that provides tools for interacting with the JustiFi payments API.
 Supports OAuth2 Client-Credentials authentication with token caching.
@@ -9,7 +8,6 @@ import asyncio
 import json
 import os
 import sys
-import time
 
 from dotenv import load_dotenv
 from mcp import stdio_server
@@ -26,18 +24,17 @@ from tools.justifi import (
     _get_access_token,
     # Payment tools
     create_payment,
-    retrieve_payment,
-    list_payments,
-    refund_payment,
-    list_refunds,
     # Payment method tools
     create_payment_method,
+    # Balance tools
+    list_balance_transactions,
+    list_payments,
+    list_payouts,
+    refund_payment,
+    retrieve_payment,
     retrieve_payment_method,
     # Payout tools
     retrieve_payout,
-    list_payouts,
-    # Balance tools
-    list_balance_transactions,
 )
 
 # Initialize the MCP server
@@ -49,13 +46,13 @@ TOOL_DISPATCH = {
     "retrieve_payment": retrieve_payment,
     "list_payments": list_payments,
     "refund_payment": refund_payment,
-    "list_refunds": list_refunds,
     "create_payment_method": create_payment_method,
     "retrieve_payment_method": retrieve_payment_method,
     "retrieve_payout": retrieve_payout,
     "list_payouts": list_payouts,
     "list_balance_transactions": list_balance_transactions,
 }
+
 
 @server.list_tools()
 async def handle_list_tools() -> list[Tool]:
@@ -155,20 +152,6 @@ async def handle_list_tools() -> list[Tool]:
                 "required": ["payment_id"],
             },
         ),
-        Tool(
-            name="list_refunds",
-            description="List refunds for a specific payment",
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "payment_id": {
-                        "type": "string",
-                        "description": "The ID of the payment to list refunds for",
-                    }
-                },
-                "required": ["payment_id"],
-            },
-        ),
         # Payment method tools
         Tool(
             name="create_payment_method",
@@ -223,7 +206,12 @@ async def handle_list_tools() -> list[Tool]:
                         "optional": True,
                     },
                 },
-                "required": ["card_number", "card_exp_month", "card_exp_year", "card_cvv"],
+                "required": [
+                    "card_number",
+                    "card_exp_month",
+                    "card_exp_year",
+                    "card_cvv",
+                ],
             },
         ),
         Tool(
@@ -320,13 +308,13 @@ async def handle_call_tool(name: str, arguments: dict) -> list[TextContent]:
         # Check if tool exists in our dispatch table
         if name not in TOOL_DISPATCH:
             raise ValueError(f"Unknown tool: {name}")
-        
+
         # Get the tool function
         tool_func = TOOL_DISPATCH[name]
-        
+
         # Call the tool function with arguments
         result = await tool_func(**arguments)
-        
+
         # Format the response
         return [TextContent(type="text", text=json.dumps(result, indent=2))]
 
@@ -352,20 +340,26 @@ async def health_check():
     try:
         # Load environment variables
         load_dotenv()
-        
+
         # Check required environment variables
-        required_vars = ["JUSTIFI_CLIENT_ID", "JUSTIFI_CLIENT_SECRET", "JUSTIFI_BASE_URL"]
+        required_vars = [
+            "JUSTIFI_CLIENT_ID",
+            "JUSTIFI_CLIENT_SECRET",
+            "JUSTIFI_BASE_URL",
+        ]
         missing_vars = [var for var in required_vars if not os.getenv(var)]
-        
+
         if missing_vars:
-            print(f"❌ Missing required environment variables: {', '.join(missing_vars)}")
+            print(
+                f"❌ Missing required environment variables: {', '.join(missing_vars)}"
+            )
             return False
-        
+
         # Test API connectivity
         await _get_access_token()
         print("✅ JustiFi API connection successful")
         return True
-        
+
     except Exception as e:
         print(f"❌ Health check failed: {e}")
         return False
@@ -375,25 +369,23 @@ async def main():
     """Main entry point for the MCP server."""
     # Load environment variables
     load_dotenv()
-    
+
     # Check if this is a health check
     if len(sys.argv) > 1 and sys.argv[1] == "health":
         success = await health_check()
         sys.exit(0 if success else 1)
-    
+
     # Perform startup health check
     try:
         await health_check()
     except Exception as e:
         print(f"❌ Startup health check failed: {e}", file=sys.stderr)
         sys.exit(1)
-    
+
     # Start the MCP server
     async with stdio_server() as (read_stream, write_stream):
         await server.run(
-            read_stream,
-            write_stream,
-            server.create_initialization_options()
+            read_stream, write_stream, server.create_initialization_options()
         )
 
 

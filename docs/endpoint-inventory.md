@@ -9,7 +9,7 @@ High value, low coupling, directly extends current payment functionality.
 | `/payment_methods` | POST | Create payment method | customer_id, card/bank details | - | 🎯 NEW |
 | `/payment_methods/{token}` | GET | Retrieve payment method | payment_method_token | - | 🎯 NEW |
 | `/payment_methods` | GET | List payment methods | - | limit, cursors | 🎯 NEW |
-| `/payments/{id}/refunds` | GET | List refunds for payment | payment_id | limit, cursors | 🎯 NEW |
+| `/payments/{id}/refunds` | GET | List refunds for payment | payment_id | limit, cursors | ❌ NOT AVAILABLE |
 
 | `/payouts/{id}` | GET | Retrieve payout | payout_id | - | 🎯 NEW |
 | `/payouts` | GET | List payouts | - | limit, cursors | 🎯 NEW |

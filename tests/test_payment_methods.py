@@ -1,5 +1,4 @@
-"""
-Unit tests for JustiFi Payment Method MCP tools.
+"""Unit tests for JustiFi Payment Method MCP tools.
 
 Tests payment method creation and retrieval functionality.
 Uses respx to mock HTTP calls - no external API calls during testing.
@@ -8,6 +7,7 @@ Uses respx to mock HTTP calls - no external API calls during testing.
 import os
 from unittest.mock import patch
 
+import httpx
 import pytest
 import respx
 from httpx import Response
@@ -17,6 +17,14 @@ from tools.justifi import (
     create_payment_method,
     retrieve_payment_method,
 )
+
+# Test constants - not real credentials
+TEST_CLIENT_ID = "test_client_id"
+TEST_CLIENT_SECRET = "test_client_secret"  # noqa: S105
+TEST_BASE_URL = "https://api.justifi.ai/v1"
+TEST_ACCESS_TOKEN = "test_token"  # noqa: S105
+TEST_PAYMENT_METHOD_ID = "pm_test123"
+TEST_NONEXISTENT_PM_ID = "pm_nonexistent"
 
 
 @pytest.fixture(autouse=True)
@@ -32,8 +40,8 @@ def mock_env_vars():
     with patch.dict(
         os.environ,
         {
-            "JUSTIFI_CLIENT_ID": "test_client_id",
-            "JUSTIFI_CLIENT_SECRET": "test_client_secret",
+            "JUSTIFI_CLIENT_ID": TEST_CLIENT_ID,
+            "JUSTIFI_CLIENT_SECRET": TEST_CLIENT_SECRET,
             "JUSTIFI_BASE_URL": "https://api.justifi.ai/v1",
         },
     ):
@@ -50,7 +58,7 @@ class TestPaymentMethodTools:
         # Mock OAuth token
         respx.post("https://api.justifi.ai/oauth/token").mock(
             return_value=Response(
-                200, json={"access_token": "test_token", "expires_in": 3600}
+                200, json={"access_token": TEST_ACCESS_TOKEN, "expires_in": 3600}
             )
         )
 
@@ -59,7 +67,7 @@ class TestPaymentMethodTools:
             return_value=Response(
                 201,
                 json={
-                    "id": "pm_test123",
+                    "id": TEST_PAYMENT_METHOD_ID,
                     "customer_id": "cust_456",
                     "type": "card",
                     "card": {
@@ -82,7 +90,7 @@ class TestPaymentMethodTools:
         )
 
         assert isinstance(result, dict)
-        assert result["id"] == "pm_test123"
+        assert result["id"] == TEST_PAYMENT_METHOD_ID
         assert result["customer_id"] == "cust_456"
         assert result["type"] == "card"
         assert result["card"]["last4"] == "4242"
@@ -94,7 +102,7 @@ class TestPaymentMethodTools:
         # Mock OAuth token
         respx.post("https://api.justifi.ai/oauth/token").mock(
             return_value=Response(
-                200, json={"access_token": "test_token", "expires_in": 3600}
+                200, json={"access_token": TEST_ACCESS_TOKEN, "expires_in": 3600}
             )
         )
 
@@ -103,7 +111,7 @@ class TestPaymentMethodTools:
             return_value=Response(
                 200,
                 json={
-                    "id": "pm_test123",
+                    "id": TEST_PAYMENT_METHOD_ID,
                     "customer_id": "cust_456",
                     "type": "card",
                     "card": {
@@ -117,9 +125,9 @@ class TestPaymentMethodTools:
             )
         )
 
-        result = await retrieve_payment_method(payment_method_token="pm_test123")
+        result = await retrieve_payment_method(payment_method_token=TEST_PAYMENT_METHOD_ID)
         assert isinstance(result, dict)
-        assert result["id"] == "pm_test123"
+        assert result["id"] == TEST_PAYMENT_METHOD_ID
         assert result["customer_id"] == "cust_456"
         assert result["type"] == "card"
 
@@ -130,7 +138,7 @@ class TestPaymentMethodTools:
         # Mock OAuth token
         respx.post("https://api.justifi.ai/oauth/token").mock(
             return_value=Response(
-                200, json={"access_token": "test_token", "expires_in": 3600}
+                200, json={"access_token": TEST_ACCESS_TOKEN, "expires_in": 3600}
             )
         )
 
@@ -145,7 +153,7 @@ class TestPaymentMethodTools:
             )
         )
 
-        with pytest.raises(Exception):
+        with pytest.raises(httpx.HTTPStatusError):
             await create_payment_method(
                 customer_id="cust_456",
                 card_number="invalid_card",
@@ -158,7 +166,7 @@ class TestPaymentMethodTools:
         # Mock OAuth token
         respx.post("https://api.justifi.ai/oauth/token").mock(
             return_value=Response(
-                200, json={"access_token": "test_token", "expires_in": 3600}
+                200, json={"access_token": TEST_ACCESS_TOKEN, "expires_in": 3600}
             )
         )
 
@@ -173,5 +181,5 @@ class TestPaymentMethodTools:
             )
         )
 
-        with pytest.raises(Exception):
-            await retrieve_payment_method(payment_method_token="pm_nonexistent")
+        with pytest.raises(httpx.HTTPStatusError):
+            await retrieve_payment_method(payment_method_token=TEST_NONEXISTENT_PM_ID)

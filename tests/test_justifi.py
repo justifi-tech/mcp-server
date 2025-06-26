@@ -1,5 +1,4 @@
-"""
-Unit tests for JustiFi MCP tools.
+"""Unit tests for JustiFi MCP tools.
 
 Tests OAuth token handling, HTTP requests, and all four payment tools.
 Uses respx to mock HTTP calls - no external API calls during testing.
@@ -18,10 +17,19 @@ from tools.justifi import (
     _get_access_token,
     create_payment,
     list_payments,
-    list_refunds,
     refund_payment,
     retrieve_payment,
 )
+
+# Test constants - not real credentials
+TEST_CLIENT_ID = "test_client_id"
+TEST_CLIENT_SECRET = "test_client_secret"  # noqa: S105
+TEST_BASE_URL = "https://api.justifi.ai/v1"
+TEST_ACCESS_TOKEN = "test_token"  # noqa: S105
+TEST_ACCESS_TOKEN_123 = "test_token_123"  # noqa: S105
+TEST_CACHED_TOKEN = "cached_token"  # noqa: S105
+TEST_EXPIRED_TOKEN = "expired_token"  # noqa: S105
+TEST_NEW_TOKEN = "new_token_456"  # noqa: S105
 
 
 @pytest.fixture(autouse=True)
@@ -37,9 +45,9 @@ def mock_env_vars():
     with patch.dict(
         os.environ,
         {
-            "JUSTIFI_CLIENT_ID": "test_client_id",
-            "JUSTIFI_CLIENT_SECRET": "test_client_secret",
-            "JUSTIFI_BASE_URL": "https://api.justifi.ai/v1",
+            "JUSTIFI_CLIENT_ID": TEST_CLIENT_ID,
+            "JUSTIFI_CLIENT_SECRET": TEST_CLIENT_SECRET,
+            "JUSTIFI_BASE_URL": TEST_BASE_URL,
         },
     ):
         yield
@@ -55,13 +63,13 @@ class TestTokenManagement:
         # Mock OAuth token endpoint
         respx.post("https://api.justifi.ai/oauth/token").mock(
             return_value=Response(
-                200, json={"access_token": "test_token_123", "expires_in": 3600}
+                200, json={"access_token": TEST_ACCESS_TOKEN_123, "expires_in": 3600}
             )
         )
 
         token = await _get_access_token()
-        assert token == "test_token_123"
-        assert _TOKEN_CACHE.token == "test_token_123"
+        assert token == TEST_ACCESS_TOKEN_123
+        assert _TOKEN_CACHE.token == TEST_ACCESS_TOKEN_123
         assert _TOKEN_CACHE.expires_at > time.time()
 
     @respx.mock
@@ -69,19 +77,19 @@ class TestTokenManagement:
     async def test_token_caching(self):
         """Test that tokens are cached and reused."""
         # Set up a cached token
-        _TOKEN_CACHE.token = "cached_token"
+        _TOKEN_CACHE.token = TEST_CACHED_TOKEN
         _TOKEN_CACHE.expires_at = time.time() + 1800  # 30 minutes from now
 
         # Should return cached token without making HTTP request
         token = await _get_access_token()
-        assert token == "cached_token"
+        assert token == TEST_CACHED_TOKEN
 
     @respx.mock
     @pytest.mark.asyncio
     async def test_token_refresh_when_expired(self):
         """Test token refresh when cached token is expired."""
         # Set up an expired token
-        _TOKEN_CACHE.token = "expired_token"
+        _TOKEN_CACHE.token = TEST_EXPIRED_TOKEN
         _TOKEN_CACHE.expires_at = time.time() - 100  # Expired
 
         # Mock new token request
@@ -89,7 +97,7 @@ class TestTokenManagement:
             return_value=Response(
                 200,
                 json={
-                    "access_token": "new_token_456",
+                    "access_token": TEST_NEW_TOKEN,
                     "token_type": "Bearer",
                     "expires_in": 3600,
                 },
@@ -97,8 +105,8 @@ class TestTokenManagement:
         )
 
         token = await _get_access_token()
-        assert token == "new_token_456"
-        assert _TOKEN_CACHE.token == "new_token_456"
+        assert token == TEST_NEW_TOKEN
+        assert _TOKEN_CACHE.token == TEST_NEW_TOKEN
 
 
 class TestPaymentTools:
@@ -111,7 +119,7 @@ class TestPaymentTools:
         # Mock OAuth token
         respx.post("https://api.justifi.ai/oauth/token").mock(
             return_value=Response(
-                200, json={"access_token": "test_token", "expires_in": 3600}
+                200, json={"access_token": TEST_ACCESS_TOKEN, "expires_in": 3600}
             )
         )
 
@@ -145,7 +153,7 @@ class TestPaymentTools:
         # Mock OAuth token
         respx.post("https://api.justifi.ai/oauth/token").mock(
             return_value=Response(
-                200, json={"access_token": "test_token", "expires_in": 3600}
+                200, json={"access_token": TEST_ACCESS_TOKEN, "expires_in": 3600}
             )
         )
 
@@ -175,7 +183,7 @@ class TestPaymentTools:
         # Mock OAuth token
         respx.post("https://api.justifi.ai/oauth/token").mock(
             return_value=Response(
-                200, json={"access_token": "test_token", "expires_in": 3600}
+                200, json={"access_token": TEST_ACCESS_TOKEN, "expires_in": 3600}
             )
         )
 
@@ -208,7 +216,7 @@ class TestPaymentTools:
         # Mock OAuth token
         respx.post("https://api.justifi.ai/oauth/token").mock(
             return_value=Response(
-                200, json={"access_token": "test_token", "expires_in": 3600}
+                200, json={"access_token": TEST_ACCESS_TOKEN, "expires_in": 3600}
             )
         )
 
@@ -233,48 +241,7 @@ class TestPaymentTools:
         assert result["amount"] == 1000
         assert result["status"] == "succeeded"
 
-    @respx.mock
-    @pytest.mark.asyncio
-    async def test_list_refunds_success(self):
-        """Test successful refund listing."""
-        # Mock OAuth token
-        respx.post("https://api.justifi.ai/oauth/token").mock(
-            return_value=Response(
-                200, json={"access_token": "test_token", "expires_in": 3600}
-            )
-        )
 
-        # Mock refund listing
-        respx.get("https://api.justifi.ai/v1/payments/py_test123/refunds").mock(
-            return_value=Response(
-                200,
-                json={
-                    "data": [
-                        {
-                            "id": "rf_1",
-                            "payment_id": "py_test123",
-                            "amount": 500,
-                            "status": "succeeded",
-                        },
-                        {
-                            "id": "rf_2",
-                            "payment_id": "py_test123",
-                            "amount": 300,
-                            "status": "pending",
-                        },
-                    ],
-                    "page_info": {"has_next": False, "end_cursor": "cursor_789"},
-                },
-            )
-        )
-
-        result = await list_refunds(payment_id="py_test123", limit=25)
-        assert isinstance(result, dict)
-        assert "data" in result
-        assert len(result["data"]) == 2
-        assert result["data"][0]["id"] == "rf_1"
-        assert result["data"][1]["id"] == "rf_2"
-        assert "page_info" in result
 
     @respx.mock
     @pytest.mark.asyncio
@@ -283,7 +250,7 @@ class TestPaymentTools:
         # Mock OAuth token
         respx.post("https://api.justifi.ai/oauth/token").mock(
             return_value=Response(
-                200, json={"access_token": "test_token", "expires_in": 3600}
+                200, json={"access_token": TEST_ACCESS_TOKEN, "expires_in": 3600}
             )
         )
 
@@ -327,7 +294,7 @@ class TestMCPIntegration:
         from main import handle_list_tools
 
         tools = await handle_list_tools()
-        assert len(tools) == 10  # Updated for v1.1 with 10 total tools
+        assert len(tools) == 9  # Updated: removed list_refunds (endpoint doesn't exist)
 
         tool_names = [tool.name for tool in tools]
         # Payment tools
@@ -335,7 +302,6 @@ class TestMCPIntegration:
         assert "retrieve_payment" in tool_names
         assert "list_payments" in tool_names
         assert "refund_payment" in tool_names
-        assert "list_refunds" in tool_names
         # Payment method tools
         assert "create_payment_method" in tool_names
         assert "retrieve_payment_method" in tool_names
@@ -354,7 +320,7 @@ class TestMCPIntegration:
         # Mock OAuth token
         respx.post("https://api.justifi.ai/oauth/token").mock(
             return_value=Response(
-                200, json={"access_token": "test_token", "expires_in": 3600}
+                200, json={"access_token": TEST_ACCESS_TOKEN, "expires_in": 3600}
             )
         )
 

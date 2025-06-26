@@ -1,5 +1,4 @@
-"""
-JustiFi MCP Integration - Payout Tools
+"""JustiFi MCP Integration - Payout Tools
 
 Tools for managing payouts (fund transfers) in JustiFi.
 """
@@ -15,14 +14,14 @@ from .core import _request
 
 @traceable
 async def retrieve_payout(payout_id: str) -> dict[str, Any]:
-    """
-    Retrieve a payout by its ID.
+    """Retrieve a payout by its ID.
 
     Args:
         payout_id: The ID of the payout to retrieve.
 
     Returns:
         JSON response from the JustiFi API with payout details.
+
     """
     return await _request("GET", f"/payouts/{payout_id}")
 
@@ -33,8 +32,7 @@ async def list_payouts(
     after_cursor: str | None = None,
     before_cursor: str | None = None,
 ) -> dict[str, Any]:
-    """
-    List payouts with cursor-based pagination.
+    """List payouts with cursor-based pagination.
 
     Args:
         limit: Number of payouts to return (default: 25).
@@ -43,6 +41,7 @@ async def list_payouts(
 
     Returns:
         JSON response with payouts list from the JustiFi API.
+
     """
     params: dict[str, Any] = {"limit": limit}
     if after_cursor:

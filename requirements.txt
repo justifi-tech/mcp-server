@@ -4,6 +4,7 @@ pydantic
 python-dotenv
 langsmith
 langchain
+openai
 pytest
 pytest-asyncio
 respx

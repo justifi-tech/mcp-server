@@ -1,4 +1,4 @@
-.PHONY: help install start stop clean test dev-start dev-stop dev-clean mcp-test env-check lint format type-check security check-all build-dev
+.PHONY: help install start stop clean test dev-start dev-stop dev-clean mcp-test env-check lint format type-check security check-all build-dev eval
 
 # Default target
 help:
@@ -21,6 +21,7 @@ help:
 	@echo ""
 	@echo "Testing:"
 	@echo "  test        - Run unit tests (in container)"
+	@echo "  eval        - Run AI evaluation suite"
 	@echo "  mcp-test    - Test MCP server directly"
 	@echo "  drift-check - Check for JustiFi API changes"
 	@echo "  drift-update - Check for API changes and update spec"
@@ -240,4 +241,9 @@ setup: env-check install dev-start
 	@echo "   Args: [\"$(PWD)/main.py\"]"
 	@echo "   Working Directory: $(PWD)"
 	@echo ""
-	@echo "2. Test the server: make mcp-test" 
+	@echo "2. Test the server: make mcp-test"
+
+# Run AI evaluation suite
+eval: env-check build-dev
+	@echo "📈 Running AI evaluation suite in dev container..."
+	docker-compose run --rm dev python scripts/run-evals.py 

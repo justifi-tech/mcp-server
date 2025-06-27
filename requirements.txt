@@ -3,6 +3,7 @@ httpx
 pydantic
 python-dotenv
 langsmith
+langchain
 pytest
 pytest-asyncio
 respx

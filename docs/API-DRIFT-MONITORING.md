@@ -1,374 +1,211 @@
 # JustiFi API Drift Monitoring
 
-This document explains the automated API drift monitoring system for the JustiFi MCP server.
-
 ## Overview
 
-The API drift monitoring system automatically detects changes in the JustiFi OpenAPI specification that could affect our 10 MCP tools. It runs weekly via GitHub Actions and can be executed locally for testing.
-
-## Architecture
-
-```
-┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│   GitHub        │    │   JustiFi API    │    │   Local Dev     │
-│   Actions       │    │   OpenAPI Spec   │    │   Environment   │
-│                 │    │                  │    │                 │
-│ Weekly Cron ────┼────► Download Latest ◄────┼─── Manual Check │
-│ Manual Trigger  │    │ Specification    │    │                 │
-│ File Changes    │    │                  │    │                 │
-└─────────────────┘    └──────────────────┘    └─────────────────┘
-         │                        │                        │
-         │                        │                        │
-         ▼                        ▼                        ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                   Drift Analysis Engine                        │
-│                                                                 │
-│  CI Script (scripts/ci-drift-check.py):                        │
-│  • Download and compare OpenAPI specs                          │
-│  • Monitor 10 endpoints used by our MCP tools                  │
-│  • Detect additions, removals, and modifications               │
-│  • Set GitHub Actions outputs for workflow decisions           │
-│                                                                 │
-│  Local Script (scripts/check-api-drift.py):                    │
-│  • Same analysis logic for development use                     │
-│  • Interactive output and optional spec updates                │
-└─────────────────────────────────────────────────────────────────┘
-         │
-         ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                      Response Actions                          │
-│                                                                 │
-│  No Changes:                   Critical Changes:                │
-│  • Update stored spec          • Create GitHub issue           │
-│  • Auto-commit changes        • Alert development team         │
-│  • Continue monitoring        • Block spec updates             │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-### Key Architecture Benefits
-- **Clean separation**: CI logic in dedicated scripts, not inline YAML
-- **Maintainable**: Python code is easier to test and debug than YAML
-- **Reusable**: Same analysis logic for both CI and local development
-- **Testable**: Scripts can be run and tested independently
-
-## Monitored Endpoints
-
-Our drift monitoring tracks these 10 endpoints that correspond to our MCP tools:
-
-### Payment Tools (5)
-- `POST /payments` → `create_payment`
-- `GET /payments/{id}` → `retrieve_payment`
-- `GET /payments` → `list_payments`
-- `POST /payments/{id}/refunds` → `refund_payment`
-- `GET /payments/{id}/refunds` → `list_refunds`
-
-### Payment Method Tools (2)
-- `POST /payment_methods` → `create_payment_method`
-- `GET /payment_methods/{token}` → `retrieve_payment_method`
-
-### Payout Tools (2)
-- `GET /payouts/{id}` → `retrieve_payout`
-- `GET /payouts` → `list_payouts`
-
-### Balance Transaction Tools (1)
-- `GET /balance_transactions` → `list_balance_transactions`
-
-## Files
-
-### GitHub Actions Workflow
-- **File**: `.github/workflows/api-drift-monitor.yml`
-- **Purpose**: Automated weekly monitoring with GitHub issue creation
-- **Architecture**: Clean workflow that calls dedicated CI script
-- **Triggers**:
-  - Weekly schedule (Mondays at 9 AM UTC)
-  - Manual workflow dispatch
-  - Changes to endpoint inventory or stored spec
-
-### CI Script
-- **File**: `scripts/ci-drift-check.py`
-- **Purpose**: CI/CD-optimized drift detection with GitHub Actions integration
-- **Features**: GitHub Actions outputs, error codes, automated spec saving
-
-### Local Development Script
-- **File**: `scripts/check-api-drift.py`
-- **Purpose**: Local development and testing of drift detection
-- **Usage**:
-  ```bash
-  # Check for changes (read-only)
-  make drift-check
-  
-  # Check and update spec if no breaking changes
-  make drift-update
-  
-  # Direct script usage
-  python scripts/check-api-drift.py --help
-  ```
-
-### Stored Specification
-- **File**: `docs/justifi-openapi.yaml`
-- **Purpose**: Baseline OpenAPI spec for comparison
-- **Updates**: Automatically updated when no breaking changes detected
+The JustiFi MCP server includes an automated API drift monitoring system that tracks changes in the JustiFi API specification. This ensures our MCP tools remain compatible with the latest JustiFi API and alerts us to any breaking changes.
 
 ## How It Works
 
-### 1. Specification Download
-```python
-# Downloads latest spec from JustiFi
-JUSTIFI_OPENAPI_URL = "https://docs.justifi.tech/redocusaurus/plugin-redoc-0.yaml"
-```
+### 🔄 Automated Monitoring
+- **Schedule**: Runs every Monday at 9 AM UTC
+- **Trigger**: Can also be manually triggered via GitHub Actions
+- **Comparison**: Downloads latest JustiFi OpenAPI spec and compares with our stored version
+- **Action**: Creates PRs and issues when changes are detected
 
-### 2. Endpoint Extraction
-```python
-def extract_endpoint_info(spec: dict, endpoint_key: str) -> dict:
-    """Extract endpoint information from OpenAPI spec"""
-    # Handles parameter variations: {id} vs {payment_id}
-    # Supports multiple path formats
-    # Returns endpoint definition or None
-```
+### 📊 Change Detection
+The system detects several types of changes:
 
-### 3. Change Detection
-The system detects three types of changes:
+#### Breaking Changes (High Priority)
+- **Endpoint Removal**: Existing endpoints are removed
+- **Schema Changes**: Required fields added/removed, data types changed
+- **Authentication Changes**: Auth requirements modified
+- **Parameter Changes**: Required parameters added/removed
 
-#### 🆕 New Endpoints
-- Endpoint exists in latest spec but not in stored spec
-- Could indicate new functionality available
+#### Non-Breaking Changes (Low Priority)
+- **New Endpoints**: Additional API endpoints added
+- **Optional Fields**: New optional fields in responses
+- **Documentation Updates**: Descriptions, examples updated
+- **Version Updates**: API version increments
 
-#### 🚨 Removed Endpoints  
-- Endpoint exists in stored spec but not in latest spec
-- **CRITICAL**: Could break existing MCP tools
+## Workflow Components
 
-#### 🔄 Modified Endpoints
-- Endpoint exists in both specs but with differences
-- Uses `DeepDiff` for detailed comparison
-- Could indicate parameter, response, or behavior changes
+### 1. GitHub Actions Workflow
+**File**: `.github/workflows/api-drift-monitor.yml`
 
-### 4. Response Actions
-
-#### No Critical Changes
-- ✅ Update stored OpenAPI spec automatically
-- ✅ Commit changes to repository
-- ✅ Continue monitoring
-
-#### Critical Changes Detected
-- 🚨 Create GitHub issue with detailed analysis
-- 🚨 Block automatic spec updates
-- 🚨 Alert development team
-- 🚨 Exit with error code
-
-## GitHub Actions Workflow Details
-
-### Schedule
 ```yaml
-schedule:
-  # Run every Monday at 9 AM UTC (weekly check)
-  - cron: '0 9 * * 1'
+# Runs weekly and on manual trigger
+# Downloads latest JustiFi OpenAPI spec
+# Compares with stored version
+# Creates PR and issue if changes detected
 ```
 
-### Workflow Steps
-1. **Checkout repository** with fetch-depth=2 for comparisons
-2. **Set up Python 3.11** environment
-3. **Install dependencies** (requests, pyyaml, deepdiff)
-4. **Run API drift analysis** using `scripts/ci-drift-check.py`
-5. **Update stored spec** if no critical changes (auto-commit)
-6. **Create GitHub issue** if critical changes detected
-7. **Post success comment** if all checks pass
+**Permissions Required**:
+- `contents: write` - Update OpenAPI spec file
+- `pull-requests: write` - Create PRs for changes
+- `issues: write` - Create issues for notifications
 
-The workflow is now much cleaner with the complex analysis logic extracted to a dedicated CI script.
+### 2. CI Drift Check Script
+**File**: `scripts/ci-drift-check.py`
 
-### Issue Creation
-When critical changes are detected, the workflow creates a GitHub issue with:
+**Functions**:
+- Downloads latest JustiFi OpenAPI specification
+- Loads our stored specification from `docs/justifi-openapi.yaml`
+- Uses `deepdiff` to identify changes
+- Categorizes changes as breaking vs non-breaking
+- Generates change summaries
+- Sets GitHub Actions outputs
 
-- **Title**: "🚨 JustiFi API Changes Detected - Review Required"
-- **Labels**: `api-drift`, `breaking-change`, `high-priority`
-- **Content**:
-  - Summary of detected changes
-  - List of affected MCP tools
-  - Recommended actions checklist
-  - Files that need review
-  - Testing checklist
+### 3. Stored API Specification
+**File**: `docs/justifi-openapi.yaml`
 
-## Local Development
+- **Source of Truth**: Our reference copy of the JustiFi API spec
+- **Updated Automatically**: When changes are detected and PR is merged
+- **Version Controlled**: All changes tracked in git history
+- **Format**: YAML for human readability and git diffs
 
-### Prerequisites
-```bash
-# Ensure dependencies are installed
-make build-dev
+## Response to Changes
 
-# Verify environment
-make env-check
-```
+### When Changes Are Detected
 
-### Commands
+1. **GitHub Issue Created**
+   - **Title**: `API Drift Detected - YYYY-MM-DD`
+   - **Labels**: `api-drift`, `needs-review`, `automated`
+   - **Content**: Summary of changes, impact assessment, action items
 
-#### Basic Drift Check
-```bash
-make drift-check
-```
-- Downloads latest OpenAPI spec
-- Compares with stored version
-- Reports changes without modifying files
-- Exit code 0 = no changes, 1 = changes detected
+2. **Pull Request Created**
+   - **Title**: `chore: Update JustiFi API specification - YYYY-MM-DD`
+   - **Content**: Updated OpenAPI spec file
+   - **Review Required**: Manual review before merging
 
-#### Drift Check with Update
-```bash
-make drift-update
-```
-- Same as drift-check
-- Updates stored spec if no critical changes
-- Commits changes to repository
+3. **Notifications**
+   - Team is notified via GitHub notifications
+   - Issue provides clear action items
+   - PR includes review checklist
 
-#### Direct Script Usage
-```bash
-# Basic check
-python scripts/check-api-drift.py
+### Manual Review Process
 
-# Check with spec update
-python scripts/check-api-drift.py --update-spec
+#### For Breaking Changes
+1. **Immediate Review**: High priority, review within 24 hours
+2. **Impact Assessment**: Check which MCP tools are affected
+3. **Tool Updates**: Update affected tools to maintain compatibility
+4. **Testing**: Run full test suite and manual integration tests
+5. **Documentation**: Update tool descriptions and endpoint inventory
 
-# Verbose output
-python scripts/check-api-drift.py --verbose
+#### For Non-Breaking Changes
+1. **Standard Review**: Review within 1 week
+2. **Opportunity Assessment**: Consider if new endpoints should be added as tools
+3. **Documentation**: Update API specification reference
+4. **Optional Updates**: Consider tool enhancements
 
-# Help
-python scripts/check-api-drift.py --help
-```
+## Affected MCP Tools
 
-## Integration with Development Workflow
+Our current **4 payout-focused tools** depend on these JustiFi API endpoints:
 
-### Pre-Release Checks
-```bash
-# Include in release checklist
-make drift-check
-make test
-make check-all
-```
+### Payout Tools
+- **`retrieve_payout`** → `GET /payouts/{id}`
+- **`list_payouts`** → `GET /payouts`
+- **`get_payout_status`** → `GET /payouts/{id}` (status field)
+- **`get_recent_payouts`** → `GET /payouts` (with limit)
 
-### Continuous Integration
-The drift monitor integrates with our CI/CD pipeline:
-1. **Weekly automated checks** catch API changes early
-2. **Manual trigger capability** for immediate verification
-3. **File change triggers** when endpoint inventory is updated
-4. **GitHub issue creation** ensures team awareness
+### Monitoring Priority
+- **High**: Changes to `/payouts` endpoints
+- **Medium**: Changes to authentication/authorization
+- **Low**: Changes to unrelated endpoints
 
-### Development Best Practices
-1. **Run drift check** before major releases
-2. **Review GitHub issues** created by drift monitor
-3. **Update MCP tools** when API changes are detected
-4. **Test thoroughly** after API changes
-5. **Update documentation** to reflect changes
+## Configuration
+
+### Environment Variables
+- `GITHUB_TOKEN`: Required for creating PRs and issues
+- `FORCE_UPDATE`: Optional, forces update even without changes
+
+### Customization
+- **Schedule**: Modify cron expression in workflow file
+- **API URL**: Update JustiFi OpenAPI spec URL in script
+- **Notification**: Modify issue/PR templates
+- **Thresholds**: Adjust what constitutes "breaking" vs "non-breaking"
 
 ## Troubleshooting
 
 ### Common Issues
 
-#### Script Fails to Download Spec
+#### 1. API Spec Download Fails
 ```bash
-# Check network connectivity
-curl -I https://docs.justifi.tech/redocusaurus/plugin-redoc-0.yaml
-
-# Verify URL is still valid
-# Update JUSTIFI_OPENAPI_URL if needed
+❌ Failed to download OpenAPI spec: HTTPError
 ```
+**Solution**: Check if JustiFi API spec URL is accessible and correct
 
-#### False Positives
-- Some endpoints may have minor formatting differences
-- Parameter naming variations ({id} vs {payment_id})
-- The script handles common variations automatically
+#### 2. No Changes Detected Despite API Updates
+**Possible Causes**:
+- JustiFi hasn't updated their OpenAPI spec
+- Our stored spec is already current
+- Network issues preventing download
 
-#### Missing Dependencies
+**Solution**: Use manual trigger with `force_update: true`
+
+#### 3. False Positive Changes
+**Cause**: Timestamp or metadata changes in spec
+**Solution**: Update comparison logic to ignore non-functional changes
+
+### Manual Testing
+
+Test the drift detection locally:
 ```bash
-# Rebuild container with latest requirements
-make build-dev
-
-# Verify dependencies
-docker-compose run --rm dev pip list | grep -E "(requests|pyyaml|deepdiff)"
+cd scripts
+python ci-drift-check.py
 ```
 
-### Manual Verification
-If you suspect the drift detection is incorrect:
-
-1. **Download specs manually**:
-   ```bash
-   curl -o latest.yaml https://docs.justifi.tech/redocusaurus/plugin-redoc-0.yaml
-   diff docs/justifi-openapi.yaml latest.yaml
-   ```
-
-2. **Test specific endpoints**:
-   ```bash
-   # Test with real API credentials
-   make dev
-   # Use MCP tools to verify functionality
-   ```
-
-3. **Review GitHub issues** for similar reports
-
-## Security Considerations
-
-### API Key Protection
-- Drift monitoring does **NOT** require API keys
-- Only downloads public OpenAPI specification
-- No authentication needed for spec comparison
-
-### Automated Commits
-- Uses GitHub Actions bot account for commits
-- Limited to updating OpenAPI spec file only
-- No access to sensitive configuration
-
-### Issue Creation
-- Issues contain **NO sensitive information**
-- Only includes endpoint paths and change types
-- Safe for public repositories
-
-## Maintenance
-
-### Updating Monitored Endpoints
-When adding new MCP tools:
-
-1. **Update endpoint list** in both files:
-   - `.github/workflows/api-drift-monitor.yml`
-   - `scripts/check-api-drift.py`
-
-2. **Update this documentation**
-
-3. **Test the changes**:
-   ```bash
-   make drift-check
-   ```
-
-### Changing Schedule
-Edit the cron expression in `.github/workflows/api-drift-monitor.yml`:
-```yaml
-schedule:
-  - cron: '0 9 * * 1'  # Weekly on Monday at 9 AM UTC
+Test with force update:
+```bash
+FORCE_UPDATE=true python ci-drift-check.py
 ```
 
-### URL Updates
-If JustiFi changes their OpenAPI spec URL:
-1. Update `JUSTIFI_OPENAPI_URL` in `scripts/check-api-drift.py`
-2. Update the curl command in `.github/workflows/api-drift-monitor.yml`
-3. Test with `make drift-check`
+## Integration with Development Workflow
 
-## Success Metrics
+### Before Merging API Changes
+1. **Review the PR**: Understand what changed in the API
+2. **Run Tests**: Ensure `make test-local` passes (22/22 tests)
+3. **Manual Testing**: Test affected tools with real API
+4. **Update Tools**: Modify MCP tools if needed
+5. **Update Documentation**: Reflect changes in README and docs
 
-The drift monitoring system is considered successful when:
+### After Merging
+1. **Monitor**: Watch for any issues in production
+2. **Validate**: Confirm tools work with updated API
+3. **Document**: Update any affected documentation
+4. **Communicate**: Notify team of significant changes
 
-- ✅ **Zero false negatives**: All breaking changes are detected
-- ✅ **Minimal false positives**: Only real changes trigger alerts
-- ✅ **Fast detection**: Changes detected within 1 week
-- ✅ **Clear reporting**: Issues contain actionable information
-- ✅ **Automated updates**: Non-breaking changes handled automatically
-- ✅ **Developer friendly**: Easy local testing and debugging
+## Benefits
+
+### 🛡️ Proactive Monitoring
+- **Early Warning**: Detect API changes before they break tools
+- **Automated**: No manual checking required
+- **Comprehensive**: Covers all aspects of API specification
+
+### 📋 Change Management
+- **Documented**: All changes tracked in git history
+- **Reviewed**: Manual review ensures quality
+- **Tested**: Changes validated before deployment
+
+### 🚀 Reliability
+- **Up-to-date**: Always working with latest API version
+- **Compatible**: Tools remain functional as API evolves
+- **Predictable**: Structured response to API changes
 
 ## Future Enhancements
 
 ### Planned Improvements
-1. **Semantic versioning detection** for API changes
-2. **Automated tool update suggestions** based on detected changes
-3. **Integration with release notes** from JustiFi
-4. **Slack/Discord notifications** for critical changes
-5. **Historical change tracking** and analytics
+1. **Semantic Versioning**: Track API version changes
+2. **Impact Scoring**: Quantify the impact of changes
+3. **Automated Testing**: Run integration tests on API changes
+4. **Rollback Capability**: Quick revert if changes cause issues
+5. **Multi-Environment**: Test changes in staging before production
 
 ### Advanced Features
-1. **Breaking change severity scoring** (low/medium/high impact)
-2. **Automated regression testing** when changes detected
-3. **Multi-environment monitoring** (sandbox vs production APIs)
-4. **Custom webhook support** for external integrations 
+- **Change Prediction**: ML-based prediction of likely changes
+- **Dependency Mapping**: Visual map of tool → endpoint dependencies
+- **Performance Monitoring**: Track API performance changes
+- **Security Analysis**: Automated security impact assessment
+
+---
+
+**Note**: This monitoring system is essential for maintaining a production-ready MCP server that stays compatible with the evolving JustiFi API. 

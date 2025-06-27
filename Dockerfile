@@ -40,7 +40,7 @@ RUN groupadd -r mcpuser && useradd -r -g mcpuser mcpuser
 
 # Copy only necessary application files with proper ownership
 COPY --chown=mcpuser:mcpuser main.py .
-COPY --chown=mcpuser:mcpuser tools/ ./tools/
+COPY --chown=mcpuser:mcpuser justifi_mcp/ ./justifi_mcp/
 
 # Create necessary directories with proper permissions
 RUN mkdir -p /tmp && chown mcpuser:mcpuser /tmp

@@ -10,6 +10,8 @@ help:
 	@echo ""
 	@echo "Development:"
 	@echo "  dev-start   - Start unified dev container with databases"
+	@echo "  dev         - Start MCP server with auto-restart (in container)"
+	@echo "  dev-local   - Start MCP server locally (faster for testing)"
 	@echo "  dev-stop    - Stop development environment"
 	@echo "  dev-clean   - Clean development environment"
 	@echo "  shell       - Open interactive shell in dev container"
@@ -21,10 +23,11 @@ help:
 	@echo ""
 	@echo "Testing:"
 	@echo "  test        - Run unit tests (in container)"
+	@echo "  test-local  - Run payout tests locally (faster)"
 	@echo "  eval        - Run AI evaluation suite"
 	@echo "  mcp-test    - Test MCP server directly"
 	@echo "  drift-check - Check for JustiFi API changes"
-	@echo "  drift-update - Check for API changes and update spec"
+	@echo "  drift-update - Force update API spec from JustiFi"
 	@echo ""
 	@echo "Code Quality (All in dev container):"
 	@echo "  format      - Auto-format code with black and ruff"
@@ -84,6 +87,14 @@ dev: env-check
 	@echo "🛑 Press Ctrl+C to stop"
 	docker-compose up mcp-dev
 
+# Start MCP server (local Python for development)
+dev-local: env-check
+	@echo "🔄 Starting JustiFi MCP server locally..."
+	@echo "📊 Focus: retrieve_payout, list_payouts, get_payout_status, get_recent_payouts"
+	@echo "🎯 Payout-focused MCP server for evaluation and testing"
+	@echo "🛑 Press Ctrl+C to stop"
+	python main.py
+
 # Interactive development shell
 shell: env-check
 	@echo "🐚 Opening interactive development shell..."
@@ -121,6 +132,11 @@ clean:
 test: env-check
 	@echo "🧪 Running unit tests in dev container..."
 	docker-compose run --rm dev pytest tests/ -v
+
+# Test payout tools specifically (local Python for speed)
+test-local: env-check
+	@echo "🧪 Running payout-specific tests locally..."
+	python -m pytest tests/test_payout_tools.py -v
 
 # Code Quality Targets (All in dev container)
 format: env-check
@@ -176,15 +192,17 @@ mcp-test: env-check
 	@echo "Use Ctrl+C to stop the server."
 	python main.py
 
-# Check for JustiFi API drift
+# Check for JustiFi API drift/changes (local)
 drift-check: env-check
 	@echo "🔍 Checking for JustiFi API changes..."
-	docker-compose run --rm dev python scripts/check-api-drift.py
+	@echo "📊 This will compare our stored spec with latest from JustiFi"
+	python scripts/ci-drift-check.py
 
-# Check for API drift and update spec if no breaking changes
+# Force update API spec from JustiFi (local)
 drift-update: env-check
-	@echo "🔍 Checking for JustiFi API changes and updating spec..."
-	docker-compose run --rm dev python scripts/check-api-drift.py --update-spec
+	@echo "🔄 Force updating JustiFi API spec..."
+	@echo "⚠️ This will overwrite docs/justifi-openapi.yaml"
+	FORCE_UPDATE=true python scripts/ci-drift-check.py
 
 # Production deployment commands (standalone Docker)
 prod-build: env-check

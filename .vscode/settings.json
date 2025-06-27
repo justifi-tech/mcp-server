@@ -5,10 +5,12 @@
   "python.testing.pytestArgs": [
     "tests/"
   ],
-  "python.linting.enabled": true,
-  "python.linting.ruffEnabled": true,
-  "python.formatting.provider": "black",
-  "python.linting.mypyEnabled": true,
+  "[python]": {
+    "editor.defaultFormatter": "ms-python.black-formatter",
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": "explicit"
+    }
+  },
   "editor.formatOnSave": true,
   "editor.codeActionsOnSave": {
     "source.organizeImports": "explicit",
@@ -23,10 +25,10 @@
     "**/.git": false
   },
   "python.envFile": "${workspaceFolder}/.env",
-  "docker.defaultRegistryPath": "",
   "files.associations": {
     "Dockerfile*": "dockerfile",
     "docker-compose*.yml": "dockercompose",
-    "*.toml": "toml"
+    "*.toml": "toml",
+    "*.jsonl": "json"
   }
 }

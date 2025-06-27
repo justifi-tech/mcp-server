@@ -1,6 +1,6 @@
-"""Test suite for the JustiFi MCP Server.
+"""Test suite for the JustiFi Payout MCP Server.
 
-Tests MCP protocol compliance, tool registration, and basic functionality.
+Tests MCP protocol compliance and payout tool registration.
 """
 
 import os
@@ -17,11 +17,11 @@ from main import handle_list_tools, server
 # Test constants - not real credentials
 TEST_CLIENT_ID = "test_client_id"
 TEST_CLIENT_SECRET = "test_client_secret"  # noqa: S105
-TEST_BASE_URL = "https://api.justifi.ai"
+TEST_BASE_URL = "https://api.justifi.ai/v1"
 
 
-class TestMCPServer:
-    """Test MCP server initialization and basic functionality."""
+class TestPayoutMCPServer:
+    """Test payout-focused MCP server initialization and functionality."""
 
     @pytest.fixture(autouse=True)
     def setup_env(self):
@@ -35,22 +35,22 @@ class TestMCPServer:
         """Test that MCP server can be created successfully."""
         assert server is not None
         assert hasattr(server, "name")
-        assert server.name == "justifi-mcp-server"
+        assert server.name == "justifi-payout-mcp-server"
 
     @pytest.mark.asyncio
-    async def test_get_tools_function(self):
-        """Test that get_tools returns the expected tools."""
+    async def test_payout_tools_registration(self):
+        """Test that payout tools are properly registered."""
         tools = await handle_list_tools()
 
-        # Should have exactly 9 JustiFi tools (removed list_refunds - endpoint doesn't exist)
-        assert len(tools) == 9
+        # Should have exactly 4 payout tools
+        assert len(tools) == 4
 
         tool_names = [tool.name for tool in tools]
         expected_tools = [
-            "create_payment",
-            "retrieve_payment",
-            "list_payments",
-            "refund_payment",
+            "retrieve_payout",
+            "list_payouts",
+            "get_payout_status",
+            "get_recent_payouts",
         ]
 
         for expected_tool in expected_tools:
@@ -58,39 +58,71 @@ class TestMCPServer:
 
     @pytest.mark.asyncio
     async def test_tool_descriptions(self):
-        """Test that all tools have proper descriptions."""
+        """Test that all payout tools have proper descriptions."""
         tools = await handle_list_tools()
 
         for tool in tools:
             assert hasattr(tool, "description")
             assert isinstance(tool.description, str)
             assert len(tool.description) > 10  # Should have meaningful descriptions
+            # All tools should be payout-related
+            assert "payout" in tool.description.lower()
 
     @pytest.mark.asyncio
-    async def test_tool_functions_callable(self):
-        """Test that all tool functions are callable."""
+    async def test_tool_schemas(self):
+        """Test that all tools have proper input schemas."""
         tools = await handle_list_tools()
 
         for tool in tools:
-            # MCP tools don't have a 'func' attribute, they have schemas
             assert hasattr(tool, "name")
             assert hasattr(tool, "description")
             assert hasattr(tool, "inputSchema")
+            assert isinstance(tool.inputSchema, dict)
+            assert "type" in tool.inputSchema
+            assert tool.inputSchema["type"] == "object"
 
-    def test_environment_validation(self):
-        """Test that the server validates required environment variables."""
-        # Test with missing CLIENT_ID
-        old_client_id = os.environ.get("JUSTIFI_CLIENT_ID")
-        if "JUSTIFI_CLIENT_ID" in os.environ:
-            del os.environ["JUSTIFI_CLIENT_ID"]
+    @pytest.mark.asyncio
+    async def test_retrieve_payout_tool(self):
+        """Test retrieve_payout tool registration."""
+        tools = await handle_list_tools()
+        retrieve_tool = next((t for t in tools if t.name == "retrieve_payout"), None)
 
-        try:
-            # This should work since we're not actually calling the API
-            # The validation happens when tokens are requested
-            pass
-        finally:
-            if old_client_id:
-                os.environ["JUSTIFI_CLIENT_ID"] = old_client_id
+        assert retrieve_tool is not None
+        assert "retrieve details" in retrieve_tool.description.lower()
+        assert "payout_id" in retrieve_tool.inputSchema["properties"]
+        assert retrieve_tool.inputSchema["required"] == ["payout_id"]
+
+    @pytest.mark.asyncio
+    async def test_list_payouts_tool(self):
+        """Test list_payouts tool registration."""
+        tools = await handle_list_tools()
+        list_tool = next((t for t in tools if t.name == "list_payouts"), None)
+
+        assert list_tool is not None
+        assert "list payouts" in list_tool.description.lower()
+        assert "limit" in list_tool.inputSchema["properties"]
+        assert "after_cursor" in list_tool.inputSchema["properties"]
+
+    @pytest.mark.asyncio
+    async def test_get_payout_status_tool(self):
+        """Test get_payout_status tool registration."""
+        tools = await handle_list_tools()
+        status_tool = next((t for t in tools if t.name == "get_payout_status"), None)
+
+        assert status_tool is not None
+        assert "status" in status_tool.description.lower()
+        assert "payout_id" in status_tool.inputSchema["properties"]
+        assert status_tool.inputSchema["required"] == ["payout_id"]
+
+    @pytest.mark.asyncio
+    async def test_get_recent_payouts_tool(self):
+        """Test get_recent_payouts tool registration."""
+        tools = await handle_list_tools()
+        recent_tool = next((t for t in tools if t.name == "get_recent_payouts"), None)
+
+        assert recent_tool is not None
+        assert "recent" in recent_tool.description.lower()
+        assert "limit" in recent_tool.inputSchema["properties"]
 
 
 class TestMCPProtocol:
@@ -107,12 +139,11 @@ class TestMCPProtocol:
     def test_server_info(self):
         """Test that server provides proper info."""
         assert hasattr(server, "name")
-        assert server.name == "justifi-mcp-server"
+        assert server.name == "justifi-payout-mcp-server"
 
     @pytest.mark.asyncio
     async def test_list_tools_protocol(self):
         """Test that tools can be listed via MCP protocol."""
-        # This simulates the MCP list_tools call
         tools = await handle_list_tools()
 
         # Verify tools are in the expected MCP format
@@ -125,82 +156,3 @@ class TestMCPProtocol:
             assert isinstance(tool.name, str)
             assert len(tool.name) > 0
             assert "_" in tool.name or tool.name.islower()
-
-
-class TestToolIntegration:
-    """Test integration between MCP server and JustiFi tools."""
-
-    @pytest.fixture(autouse=True)
-    def setup_env(self):
-        """Set up test environment variables."""
-        os.environ["JUSTIFI_CLIENT_ID"] = TEST_CLIENT_ID
-        os.environ["JUSTIFI_CLIENT_SECRET"] = TEST_CLIENT_SECRET
-        os.environ["JUSTIFI_BASE_URL"] = TEST_BASE_URL
-        yield
-
-    @pytest.mark.asyncio
-    async def test_create_payment_tool_registration(self):
-        """Test that create_payment tool is properly registered."""
-        tools = await handle_list_tools()
-        create_tool = next((t for t in tools if t.name == "create_payment"), None)
-
-        assert create_tool is not None
-        assert "Create a new payment" in create_tool.description
-        assert create_tool.inputSchema is not None
-
-    @pytest.mark.asyncio
-    async def test_retrieve_payment_tool_registration(self):
-        """Test that retrieve_payment tool is properly registered."""
-        tools = await handle_list_tools()
-        retrieve_tool = next((t for t in tools if t.name == "retrieve_payment"), None)
-
-        assert retrieve_tool is not None
-        assert "Retrieve" in retrieve_tool.description
-        assert retrieve_tool.inputSchema is not None
-
-    @pytest.mark.asyncio
-    async def test_list_payments_tool_registration(self):
-        """Test that list_payments tool is properly registered."""
-        tools = await handle_list_tools()
-        list_tool = next((t for t in tools if t.name == "list_payments"), None)
-
-        assert list_tool is not None
-        assert "List payments" in list_tool.description
-        assert list_tool.inputSchema is not None
-
-    @pytest.mark.asyncio
-    async def test_refund_payment_tool_registration(self):
-        """Test that refund_payment tool is properly registered."""
-        tools = await handle_list_tools()
-        refund_tool = next((t for t in tools if t.name == "refund_payment"), None)
-
-        assert refund_tool is not None
-        assert "refund" in refund_tool.description
-        assert refund_tool.inputSchema is not None
-
-
-class TestErrorHandling:
-    """Test error handling in the MCP server."""
-
-    def test_missing_environment_variables(self):
-        """Test behavior when required environment variables are missing."""
-        # Remove environment variables
-        old_vars = {}
-        for var in ["JUSTIFI_CLIENT_ID", "JUSTIFI_CLIENT_SECRET"]:
-            old_vars[var] = os.environ.get(var)
-            if var in os.environ:
-                del os.environ[var]
-
-        try:
-            # The server should still initialize, but API calls should fail
-            # This is expected behavior - validation happens at runtime
-            assert server is not None
-        finally:
-            # Restore environment variables
-            for var, value in old_vars.items():
-                if value:
-                    os.environ[var] = value
-
-
-if __name__ == "__main__":
-    pytest.main([__file__])

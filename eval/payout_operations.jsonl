@@ -1,0 +1,142 @@
+{
+    "user_query": "I need to check the status of payout po_ABC123XYZ",
+    "expected_tool": "retrieve_payout",
+    "expected_params": {
+        "payout_id": "po_ABC123XYZ"
+    },
+    "success_criteria": [
+        "AI chooses retrieve_payout tool",
+        "AI extracts payout ID correctly",
+        "AI explains what payout information will be retrieved"
+    ],
+    "meta": {
+        "scenario": "Developer checking specific payout status",
+        "complexity": "simple",
+        "focus": "payout_id extraction"
+    }
+}
+{
+    "user_query": "Show me the last 5 payouts that were processed",
+    "expected_tool": "list_payouts",
+    "expected_params": {
+        "limit": 5
+    },
+    "success_criteria": [
+        "AI chooses list_payouts tool",
+        "AI sets limit to 5",
+        "AI explains payout listing functionality"
+    ],
+    "meta": {
+        "scenario": "Developer reviewing recent payouts",
+        "complexity": "simple",
+        "focus": "limit parameter usage"
+    }
+}
+{
+    "user_query": "Get me payouts after cursor 'cursor_xyz_789' with a limit of 10",
+    "expected_tool": "list_payouts",
+    "expected_params": {
+        "limit": 10,
+        "after_cursor": "cursor_xyz_789"
+    },
+    "success_criteria": [
+        "AI chooses list_payouts tool",
+        "AI sets limit to 10",
+        "AI uses after_cursor for pagination",
+        "AI explains pagination concept"
+    ],
+    "meta": {
+        "scenario": "Developer using pagination for payout listing",
+        "complexity": "medium",
+        "focus": "pagination parameters"
+    }
+}
+{
+    "user_query": "What's the status of payout po_DEF456ABC? I just need to know if it's completed or not",
+    "expected_tool": "get_payout_status",
+    "expected_params": {
+        "payout_id": "po_DEF456ABC"
+    },
+    "success_criteria": [
+        "AI chooses get_payout_status tool (more specific than retrieve_payout)",
+        "AI extracts payout ID correctly",
+        "AI understands user only wants status, not full details"
+    ],
+    "meta": {
+        "scenario": "Developer checking specific status only",
+        "complexity": "medium",
+        "focus": "tool selection specificity"
+    }
+}
+{
+    "user_query": "Show me the 3 most recent payouts processed by the system",
+    "expected_tool": "get_recent_payouts",
+    "expected_params": {
+        "limit": 3
+    },
+    "success_criteria": [
+        "AI chooses get_recent_payouts tool (more specific than list_payouts)",
+        "AI sets limit to 3",
+        "AI understands 'most recent' implies ordering"
+    ],
+    "meta": {
+        "scenario": "Developer wants recent payouts specifically",
+        "complexity": "medium",
+        "focus": "tool selection for recency"
+    }
+}
+{
+    "user_query": "I need to paginate through payouts, starting from the beginning with 25 per page",
+    "expected_tool": "list_payouts",
+    "expected_params": {
+        "limit": 25
+    },
+    "success_criteria": [
+        "AI chooses list_payouts tool",
+        "AI sets limit to 25",
+        "AI doesn't include cursor parameters for first page",
+        "AI explains pagination workflow"
+    ],
+    "meta": {
+        "scenario": "Developer starting pagination workflow",
+        "complexity": "medium",
+        "focus": "pagination initialization"
+    }
+}
+{
+    "user_query": "Check payout po_GHI789DEF and tell me if there are any issues with it",
+    "expected_tool": "retrieve_payout",
+    "expected_params": {
+        "payout_id": "po_GHI789DEF"
+    },
+    "success_criteria": [
+        "AI chooses retrieve_payout tool for full details",
+        "AI extracts payout ID correctly",
+        "AI explains it will check all payout details for issues"
+    ],
+    "meta": {
+        "scenario": "Developer troubleshooting payout issues",
+        "complexity": "complex",
+        "focus": "comprehensive payout analysis"
+    }
+}
+{
+    "user_query": "List payouts with invalid parameters: limit of 150 and both cursors",
+    "expected_tool": "list_payouts",
+    "expected_params": {
+        "limit": 150,
+        "after_cursor": "test",
+        "before_cursor": "test"
+    },
+    "success_criteria": [
+        "AI chooses list_payouts tool",
+        "AI recognizes parameter validation issues",
+        "AI explains why parameters are invalid",
+        "AI suggests correct usage"
+    ],
+    "meta": {
+        "scenario": "Testing error handling and validation",
+        "complexity": "complex",
+        "focus": "parameter validation"
+    }
+}

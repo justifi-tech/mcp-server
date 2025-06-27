@@ -2,26 +2,30 @@ name: JustiFi API Drift Monitor
 
 on:
   schedule:
-    # Run every Monday at 9 AM UTC (weekly check)
+    # Run every Monday at 9 AM UTC (check for API changes weekly)
     - cron: '0 9 * * 1'
   workflow_dispatch:
     # Allow manual triggering
-  push:
-    paths:
-      # Run when our endpoint inventory changes
-      - 'docs/endpoint-inventory.md'
-      - 'docs/justifi-openapi.yaml'
+    inputs:
+      force_update:
+        description: 'Force update even if no changes detected'
+        required: false
+        default: false
+        type: boolean
 
 jobs:
-  api-drift-check:
+  check-api-drift:
     runs-on: ubuntu-latest
-    name: Monitor JustiFi OpenAPI Spec Changes
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
     
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 2  # Need previous commit for comparison
+          fetch-depth: 0
       
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -30,135 +34,115 @@ jobs:
       
       - name: Install dependencies
         run: |
+          python -m pip install --upgrade pip
           pip install requests pyyaml deepdiff
       
-      - name: Run API drift analysis
-        id: drift-analysis
+      - name: Check for API changes
+        id: check_changes
         run: |
           python scripts/ci-drift-check.py
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FORCE_UPDATE: ${{ github.event.inputs.force_update }}
       
-      - name: Check for actual spec changes
-        id: spec-changes
-        run: |
-          echo "📝 Checking for actual OpenAPI spec changes..."
-          cp justifi-openapi-latest.yaml docs/justifi-openapi.yaml.new
-          
-          # Check if there are any actual changes
-          if git diff --quiet docs/justifi-openapi.yaml docs/justifi-openapi.yaml.new; then
-            echo "No actual changes in spec"
-            echo "HAS_SPEC_CHANGES=false" >> $GITHUB_OUTPUT
-          else
-            echo "Spec changes detected"
-            echo "HAS_SPEC_CHANGES=true" >> $GITHUB_OUTPUT
-          fi
-          
-          # Clean up temp file
-          rm docs/justifi-openapi.yaml.new
-      
-      - name: Create Pull Request for Spec Update
-        if: steps.spec-changes.outputs.HAS_SPEC_CHANGES == 'true'
-        uses: peter-evans/create-pull-request@v5
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: "chore: update JustiFi OpenAPI spec"
-          title: "🔄 Update JustiFi OpenAPI Specification"
-          body: |
-            # JustiFi OpenAPI Spec Update
-            
-            **Auto-generated PR from API Drift Monitor**
-            
-            ## Changes Summary
-            - Updated `docs/justifi-openapi.yaml` with latest JustiFi API specification
-            - **Change Type:** ${{ steps.drift-analysis.outputs.CHANGES_DETECTED == 'true' && 'Breaking Changes Detected' || 'Non-breaking Updates' }}
-            - **Critical Changes:** ${{ steps.drift-analysis.outputs.CRITICAL_CHANGES || '0' }}
-            
-            ## Analysis Results
-            ```
-            ${{ steps.drift-analysis.outputs.SUMMARY }}
-            ```
-            
-            ## Before Merging
-            - [ ] Review the spec changes carefully
-            - [ ] Run `make test` to ensure all 36 tests pass
-            - [ ] Test MCP server integration manually
-            - [ ] Update any affected tool implementations
-            - [ ] Update documentation if needed
-            
-            ---
-            *This PR was automatically created by the API Drift Monitor workflow.*
-          branch: api-drift-update-${{ github.run_number }}
-          delete-branch: true
-          labels: |
-            api-drift
-            automated-pr
-            ${{ steps.drift-analysis.outputs.CHANGES_DETECTED == 'true' && 'breaking-change' || 'enhancement' }}
-      
-      - name: Create GitHub Issue for Changes
-        if: steps.spec-changes.outputs.HAS_SPEC_CHANGES == 'true'
+      - name: Create Issue for API Changes
+        if: steps.check_changes.outputs.changes_detected == 'true'
         uses: actions/github-script@v7
         with:
           script: |
-            const changeType = '${{ steps.drift-analysis.outputs.CHANGES_DETECTED }}' === 'true' ? 'Breaking' : 'Non-breaking';
-            const issueTitle = `🔄 JustiFi API ${changeType} Changes Detected - Review Required`;
-            const issueBody = `
-            # JustiFi API Drift Detection Alert
+            const fs = require('fs');
             
-            **Date:** ${new Date().toISOString().split('T')[0]}
-            **Change Type:** ${changeType} Changes
-            **Critical Changes:** ${{ steps.drift-analysis.outputs.CRITICAL_CHANGES || '0' }}
-            **Summary:** ${{ steps.drift-analysis.outputs.SUMMARY }}
-            
-            ## Detected Changes
-            \`\`\`
-            ${{ steps.drift-analysis.outputs.CHANGES_DETAIL || 'See PR for detailed changes' }}
-            \`\`\`
-            
-            ## Related Pull Request
-            A PR has been automatically created to update the OpenAPI specification. Please review and merge it after validation.
-            
-            ## Affected Tools
-            Our JustiFi MCP server implements 9 tools across these endpoints:
-            - **Payment Tools (4):** create_payment, retrieve_payment, list_payments, refund_payment
-            - **Payment Method Tools (2):** create_payment_method, retrieve_payment_method  
-            - **Payout Tools (2):** retrieve_payout, list_payouts
-            - **Balance Tools (1):** list_balance_transactions
-            
-            ## Recommended Actions
-            1. **Review PR:** Check the automatically created PR for spec updates
-            2. **Test Compatibility:** Run \`make test\` to verify all tests still pass
-            3. **Update Tools:** Modify affected MCP tools if needed
-            4. **Update Documentation:** Update endpoint inventory and tool descriptions
-            5. **Merge PR:** After validation, merge the spec update PR
-            
-            ## Testing Checklist
-            - [ ] All tests pass (\`make test\`)
-            - [ ] Real API integration still works (\`make dev\` + manual testing)
-            - [ ] No new security vulnerabilities (\`make security\`)
-            - [ ] Updated documentation reflects any changes
-            - [ ] PR reviewed and ready to merge
-            
-            ---
-            *This issue was automatically created by the API Drift Monitor workflow.*
-            `;
-            
-            const labels = ['api-drift'];
-            if ('${{ steps.drift-analysis.outputs.CHANGES_DETECTED }}' === 'true') {
-              labels.push('breaking-change', 'high-priority');
-            } else {
-              labels.push('enhancement', 'low-priority');
+            // Read the changes summary if it exists
+            let changesSummary = 'API changes detected in JustiFi OpenAPI specification.';
+            try {
+              changesSummary = fs.readFileSync('api-changes-summary.md', 'utf8');
+            } catch (error) {
+              console.log('No changes summary file found, using default message');
             }
             
-            github.rest.issues.create({
+            const issueBody = `# JustiFi API Changes Detected 🔄
+            
+            The automated API drift monitor has detected changes in the JustiFi API specification.
+            
+            ## Summary
+            ${changesSummary}
+            
+            ## Next Steps
+            1. Review the changes in the generated PR
+            2. Update MCP server tools if needed
+            3. Update tests and documentation
+            4. Consider impact on existing integrations
+            
+            ## Automated Actions
+            - ✅ OpenAPI spec updated
+            - ✅ PR created for review
+            - ⏳ Manual review required
+            
+            **Created by**: API Drift Monitor Workflow
+            **Detected on**: ${new Date().toISOString()}
+            `;
+            
+            await github.rest.issues.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              title: issueTitle,
+              title: `API Drift Detected - ${new Date().toISOString().split('T')[0]}`,
               body: issueBody,
-              labels: labels
+              labels: ['api-drift', 'needs-review', 'automated']
             });
       
-      - name: Post success comment
-        if: steps.drift-analysis.outputs.CHANGES_DETECTED == 'false'
+      - name: Create Pull Request
+        if: steps.check_changes.outputs.changes_detected == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            
+            // Read the changes summary if it exists
+            let changesSummary = 'API changes detected in JustiFi OpenAPI specification.';
+            try {
+              changesSummary = fs.readFileSync('api-changes-summary.md', 'utf8');
+            } catch (error) {
+              console.log('No changes summary file found, using default message');
+            }
+            
+            const prBody = `# JustiFi API Specification Update 📋
+            
+            This PR contains automated updates to the JustiFi OpenAPI specification detected by our drift monitoring system.
+            
+            ## Changes Summary
+            ${changesSummary}
+            
+            ## Review Checklist
+            - [ ] Review API specification changes
+            - [ ] Check if MCP tools need updates
+            - [ ] Verify endpoint compatibility
+            - [ ] Update tests if necessary
+            - [ ] Update documentation
+            
+            ## Impact Assessment
+            - [ ] Breaking changes identified
+            - [ ] New endpoints available
+            - [ ] Deprecated endpoints noted
+            - [ ] Schema changes reviewed
+            
+            **Auto-generated by**: API Drift Monitor
+            **Detection date**: ${new Date().toISOString()}
+            
+            > ⚠️ **Important**: This PR requires manual review before merging. Do not auto-merge API specification changes.
+            `;
+            
+            await github.rest.pulls.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `chore: Update JustiFi API specification - ${new Date().toISOString().split('T')[0]}`,
+              head: 'api-drift-update',
+              base: 'main',
+              body: prBody,
+              draft: false
+            });
+      
+      - name: Cleanup temporary files
+        if: always()
         run: |
-          echo "✅ API Drift Monitor: No breaking changes detected"
-          echo "🎯 All 10 JustiFi MCP tools remain fully compatible"
-          echo "📝 Stored OpenAPI spec updated automatically" 
+          rm -f api-changes-summary.md
+          rm -f justifi-openapi-new.yaml 

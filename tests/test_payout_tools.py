@@ -88,7 +88,7 @@ class TestRetrievePayout:
             return_value=Response(200, json=mock_payout_data)
         )
 
-        result = await retrieve_payout("po_test123", justifi_client)
+        result = await retrieve_payout(justifi_client, "po_test123")
         assert result == mock_payout_data
         assert result["data"]["id"] == "po_test123"
         assert result["data"]["status"] == "completed"
@@ -108,16 +108,18 @@ class TestRetrievePayout:
             return_value=Response(200, json=mock_payout_data)
         )
 
-        result = await retrieve_payout("po_test123")
+        # This test is no longer valid since client is now required
+        client = JustiFiClient()
+        result = await retrieve_payout(client, "po_test123")
         assert result == mock_payout_data
 
     async def test_retrieve_payout_empty_id(self, justifi_client):
         """Test error handling for empty payout ID."""
         with pytest.raises(ValueError, match="payout_id cannot be empty"):
-            await retrieve_payout("", justifi_client)
+            await retrieve_payout(justifi_client, "")
 
         with pytest.raises(ValueError, match="payout_id cannot be empty"):
-            await retrieve_payout("   ", justifi_client)
+            await retrieve_payout(justifi_client, "   ")
 
     @respx.mock
     async def test_retrieve_payout_not_found(self, justifi_client, mock_token_response):
@@ -133,7 +135,7 @@ class TestRetrievePayout:
         )
 
         with pytest.raises(Exception):  # httpx.HTTPStatusError  # noqa: B017
-            await retrieve_payout("po_notfound", justifi_client)
+            await retrieve_payout(justifi_client, "po_notfound")
 
 
 class TestListPayouts:
@@ -154,7 +156,7 @@ class TestListPayouts:
             return_value=Response(200, json=mock_payouts_list)
         )
 
-        result = await list_payouts(limit=25, client=justifi_client)
+        result = await list_payouts(justifi_client, limit=25)
         assert result == mock_payouts_list
         assert len(result["data"]) == 2
 
@@ -173,18 +175,16 @@ class TestListPayouts:
             return_value=Response(200, json=mock_payouts_list)
         )
 
-        result = await list_payouts(
-            limit=10, after_cursor="cursor_123", client=justifi_client
-        )
+        result = await list_payouts(justifi_client, limit=10, after_cursor="cursor_123")
         assert result == mock_payouts_list
 
     async def test_list_payouts_invalid_limit(self, justifi_client):
         """Test error handling for invalid limit."""
         with pytest.raises(ValueError, match="limit must be between 1 and 100"):
-            await list_payouts(limit=0, client=justifi_client)
+            await list_payouts(justifi_client, limit=0)
 
         with pytest.raises(ValueError, match="limit must be between 1 and 100"):
-            await list_payouts(limit=101, client=justifi_client)
+            await list_payouts(justifi_client, limit=101)
 
     async def test_list_payouts_both_cursors(self, justifi_client):
         """Test error handling when both cursors are provided."""
@@ -192,7 +192,7 @@ class TestListPayouts:
             ValueError, match="Cannot specify both after_cursor and before_cursor"
         ):
             await list_payouts(
-                after_cursor="cursor1", before_cursor="cursor2", client=justifi_client
+                justifi_client, after_cursor="cursor1", before_cursor="cursor2"
             )
 
 
@@ -214,7 +214,7 @@ class TestGetPayoutStatus:
             return_value=Response(200, json=mock_payout_data)
         )
 
-        status = await get_payout_status("po_test123", justifi_client)
+        status = await get_payout_status(justifi_client, "po_test123")
         assert status == "completed"
 
     @respx.mock
@@ -233,7 +233,7 @@ class TestGetPayoutStatus:
         )
 
         with pytest.raises(KeyError, match="Payout response missing expected field"):
-            await get_payout_status("po_test123", justifi_client)
+            await get_payout_status(justifi_client, "po_test123")
 
 
 class TestGetRecentPayouts:
@@ -254,7 +254,7 @@ class TestGetRecentPayouts:
             return_value=Response(200, json=mock_payouts_list)
         )
 
-        payouts = await get_recent_payouts(limit=10, client=justifi_client)
+        payouts = await get_recent_payouts(justifi_client, limit=10)
         assert len(payouts) == 2
         assert payouts[0]["id"] == "po_test123"
         assert payouts[1]["id"] == "po_test456"
@@ -262,7 +262,7 @@ class TestGetRecentPayouts:
     async def test_get_recent_payouts_invalid_limit(self, justifi_client):
         """Test error handling for invalid limit."""
         with pytest.raises(ValueError, match="limit must be between 1 and 25"):
-            await get_recent_payouts(limit=0, client=justifi_client)
+            await get_recent_payouts(justifi_client, limit=0)
 
         with pytest.raises(ValueError, match="limit must be between 1 and 25"):
-            await get_recent_payouts(limit=26, client=justifi_client)
+            await get_recent_payouts(justifi_client, limit=26)

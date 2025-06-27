@@ -130,31 +130,3 @@ class JustiFiClient:
             resp.raise_for_status()
             result: dict[str, Any] = resp.json()
             return result
-
-
-# Legacy functions for backward compatibility
-def _clear_token_cache() -> None:
-    """Clear the token cache (useful for testing)."""
-    global _TOKEN_CACHE
-    _TOKEN_CACHE = _TokenCache()
-
-
-async def _get_access_token() -> str:
-    """Legacy function - use JustiFiClient.get_access_token() instead."""
-    client = JustiFiClient()
-    return await client.get_access_token()
-
-
-async def _request(
-    method: str,
-    path: str,
-    *,
-    params: dict[str, Any] | None = None,
-    data: dict[str, Any] | None = None,
-    idempotency_key: str | None = None,
-) -> dict[str, Any]:
-    """Legacy function - use JustiFiClient.request() instead."""
-    client = JustiFiClient()
-    return await client.request(
-        method, path, params=params, data=data, idempotency_key=idempotency_key
-    )

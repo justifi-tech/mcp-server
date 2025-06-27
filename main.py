@@ -131,11 +131,14 @@ async def handle_call_tool(name: str, arguments: dict) -> list[TextContent]:
         ]
 
     try:
+        # Create JustiFi client instance
+        client = JustiFiClient()
+
         # Get the tool function
         tool_func = PAYOUT_TOOL_DISPATCH[name]
 
-        # Call the tool function
-        result = await tool_func(**arguments)  # type: ignore[operator]
+        # Call the tool function with client as first argument
+        result = await tool_func(client, **arguments)  # type: ignore[operator]
 
         # Format the response
         response_text = json.dumps(result, indent=2)

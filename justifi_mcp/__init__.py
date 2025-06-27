@@ -10,10 +10,17 @@ __email__ = "support@justifi.ai"
 
 # Export main components
 from .core import JustiFiClient
-from .payouts import list_payouts, retrieve_payout
+from .payouts import (
+    get_payout_status,
+    get_recent_payouts,
+    list_payouts,
+    retrieve_payout,
+)
 
 __all__ = [
     "JustiFiClient",
     "retrieve_payout",
     "list_payouts",
+    "get_payout_status",
+    "get_recent_payouts",
 ]

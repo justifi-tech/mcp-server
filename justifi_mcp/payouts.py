@@ -10,18 +10,16 @@ from typing import Any
 
 from langsmith import traceable
 
-from .core import JustiFiClient, _request
+from .core import JustiFiClient
 
 
 @traceable
-async def retrieve_payout(
-    payout_id: str, client: JustiFiClient | None = None
-) -> dict[str, Any]:
+async def retrieve_payout(client: JustiFiClient, payout_id: str) -> dict[str, Any]:
     """Retrieve a payout by its ID.
 
     Args:
+        client: JustiFi client instance.
         payout_id: The ID of the payout to retrieve.
-        client: Optional JustiFi client instance (uses default if not provided).
 
     Returns:
         JSON response from the JustiFi API with payout details.
@@ -34,18 +32,15 @@ async def retrieve_payout(
     if not payout_id or not payout_id.strip():
         raise ValueError("payout_id cannot be empty")
 
-    if client:
-        return await client.request("GET", f"/payouts/{payout_id}")
-    # Use legacy function for backward compatibility
-    return await _request("GET", f"/payouts/{payout_id}")
+    return await client.request("GET", f"/payouts/{payout_id}")
 
 
 @traceable
 async def list_payouts(
+    client: JustiFiClient,
     limit: int = 25,
     after_cursor: str | None = None,
     before_cursor: str | None = None,
-    client: JustiFiClient | None = None,
 ) -> dict[str, Any]:
     """List payouts with cursor-based pagination.
 
@@ -53,7 +48,7 @@ async def list_payouts(
         limit: Number of payouts to return (default: 25, max: 100).
         after_cursor: Cursor for pagination (get payouts after this cursor).
         before_cursor: Cursor for pagination (get payouts before this cursor).
-        client: Optional JustiFi client instance (uses default if not provided).
+        client: JustiFi client instance.
 
     Returns:
         JSON response with payouts list from the JustiFi API.
@@ -76,19 +71,16 @@ async def list_payouts(
     if before_cursor:
         params["before_cursor"] = before_cursor
 
-    if client:
-        return await client.request("GET", "/payouts", params=params)
-    # Use legacy function for backward compatibility
-    return await _request("GET", "/payouts", params=params)
+    return await client.request("GET", "/payouts", params=params)
 
 
 @traceable
-async def get_payout_status(payout_id: str, client: JustiFiClient | None = None) -> str:
+async def get_payout_status(client: JustiFiClient, payout_id: str) -> str:
     """Get the status of a specific payout.
 
     Args:
+        client: JustiFi client instance.
         payout_id: The ID of the payout to check.
-        client: Optional JustiFi client instance.
 
     Returns:
         The status string of the payout (e.g., 'pending', 'completed', 'failed').
@@ -99,7 +91,7 @@ async def get_payout_status(payout_id: str, client: JustiFiClient | None = None)
         KeyError: If the response doesn't contain expected status field.
 
     """
-    payout_data = await retrieve_payout(payout_id, client)
+    payout_data = await retrieve_payout(client, payout_id)
 
     try:
         status: str = payout_data["data"]["status"]
@@ -110,13 +102,13 @@ async def get_payout_status(payout_id: str, client: JustiFiClient | None = None)
 
 @traceable
 async def get_recent_payouts(
-    limit: int = 10, client: JustiFiClient | None = None
+    client: JustiFiClient, limit: int = 10
 ) -> list[dict[str, Any]]:
     """Get the most recent payouts.
 
     Args:
+        client: JustiFi client instance.
         limit: Number of recent payouts to return (default: 10, max: 25).
-        client: Optional JustiFi client instance.
 
     Returns:
         List of payout data dictionaries.
@@ -129,7 +121,7 @@ async def get_recent_payouts(
     if limit < 1 or limit > 25:
         raise ValueError("limit must be between 1 and 25 for recent payouts")
 
-    response = await list_payouts(limit=limit, client=client)
+    response = await list_payouts(client, limit=limit)
 
     try:
         payouts_data: list[dict[str, Any]] = response["data"]

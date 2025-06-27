@@ -30,7 +30,9 @@ After each step you can pause, review, and approve before the next PR lands.
 ---
 
 ## 1. Dependencies & Environment (🔧) — _PR #1_
-1. Add `langchain` to `requirements.txt` (for AI evaluation utilities).
+1. Add AI evaluation dependencies to `requirements.txt`:
+   - `langchain` (for AI evaluation utilities)
+   - `openai` (for AI agent testing)
 2. Extend **Makefile**:
    ```make
    eval: env-check build-dev
@@ -51,40 +53,106 @@ schemas/
   retrieve_payment_response.schema.json # Expected AI response structure
 ```
 
-Each JSONL row represents a **user interaction scenario**:
+Each JSONL row represents a **developer assistance scenario**:
 ```json
 {
-  "arguments": { "payment_id": "py_5A30RmJ3vLiYxqenOojQVW" },
-  "expected": { "id": "py_5A30RmJ3vLiYxqenOojQVW", "status": "succeeded", "amount": 4299, "currency": "usd" },
-  "meta": { "description": "Real payment from JustiFi API - $42.99" }
+  "user_query": "Check the status of payment py_5A30RmJ3vLiYxqenOojQVW",
+  "expected_tool": "retrieve_payment",
+  "expected_params": { "payment_id": "py_5A30RmJ3vLiYxqenOojQVW" },
+  "success_criteria": [
+    "AI chooses retrieve_payment tool",
+    "AI extracts payment ID correctly", 
+    "AI explains payment status clearly",
+    "AI provides helpful context about the payment"
+  ],
+  "meta": { "scenario": "Developer checking payment status", "complexity": "simple" }
 }
 ```
 
 **Key Design Decisions**:
-- **Real API Data**: Uses actual JustiFi payment IDs so AI sees realistic response structures
-- **User-Centric**: Focuses on what users care about (payment status, amounts, etc.)
-- **Regression-Focused**: Stable test cases that detect AI performance degradation
+- **Developer-Centric**: Real questions developers ask when integrating JustiFi
+- **AI Behavior Testing**: Focus on tool selection, parameter extraction, communication quality
+- **Real API Integration**: Uses actual JustiFi payment IDs for realistic AI responses
+- **Regression Detection**: Stable scenarios that catch AI performance degradation
 
 **WHY?** – Data-first approach lets reviewers validate AI evaluation criteria before implementation.
 
 ---
 
-## 3. AI Evaluation Harness (⚙️) — _PR #3_
-Add `scripts/run-evals.py` that evaluates **AI agent performance**:
+## 3. AI Agent Evaluation Harness (⚙️) — _PR #3_
+Add `scripts/run-evals.py` that evaluates **real AI agent performance** for developer assistance:
 
-1. **Direct MCP Tool Testing**: Call `handle_call_tool()` directly (simulates AI agent calls)
-2. **Real API Integration**: Uses live JustiFi API for realistic evaluation conditions
-3. **AI-Focused Metrics**:
-   * **Response Structure**: JSON schema validation of tool outputs
-   * **Performance**: Latency measurements (affects user experience)
-   * **Reliability**: Success rate across different scenarios
-4. **Observability**: Optional LangSmith integration for debugging AI decisions
-5. **CI Integration**: Exits non-zero if AI performance degrades
+### **Architecture: AI Agent + MCP Tools Integration**
+```python
+# Real AI agent evaluation using OpenAI function calling
+import openai
+from langsmith.wrappers import wrap_openai
+from langsmith import traceable
 
-**What This Catches**:
-- API response format changes that break AI understanding
-- Performance regressions that hurt user experience  
-- Edge cases where AI tools fail unexpectedly
+client = wrap_openai(openai.Client())
+
+@traceable
+def evaluate_developer_assistant(user_query: str, expected_outcome: dict):
+    """Test AI agent's ability to help developers with JustiFi integration."""
+    
+    # Define MCP tools as OpenAI functions
+    tools = [
+        {
+            "type": "function",
+            "function": {
+                "name": "retrieve_payment",
+                "description": "Get payment details by ID",
+                "parameters": {
+                    "type": "object",
+                    "properties": {"payment_id": {"type": "string"}},
+                    "required": ["payment_id"]
+                }
+            }
+        },
+        # ... other MCP tools
+    ]
+    
+    system_prompt = """
+    You are a JustiFi API expert helping developers integrate payments.
+    Use the available tools to help developers understand, debug, and implement JustiFi payments.
+    Always explain what you're doing and provide helpful context.
+    """
+    
+    response = client.chat.completions.create(
+        model="gpt-4",
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_query}
+        ],
+        tools=tools,
+        tool_choice="auto"
+    )
+    
+    # When AI calls a tool, execute it via our MCP server
+    if response.choices[0].message.tool_calls:
+        for tool_call in response.choices[0].message.tool_calls:
+            # Execute the actual MCP tool
+            tool_result = await handle_call_tool(
+                tool_call.function.name, 
+                json.loads(tool_call.function.arguments)
+            )
+            # Continue conversation with tool results...
+    
+    return evaluate_ai_response(response, expected_outcome)
+```
+
+### **What This Architecture Tests**
+1. **Tool Selection**: Does AI choose the right JustiFi operation for developer needs?
+2. **Parameter Extraction**: Does AI correctly parse payment IDs, amounts, etc. from natural language?
+3. **Developer Communication**: Does AI explain results clearly and provide helpful context?
+4. **Error Handling**: How does AI help developers debug payment issues?
+5. **Learning Support**: Does AI teach developers JustiFi best practices?
+
+### **Integration Points**
+- **Real MCP Tools**: AI calls actual `handle_call_tool()` functions
+- **Real JustiFi API**: Tools make live API calls for realistic responses
+- **LangSmith Tracing**: Full conversation and tool usage tracking
+- **Developer Scenarios**: Test cases based on real developer workflows
 
 **WHY?** – Separate from unit tests because AI evaluation requires real API data and different success criteria.
 

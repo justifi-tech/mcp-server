@@ -23,6 +23,12 @@ FROM base AS development
 # Install watchdog for auto-restart functionality
 RUN uv pip install --system watchdog
 
+# Copy pyproject.toml for dev dependencies
+COPY pyproject.toml .
+
+# Install dev dependencies including LangChain
+RUN uv pip install --system -e ".[dev]"
+
 # Copy application code (will be overridden by volume mount in development)
 COPY . .
 

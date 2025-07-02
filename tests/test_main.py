@@ -1,158 +1,195 @@
-"""Test suite for the JustiFi Payout MCP Server.
+"""Test main MCP server functionality."""
 
-Tests MCP protocol compliance and payout tool registration.
-"""
-
-import os
-import sys
-from pathlib import Path
+from unittest.mock import patch
 
 import pytest
+import respx
+from httpx import Response
 
-# Add the parent directory to the path so we can import main
-sys.path.insert(0, str(Path(__file__).parent.parent))
+from justifi_mcp.config import PRODUCTION_CONFIG, READ_ONLY_CONFIG, JustiFiConfig
+from justifi_mcp.toolkit import JustiFiToolkit
+from main import health_check, load_configuration
 
-from main import handle_list_tools, server
-
-# Test constants - not real credentials
-TEST_CLIENT_ID = "test_client_id"
-TEST_CLIENT_SECRET = "test_client_secret"  # noqa: S105
-TEST_BASE_URL = "https://api.justifi.ai/v1"
+# Mark all tests as async
+pytestmark = pytest.mark.asyncio
 
 
-class TestPayoutMCPServer:
-    """Test payout-focused MCP server initialization and functionality."""
+@pytest.fixture
+def mock_token_response():
+    """Mock OAuth token response."""
+    return {"access_token": "test_token", "expires_in": 3600}
 
-    @pytest.fixture(autouse=True)
-    def setup_env(self):
-        """Set up test environment variables."""
-        os.environ["JUSTIFI_CLIENT_ID"] = TEST_CLIENT_ID
-        os.environ["JUSTIFI_CLIENT_SECRET"] = TEST_CLIENT_SECRET
-        os.environ["JUSTIFI_BASE_URL"] = TEST_BASE_URL
-        yield
 
-    def test_mcp_server_creation(self):
-        """Test that MCP server can be created successfully."""
+class TestMainConfiguration:
+    """Test main.py configuration loading."""
+
+    @patch.dict("os.environ", {}, clear=True)
+    def test_load_configuration_default(self):
+        """Test loading default configuration."""
+        with patch("os.getenv") as mock_getenv:
+            mock_getenv.side_effect = lambda key, default=None: {
+                "JUSTIFI_CLIENT_ID": "test_id",
+                "JUSTIFI_CLIENT_SECRET": "test_secret",
+            }.get(key, default)
+
+            config = load_configuration()
+            assert isinstance(config, JustiFiConfig)
+            assert config.context.environment == "sandbox"
+
+    @patch.dict("os.environ", {"JUSTIFI_CONFIG_MODE": "production"})
+    def test_load_configuration_production_mode(self):
+        """Test loading production configuration mode."""
+        config = load_configuration()
+        assert config == PRODUCTION_CONFIG
+        assert config.context.environment == "production"
+
+    @patch.dict("os.environ", {"JUSTIFI_CONFIG_MODE": "readonly"})
+    def test_load_configuration_readonly_mode(self):
+        """Test loading readonly configuration mode."""
+        config = load_configuration()
+        assert config == READ_ONLY_CONFIG
+        assert not config.is_tool_enabled("get_recent_payouts")
+
+    @patch.dict(
+        "os.environ",
+        {"JUSTIFI_CONFIG": '{"context": {"environment": "production", "timeout": 20}}'},
+    )
+    def test_load_configuration_json(self):
+        """Test loading configuration from JSON environment variable."""
+        with patch("os.getenv") as mock_getenv:
+
+            def getenv_side_effect(key, default=None):
+                if key == "JUSTIFI_CONFIG":
+                    return '{"context": {"environment": "production", "timeout": 20}}'
+                if key == "JUSTIFI_CLIENT_ID":
+                    return "test_id"
+                if key == "JUSTIFI_CLIENT_SECRET":
+                    return "test_secret"
+                return default
+
+            mock_getenv.side_effect = getenv_side_effect
+
+            config = load_configuration()
+            assert config.context.environment == "production"
+            assert config.context.timeout == 20
+
+    @patch.dict("os.environ", {"JUSTIFI_CONFIG": "invalid json"})
+    def test_load_configuration_invalid_json(self, capsys):
+        """Test loading configuration with invalid JSON."""
+        with patch("os.getenv") as mock_getenv:
+            mock_getenv.side_effect = lambda key, default=None: {
+                "JUSTIFI_CONFIG": "invalid json",
+                "JUSTIFI_CLIENT_ID": "test_id",
+                "JUSTIFI_CLIENT_SECRET": "test_secret",
+            }.get(key, default)
+
+            config = load_configuration()
+
+            # Should fall back to default config
+            assert config.context.environment == "sandbox"
+
+            # Should print warning to stderr
+            captured = capsys.readouterr()
+            assert "Warning: Invalid JUSTIFI_CONFIG JSON" in captured.err
+
+
+class TestHealthCheck:
+    """Test health check functionality."""
+
+    @respx.mock
+    async def test_health_check_success(self, mock_token_response):
+        """Test successful health check."""
+        # Mock OAuth token request
+        respx.post("https://api.justifi.ai/oauth/token").mock(
+            return_value=Response(200, json=mock_token_response)
+        )
+
+        config = JustiFiConfig(client_id="test_id", client_secret="test_secret")
+        toolkit = JustiFiToolkit(config=config)
+
+        result = await health_check(toolkit)
+
+        assert result["status"] == "healthy"
+        assert result["token_acquired"] is True
+        assert "configuration" in result
+        assert result["configuration"]["environment"] == "sandbox"
+
+    async def test_health_check_failure(self):
+        """Test health check failure."""
+        # Create a toolkit that will definitely fail
+        config = JustiFiConfig(client_id="invalid_id", client_secret="invalid_secret")
+        toolkit = JustiFiToolkit(config=config)
+
+        # Mock the get_access_token method to raise an exception
+        import unittest.mock
+
+        with unittest.mock.patch.object(
+            toolkit.client,
+            "get_access_token",
+            side_effect=Exception("Authentication failed"),
+        ):
+            result = await health_check(toolkit)
+
+        assert result["status"] == "unhealthy"
+        assert "error" in result
+        assert "Authentication failed" in str(result["error"])
+
+
+class TestMainIntegration:
+    """Test main.py integration scenarios."""
+
+    @respx.mock
+    async def test_toolkit_integration(self, mock_token_response):
+        """Test that main.py properly integrates with the toolkit system."""
+        # Mock OAuth token request
+        respx.post("https://api.justifi.ai/oauth/token").mock(
+            return_value=Response(200, json=mock_token_response)
+        )
+
+        # Create a toolkit like main.py does
+        config = JustiFiConfig(client_id="test_id", client_secret="test_secret")
+        toolkit = JustiFiToolkit(config=config)
+
+        # Verify toolkit is properly configured
+        summary = toolkit.get_configuration_summary()
+        assert summary["total_tools"] == 4
+        assert "retrieve_payout" in summary["enabled_tools"]
+
+        # Verify MCP server can be created
+        server = toolkit.get_mcp_server("test-server")
         assert server is not None
-        assert hasattr(server, "name")
-        assert server.name == "justifi-payout-mcp-server"
+        assert server.name == "test-server"
 
-    @pytest.mark.asyncio
-    async def test_payout_tools_registration(self):
-        """Test that payout tools are properly registered."""
-        tools = await handle_list_tools()
+    def test_configuration_driven_tool_selection(self):
+        """Test that different configurations enable different tools."""
+        # Production config (restricted)
+        prod_config = PRODUCTION_CONFIG
+        prod_toolkit = JustiFiToolkit(config=prod_config)
+        prod_summary = prod_toolkit.get_configuration_summary()
 
-        # Should have exactly 4 payout tools
-        assert len(tools) == 4
+        # Read-only config (more restricted)
+        readonly_config = READ_ONLY_CONFIG
+        readonly_toolkit = JustiFiToolkit(config=readonly_config)
+        readonly_summary = readonly_toolkit.get_configuration_summary()
 
-        tool_names = [tool.name for tool in tools]
-        expected_tools = [
-            "retrieve_payout",
-            "list_payouts",
-            "get_payout_status",
-            "get_recent_payouts",
-        ]
+        # Production should have all 4 tools
+        assert prod_summary["total_tools"] == 4
 
-        for expected_tool in expected_tools:
-            assert expected_tool in tool_names
+        # Read-only should have fewer tools (recent disabled)
+        assert readonly_summary["total_tools"] == 3
+        assert "get_recent_payouts" not in readonly_summary["enabled_tools"]
 
-    @pytest.mark.asyncio
-    async def test_tool_descriptions(self):
-        """Test that all payout tools have proper descriptions."""
-        tools = await handle_list_tools()
+    @patch.dict(
+        "os.environ",
+        {
+            "JUSTIFI_CLIENT_ID": "env_test_id",
+            "JUSTIFI_CLIENT_SECRET": "env_test_secret",
+        },
+    )
+    def test_environment_variable_integration(self):
+        """Test that main.py properly loads environment variables."""
+        config = load_configuration()
+        toolkit = JustiFiToolkit(config=config)
 
-        for tool in tools:
-            assert hasattr(tool, "description")
-            assert isinstance(tool.description, str)
-            assert len(tool.description) > 10  # Should have meaningful descriptions
-            # All tools should be payout-related
-            assert "payout" in tool.description.lower()
-
-    @pytest.mark.asyncio
-    async def test_tool_schemas(self):
-        """Test that all tools have proper input schemas."""
-        tools = await handle_list_tools()
-
-        for tool in tools:
-            assert hasattr(tool, "name")
-            assert hasattr(tool, "description")
-            assert hasattr(tool, "inputSchema")
-            assert isinstance(tool.inputSchema, dict)
-            assert "type" in tool.inputSchema
-            assert tool.inputSchema["type"] == "object"
-
-    @pytest.mark.asyncio
-    async def test_retrieve_payout_tool(self):
-        """Test retrieve_payout tool registration."""
-        tools = await handle_list_tools()
-        retrieve_tool = next((t for t in tools if t.name == "retrieve_payout"), None)
-
-        assert retrieve_tool is not None
-        assert "retrieve details" in retrieve_tool.description.lower()
-        assert "payout_id" in retrieve_tool.inputSchema["properties"]
-        assert retrieve_tool.inputSchema["required"] == ["payout_id"]
-
-    @pytest.mark.asyncio
-    async def test_list_payouts_tool(self):
-        """Test list_payouts tool registration."""
-        tools = await handle_list_tools()
-        list_tool = next((t for t in tools if t.name == "list_payouts"), None)
-
-        assert list_tool is not None
-        assert "list payouts" in list_tool.description.lower()
-        assert "limit" in list_tool.inputSchema["properties"]
-        assert "after_cursor" in list_tool.inputSchema["properties"]
-
-    @pytest.mark.asyncio
-    async def test_get_payout_status_tool(self):
-        """Test get_payout_status tool registration."""
-        tools = await handle_list_tools()
-        status_tool = next((t for t in tools if t.name == "get_payout_status"), None)
-
-        assert status_tool is not None
-        assert "status" in status_tool.description.lower()
-        assert "payout_id" in status_tool.inputSchema["properties"]
-        assert status_tool.inputSchema["required"] == ["payout_id"]
-
-    @pytest.mark.asyncio
-    async def test_get_recent_payouts_tool(self):
-        """Test get_recent_payouts tool registration."""
-        tools = await handle_list_tools()
-        recent_tool = next((t for t in tools if t.name == "get_recent_payouts"), None)
-
-        assert recent_tool is not None
-        assert "recent" in recent_tool.description.lower()
-        assert "limit" in recent_tool.inputSchema["properties"]
-
-
-class TestMCPProtocol:
-    """Test MCP protocol compliance."""
-
-    @pytest.fixture(autouse=True)
-    def setup_env(self):
-        """Set up test environment variables."""
-        os.environ["JUSTIFI_CLIENT_ID"] = TEST_CLIENT_ID
-        os.environ["JUSTIFI_CLIENT_SECRET"] = TEST_CLIENT_SECRET
-        os.environ["JUSTIFI_BASE_URL"] = TEST_BASE_URL
-        yield
-
-    def test_server_info(self):
-        """Test that server provides proper info."""
-        assert hasattr(server, "name")
-        assert server.name == "justifi-payout-mcp-server"
-
-    @pytest.mark.asyncio
-    async def test_list_tools_protocol(self):
-        """Test that tools can be listed via MCP protocol."""
-        tools = await handle_list_tools()
-
-        # Verify tools are in the expected MCP format
-        for tool in tools:
-            assert hasattr(tool, "name")
-            assert hasattr(tool, "description")
-            assert hasattr(tool, "inputSchema")
-
-            # Tool names should follow naming conventions
-            assert isinstance(tool.name, str)
-            assert len(tool.name) > 0
-            assert "_" in tool.name or tool.name.islower()
+        assert toolkit.config.client_id == "env_test_id"
+        assert toolkit.config.client_secret == "env_test_secret"

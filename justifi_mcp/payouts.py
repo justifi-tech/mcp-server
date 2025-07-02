@@ -19,7 +19,7 @@ async def retrieve_payout(client: JustiFiClient, payout_id: str) -> dict[str, An
 
     Args:
         client: JustiFi client instance.
-        payout_id: The ID of the payout to retrieve.
+        payout_id: The ID of the payout to retrieve (e.g., 'po_ABC123XYZ').
 
     Returns:
         JSON response from the JustiFi API with payout details.
@@ -80,7 +80,7 @@ async def get_payout_status(client: JustiFiClient, payout_id: str) -> str:
 
     Args:
         client: JustiFi client instance.
-        payout_id: The ID of the payout to check.
+        payout_id: The ID of the payout to check status for (e.g., 'po_ABC123XYZ').
 
     Returns:
         The status string of the payout (e.g., 'pending', 'completed', 'failed').

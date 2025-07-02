@@ -196,7 +196,7 @@ openai_functions = toolkit.get_openai_functions()
 - [ ] **Configuration system**: Stripe-like tool filtering and context management
 - [ ] **Multi-framework foundation**: Extract core logic from MCP-specific implementation
 - [ ] **Enhanced existing tools**: Improve our current 10 tools with better error handling
-- [ ] **Comprehensive test suite**: Unit, integration, and evaluation tests
+- [ ] **Comprehensive test suite**: Unit, integration, and MCP compliance tests
 - [ ] **Robust error handling**: Clear user feedback and graceful failure management
 - [ ] **Complete documentation**: API documentation and usage examples
 
@@ -302,12 +302,12 @@ openai_functions = toolkit.get_openai_functions()
 - **Documentation**: Up-to-date and comprehensive
 - **Linting**: Code quality standards maintained
 
-### AI Agent Evaluation
-- **Tool Selection**: Does AI choose correct tools?
-- **Parameter Extraction**: Accurate natural language parsing
-- **Response Quality**: Clear, helpful explanations
-- **Error Handling**: Graceful failure management
-- **Conversation Context**: Multi-turn interaction support
+### MCP Server Quality Assurance
+- **Tool Reliability**: Do our tools work correctly and consistently?
+- **MCP Protocol Compliance**: Proper message format and schema validation
+- **Tool Schema Quality**: Clear descriptions, comprehensive parameters, helpful examples
+- **Integration Testing**: End-to-end functionality with MCP clients
+- **Developer Experience**: Easy-to-use tools with good error messages
 
 ---
 

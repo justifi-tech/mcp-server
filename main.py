@@ -1,200 +1,105 @@
 #!/usr/bin/env python3
-"""JustiFi MCP Server - Payout Focus
+"""JustiFi MCP Server - Configuration-Driven Payment Integration
 
-A Model Context Protocol server focused on JustiFi payout operations.
-This version is designed for evaluation and testing of payout-specific functionality.
+A Model Context Protocol (MCP) server that provides AI agents with tools
+to interact with the JustiFi payment API. Now supports Stripe-like configuration
+for flexible tool selection and context management.
+
+Usage:
+    # Basic usage (all tools enabled)
+    python main.py
+
+    # With health check
+    python main.py --health-check
+
+    # With custom configuration
+    JUSTIFI_CONFIG='{"tools":{"payouts":{"recent":{"enabled":false}}}}' python main.py
 """
 import asyncio
 import json
 import os
 import sys
+from typing import Any
 
 from dotenv import load_dotenv
 from mcp import stdio_server
-from mcp.server import Server
-from mcp.types import (
-    Prompt,
-    Resource,
-    TextContent,
-    Tool,
-)
 
-# Import our focused payout tools from standard package structure
-from justifi_mcp.core import JustiFiClient
-from justifi_mcp.payouts import (
-    get_payout_status,
-    get_recent_payouts,
-    list_payouts,
-    retrieve_payout,
-)
-
-# Initialize the MCP server
-server: Server = Server("justifi-payout-mcp-server")
-
-# Tool dispatch dictionary - focused on payout operations only
-PAYOUT_TOOL_DISPATCH = {
-    "retrieve_payout": retrieve_payout,
-    "list_payouts": list_payouts,
-    "get_payout_status": get_payout_status,
-    "get_recent_payouts": get_recent_payouts,
-}
+# Import the new toolkit system
+from justifi_mcp.config import PRODUCTION_CONFIG, READ_ONLY_CONFIG, JustiFiConfig
+from justifi_mcp.toolkit import JustiFiToolkit
 
 
-@server.list_tools()
-async def handle_list_tools() -> list[Tool]:
-    """List available JustiFi payout tools."""
-    return [
-        Tool(
-            name="retrieve_payout",
-            description="Retrieve details of a specific payout by ID",
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "payout_id": {
-                        "type": "string",
-                        "description": "The ID of the payout to retrieve (e.g., 'po_ABC123XYZ')",
-                    }
-                },
-                "required": ["payout_id"],
-            },
-        ),
-        Tool(
-            name="list_payouts",
-            description="List payouts with cursor-based pagination",
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "limit": {
-                        "type": "integer",
-                        "description": "Number of payouts to return (default: 25, max: 100)",
-                        "default": 25,
-                        "minimum": 1,
-                        "maximum": 100,
-                    },
-                    "after_cursor": {
-                        "type": "string",
-                        "description": "Cursor for pagination (get payouts after this cursor)",
-                        "optional": True,
-                    },
-                    "before_cursor": {
-                        "type": "string",
-                        "description": "Cursor for pagination (get payouts before this cursor)",
-                        "optional": True,
-                    },
-                },
-                "required": [],
-            },
-        ),
-        Tool(
-            name="get_payout_status",
-            description="Get the status of a specific payout (returns just the status string)",
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "payout_id": {
-                        "type": "string",
-                        "description": "The ID of the payout to check status for",
-                    }
-                },
-                "required": ["payout_id"],
-            },
-        ),
-        Tool(
-            name="get_recent_payouts",
-            description="Get the most recent payouts (optimized for recency)",
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "limit": {
-                        "type": "integer",
-                        "description": "Number of recent payouts to return (default: 10, max: 25)",
-                        "default": 10,
-                        "minimum": 1,
-                        "maximum": 25,
-                    }
-                },
-                "required": [],
-            },
-        ),
-    ]
-
-
-@server.call_tool()
-async def handle_call_tool(name: str, arguments: dict) -> list[TextContent]:
-    """Handle tool calls using our focused payout dispatch."""
-    if name not in PAYOUT_TOOL_DISPATCH:
-        return [
-            TextContent(
-                type="text",
-                text=f"Unknown tool: {name}. Available payout tools: {list(PAYOUT_TOOL_DISPATCH.keys())}",
-            )
-        ]
-
-    try:
-        # Create JustiFi client instance
-        client = JustiFiClient()
-
-        # Get the tool function
-        tool_func = PAYOUT_TOOL_DISPATCH[name]
-
-        # Call the tool function with client as first argument
-        result = await tool_func(client, **arguments)  # type: ignore[operator]
-
-        # Format the response
-        response_text = json.dumps(result, indent=2)
-
-        return [TextContent(type="text", text=response_text)]
-
-    except Exception as e:
-        error_msg = f"Error calling {name}: {type(e).__name__}: {str(e)}"
-        return [TextContent(type="text", text=error_msg)]
-
-
-@server.list_resources()
-async def handle_list_resources() -> list[Resource]:
-    """List available resources (empty for now)."""
-    return []
-
-
-@server.list_prompts()
-async def handle_list_prompts() -> list[Prompt]:
-    """List available prompts (empty for now)."""
-    return []
-
-
-async def health_check():
+async def health_check(toolkit: JustiFiToolkit) -> dict[str, Any]:
     """Simple health check to verify JustiFi API connectivity."""
     try:
-        client = JustiFiClient()
-        token = await client.get_access_token()
-        return {"status": "healthy", "token_acquired": bool(token)}
+        token = await toolkit.client.get_access_token()
+        config_summary = toolkit.get_configuration_summary()
+
+        return {
+            "status": "healthy",
+            "token_acquired": bool(token),
+            "configuration": config_summary,
+        }
     except Exception as e:
         return {"status": "unhealthy", "error": str(e)}
 
 
+def load_configuration() -> JustiFiConfig:
+    """Load configuration from environment variables or use defaults."""
+    # Check for JSON configuration in environment
+    config_json = os.getenv("JUSTIFI_CONFIG")
+    if config_json:
+        try:
+            config_data = json.loads(config_json)
+            return JustiFiConfig(**config_data)
+        except (json.JSONDecodeError, ValueError) as e:
+            print(f"Warning: Invalid JUSTIFI_CONFIG JSON: {e}", file=sys.stderr)
+            print("Using default configuration", file=sys.stderr)
+
+    # Check for predefined configuration modes
+    config_mode = os.getenv("JUSTIFI_CONFIG_MODE", "default").lower()
+
+    if config_mode == "production":
+        return PRODUCTION_CONFIG
+    if config_mode == "readonly":
+        return READ_ONLY_CONFIG
+    # Default configuration (all tools enabled)
+    return JustiFiConfig()
+
+
 async def main():
-    """Main entry point for the payout-focused MCP server."""
+    """Main entry point for the configuration-driven MCP server."""
     # Load environment variables
     load_dotenv()
 
-    # Verify required environment variables
-    required_vars = ["JUSTIFI_CLIENT_ID", "JUSTIFI_CLIENT_SECRET"]
-    missing_vars = [var for var in required_vars if not os.getenv(var)]
+    # Load configuration
+    try:
+        config = load_configuration()
+    except Exception as e:
+        print(f"Error: Failed to load configuration: {e}", file=sys.stderr)
+        sys.exit(1)
 
-    if missing_vars:
+    # Create toolkit with configuration
+    try:
+        toolkit = JustiFiToolkit(config=config)
+    except Exception as e:
+        print(f"Error: Failed to initialize toolkit: {e}", file=sys.stderr)
         print(
-            f"Error: Missing required environment variables: {missing_vars}",
+            "Please check your JUSTIFI_CLIENT_ID and JUSTIFI_CLIENT_SECRET",
             file=sys.stderr,
         )
-        print("Please set these in your .env file or environment", file=sys.stderr)
         sys.exit(1)
 
     # Optional health check on startup
     if "--health-check" in sys.argv:
         print("Performing JustiFi API health check...", file=sys.stderr)
-        health_result = await health_check()
+        health_result = await health_check(toolkit)
+
         if health_result["status"] == "healthy":
             print("✅ JustiFi API connection successful", file=sys.stderr)
+            print(
+                f"📊 Configuration: {health_result['configuration']}", file=sys.stderr
+            )
         else:
             print(
                 f"❌ JustiFi API connection failed: {health_result['error']}",
@@ -202,11 +107,23 @@ async def main():
             )
             sys.exit(1)
 
-    print("🚀 Starting JustiFi Payout MCP Server...", file=sys.stderr)
+    # Get configuration summary for startup info
+    config_summary = toolkit.get_configuration_summary()
+    enabled_tools = config_summary["enabled_tools"]
+
     print(
-        "📊 Available tools: retrieve_payout, list_payouts, get_payout_status, get_recent_payouts",
+        "🚀 Starting JustiFi MCP Server with Configuration Support...", file=sys.stderr
+    )
+    print(f"🌍 Environment: {config_summary['environment']}", file=sys.stderr)
+    print(
+        f"📊 Enabled tools ({len(enabled_tools)}): {', '.join(enabled_tools)}",
         file=sys.stderr,
     )
+    print(f"⚡ Base URL: {config_summary['base_url']}", file=sys.stderr)
+    print(f"⏱️  Timeout: {config_summary['timeout']}s", file=sys.stderr)
+
+    # Get the configured MCP server
+    server = toolkit.get_mcp_server("justifi-mcp-server")
 
     # Run the stdio server
     async with stdio_server() as streams:

@@ -135,7 +135,6 @@ class LangChainAdapter:
             try:
                 # Try to get the current event loop
                 try:
-                    loop = asyncio.get_running_loop()
                     # If we have a running loop, use it directly
                     import concurrent.futures
 

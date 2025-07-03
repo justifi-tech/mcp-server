@@ -5,7 +5,8 @@ import respx
 from httpx import Response
 
 from justifi_mcp.core import JustiFiClient
-from justifi_mcp.payouts import (
+from justifi_mcp.tools.base import ToolError, ValidationError
+from justifi_mcp.tools.payouts import (
     get_payout_status,
     get_recent_payouts,
     list_payouts,
@@ -117,10 +118,10 @@ class TestRetrievePayout:
 
     async def test_retrieve_payout_empty_id(self, justifi_client):
         """Test error handling for empty payout ID."""
-        with pytest.raises(ValueError, match="payout_id cannot be empty"):
+        with pytest.raises(ValidationError, match="payout_id cannot be empty"):
             await retrieve_payout(justifi_client, "")
 
-        with pytest.raises(ValueError, match="payout_id cannot be empty"):
+        with pytest.raises(ValidationError, match="payout_id cannot be empty"):
             await retrieve_payout(justifi_client, "   ")
 
     @respx.mock
@@ -136,7 +137,7 @@ class TestRetrievePayout:
             return_value=Response(404, json={"error": "Payout not found"})
         )
 
-        with pytest.raises(Exception):  # httpx.HTTPStatusError  # noqa: B017
+        with pytest.raises(ToolError):  # Now wrapped in ToolError
             await retrieve_payout(justifi_client, "po_notfound")
 
 
@@ -182,16 +183,16 @@ class TestListPayouts:
 
     async def test_list_payouts_invalid_limit(self, justifi_client):
         """Test error handling for invalid limit."""
-        with pytest.raises(ValueError, match="limit must be between 1 and 100"):
+        with pytest.raises(ValidationError, match="limit must be between 1 and 100"):
             await list_payouts(justifi_client, limit=0)
 
-        with pytest.raises(ValueError, match="limit must be between 1 and 100"):
+        with pytest.raises(ValidationError, match="limit must be between 1 and 100"):
             await list_payouts(justifi_client, limit=101)
 
     async def test_list_payouts_both_cursors(self, justifi_client):
         """Test error handling when both cursors are provided."""
         with pytest.raises(
-            ValueError, match="Cannot specify both after_cursor and before_cursor"
+            ValidationError, match="Cannot specify both after_cursor and before_cursor"
         ):
             await list_payouts(
                 justifi_client, after_cursor="cursor1", before_cursor="cursor2"
@@ -216,8 +217,8 @@ class TestGetPayoutStatus:
             return_value=Response(200, json=mock_payout_data)
         )
 
-        status = await get_payout_status(justifi_client, "po_test123")
-        assert status == "completed"
+        result = await get_payout_status(justifi_client, "po_test123")
+        assert result == "completed"
 
     @respx.mock
     async def test_get_payout_status_missing_field(
@@ -234,7 +235,7 @@ class TestGetPayoutStatus:
             return_value=Response(200, json={"data": {"id": "po_test123"}})
         )
 
-        with pytest.raises(KeyError, match="Payout response missing expected field"):
+        with pytest.raises(ToolError, match="Payout response missing expected field"):
             await get_payout_status(justifi_client, "po_test123")
 
 
@@ -256,15 +257,14 @@ class TestGetRecentPayouts:
             return_value=Response(200, json=mock_payouts_list)
         )
 
-        payouts = await get_recent_payouts(justifi_client, limit=10)
-        assert len(payouts) == 2
-        assert payouts[0]["id"] == "po_test123"
-        assert payouts[1]["id"] == "po_test456"
+        result = await get_recent_payouts(justifi_client, limit=10)
+        assert result == mock_payouts_list["data"]
+        assert len(result) == 2
 
     async def test_get_recent_payouts_invalid_limit(self, justifi_client):
         """Test error handling for invalid limit."""
-        with pytest.raises(ValueError, match="limit must be between 1 and 25"):
+        with pytest.raises(ValidationError, match="limit must be between 1 and 25"):
             await get_recent_payouts(justifi_client, limit=0)
 
-        with pytest.raises(ValueError, match="limit must be between 1 and 25"):
+        with pytest.raises(ValidationError, match="limit must be between 1 and 25"):
             await get_recent_payouts(justifi_client, limit=26)

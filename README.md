@@ -116,6 +116,16 @@ JUSTIFI_CLIENT_ID=your_client_id
 JUSTIFI_CLIENT_SECRET=your_client_secret
 ```
 
+Tool Configuration (Security by Default):
+```bash
+# Default: No tools enabled (secure by default)
+# You must explicitly enable tools:
+
+JUSTIFI_ENABLED_TOOLS=all                                    # Enable all tools
+JUSTIFI_ENABLED_TOOLS="retrieve_payout,list_payouts"         # Enable specific tools only
+JUSTIFI_ENABLED_TOOLS="retrieve_payout,get_payout_status"    # Custom combination
+```
+
 Optional:
 ```bash
 JUSTIFI_BASE_URL=https://api.justifi.ai/v1  # Default

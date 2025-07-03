@@ -1,7 +1,7 @@
 """JustiFi MCP Configuration System
 
-Stripe-like configuration for tool selection and context management.
-Enables environment-specific tool sets and flexible deployment options.
+Simple whitelist-based configuration for tool selection and context management.
+Enables secure, explicit tool selection with forward compatibility.
 """
 
 from __future__ import annotations
@@ -9,35 +9,6 @@ from __future__ import annotations
 import os
 
 from pydantic import BaseModel, Field, field_validator
-
-
-class ToolConfig(BaseModel):
-    """Configuration for individual tools."""
-
-    enabled: bool = True
-    """Whether this tool is enabled."""
-
-    timeout: int | None = None
-    """Override timeout for this specific tool (seconds)."""
-
-    rate_limit: str | None = None
-    """Rate limiting tier: 'standard', 'premium', or 'unlimited'."""
-
-
-class PayoutToolsConfig(BaseModel):
-    """Configuration for payout-related tools."""
-
-    retrieve: ToolConfig = Field(default_factory=ToolConfig)
-    """Configuration for retrieve_payout tool."""
-
-    list: ToolConfig = Field(default_factory=ToolConfig)
-    """Configuration for list_payouts tool."""
-
-    status: ToolConfig = Field(default_factory=ToolConfig)
-    """Configuration for get_payout_status tool."""
-
-    recent: ToolConfig = Field(default_factory=ToolConfig)
-    """Configuration for get_recent_payouts tool."""
 
 
 class ContextConfig(BaseModel):
@@ -76,7 +47,7 @@ class ContextConfig(BaseModel):
 
 
 class JustiFiConfig(BaseModel):
-    """Complete JustiFi toolkit configuration."""
+    """Complete JustiFi toolkit configuration with whitelist-based tool selection."""
 
     # Authentication
     client_id: str | None = None
@@ -85,9 +56,9 @@ class JustiFiConfig(BaseModel):
     client_secret: str | None = None
     """JustiFi client secret (or from JUSTIFI_CLIENT_SECRET env var)."""
 
-    # Tool configurations
-    tools: PayoutToolsConfig = Field(default_factory=PayoutToolsConfig)
-    """Configuration for all available tools."""
+    # Tool selection (whitelist approach)
+    enabled_tools: list[str] | str = Field(default=[])
+    """List of enabled tool names, or 'all' to enable all tools. Default: [] (no tools enabled - secure by default)."""
 
     # Global context
     context: ContextConfig = Field(default_factory=ContextConfig)
@@ -123,74 +94,61 @@ class JustiFiConfig(BaseModel):
             )
         return v
 
-    def get_enabled_tools(self) -> dict[str, ToolConfig]:
-        """Get dictionary of enabled tools and their configurations."""
-        enabled_tools = {}
+    @field_validator("enabled_tools")
+    @classmethod
+    def validate_enabled_tools(cls, v):
+        """Validate enabled_tools field."""
+        if isinstance(v, str):
+            if v != "all":
+                raise ValueError("enabled_tools string value must be 'all'")
+            return v
 
-        # Check each payout tool
-        if self.tools.retrieve.enabled:
-            enabled_tools["retrieve_payout"] = self.tools.retrieve
-        if self.tools.list.enabled:
-            enabled_tools["list_payouts"] = self.tools.list
-        if self.tools.status.enabled:
-            enabled_tools["get_payout_status"] = self.tools.status
-        if self.tools.recent.enabled:
-            enabled_tools["get_recent_payouts"] = self.tools.recent
+        if isinstance(v, list):
+            # Validate that all tool names are valid
+            valid_tools = {
+                "retrieve_payout",
+                "list_payouts",
+                "get_payout_status",
+                "get_recent_payouts",
+            }
 
-        return enabled_tools
+            for tool in v:
+                if tool not in valid_tools:
+                    raise ValueError(
+                        f"Unknown tool '{tool}'. Valid tools: {', '.join(sorted(valid_tools))}"
+                    )
+            return v
 
-    def get_tool_config(self, tool_name: str) -> ToolConfig | None:
-        """Get configuration for a specific tool."""
-        tool_mapping = {
-            "retrieve_payout": self.tools.retrieve,
-            "list_payouts": self.tools.list,
-            "get_payout_status": self.tools.status,
-            "get_recent_payouts": self.tools.recent,
+        raise ValueError("enabled_tools must be a list of tool names or 'all'")
+
+    def get_available_tools(self) -> set[str]:
+        """Get set of all available tool names."""
+        return {
+            "retrieve_payout",
+            "list_payouts",
+            "get_payout_status",
+            "get_recent_payouts",
         }
-        return tool_mapping.get(tool_name)
+
+    def get_enabled_tools(self) -> set[str]:
+        """Get set of enabled tool names based on configuration."""
+        if self.enabled_tools == "all":
+            return self.get_available_tools()
+
+        if isinstance(self.enabled_tools, list):
+            return set(self.enabled_tools)
+
+        # Fallback to empty set (no tools enabled)
+        return set()
 
     def is_tool_enabled(self, tool_name: str) -> bool:
         """Check if a specific tool is enabled."""
-        tool_config = self.get_tool_config(tool_name)
-        return tool_config.enabled if tool_config else False
+        return tool_name in self.get_enabled_tools()
 
     def get_effective_timeout(self, tool_name: str) -> int:
-        """Get effective timeout for a tool (tool-specific or global default)."""
-        tool_config = self.get_tool_config(tool_name)
-        if tool_config and tool_config.timeout:
-            return tool_config.timeout
+        """Get effective timeout for a tool (uses global timeout)."""
         return self.context.timeout
 
     def get_effective_base_url(self) -> str:
         """Get effective base URL for API calls."""
         return self.context.base_url or "https://api.justifi.ai/v1"
-
-
-# Default configurations for common scenarios
-DEFAULT_CONFIG = JustiFiConfig()
-
-PRODUCTION_CONFIG = JustiFiConfig(
-    context=ContextConfig(
-        environment="production",
-        timeout=15,  # Shorter timeout for production
-        rate_limit="premium",
-    )
-)
-
-SANDBOX_CONFIG = JustiFiConfig(
-    context=ContextConfig(
-        environment="sandbox",
-        timeout=30,  # Longer timeout for testing
-        rate_limit="standard",
-    )
-)
-
-# Restrictive configuration (only read operations)
-READ_ONLY_CONFIG = JustiFiConfig(
-    tools=PayoutToolsConfig(
-        retrieve=ToolConfig(enabled=True),
-        list=ToolConfig(enabled=True),
-        status=ToolConfig(enabled=True),
-        recent=ToolConfig(enabled=False),  # Disable recent payouts
-    )
-)

@@ -4,12 +4,40 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "justifi-mcp-server"
-version = "1.0.0"
-description = "JustiFi MCP Server for payment processing integration"
-authors = [{ name = "MCP Development Team" }]
+version = "2.0.0-dev"
+description = "JustiFi MCP Server with multi-framework support for payment processing integration"
+authors = [{ name = "JustiFi MCP Team", email = "support@justifi.ai" }]
 license = "MIT"
 requires-python = ">=3.11"
 dependencies = ["mcp", "httpx", "pydantic", "python-dotenv", "langsmith"]
+keywords = [
+    "mcp",
+    "model-context-protocol",
+    "justifi",
+    "payments",
+    "ai",
+    "langchain",
+    "openai",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Office/Business :: Financial",
+]
+
+[project.urls]
+Homepage = "https://github.com/justifi-tech/mcp-servers"
+Documentation = "https://docs.justifi.ai/mcp"
+Repository = "https://github.com/justifi-tech/mcp-servers"
+Issues = "https://github.com/justifi-tech/mcp-servers/issues"
+
+[project.scripts]
+justifi-mcp-server = "main:cli_main"
 
 [project.optional-dependencies]
 dev = [

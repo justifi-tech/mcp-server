@@ -6,17 +6,17 @@ to interact with the JustiFi payment API. Now supports Stripe-like configuration
 for flexible tool selection and context management.
 
 Usage:
-    # Basic usage (all tools enabled)
+    # Basic usage (no tools enabled - secure by default)
     python main.py
 
     # With health check
     python main.py --health-check
 
-    # With custom configuration
-    JUSTIFI_CONFIG='{"tools":{"payouts":{"recent":{"enabled":false}}}}' python main.py
+    # With tool selection (container-friendly)
+    JUSTIFI_ENABLED_TOOLS=all python main.py
+    JUSTIFI_ENABLED_TOOLS="retrieve_payout,list_payouts" python main.py
 """
 import asyncio
-import json
 import os
 import sys
 from typing import Any
@@ -25,7 +25,7 @@ from dotenv import load_dotenv
 from mcp import stdio_server
 
 # Import the new toolkit system
-from justifi_mcp.config import PRODUCTION_CONFIG, READ_ONLY_CONFIG, JustiFiConfig
+from justifi_mcp.config import JustiFiConfig
 from justifi_mcp.toolkit import JustiFiToolkit
 
 
@@ -45,25 +45,18 @@ async def health_check(toolkit: JustiFiToolkit) -> dict[str, Any]:
 
 
 def load_configuration() -> JustiFiConfig:
-    """Load configuration from environment variables or use defaults."""
-    # Check for JSON configuration in environment
-    config_json = os.getenv("JUSTIFI_CONFIG")
-    if config_json:
-        try:
-            config_data = json.loads(config_json)
-            return JustiFiConfig(**config_data)
-        except (json.JSONDecodeError, ValueError) as e:
-            print(f"Warning: Invalid JUSTIFI_CONFIG JSON: {e}", file=sys.stderr)
-            print("Using default configuration", file=sys.stderr)
+    """Load configuration from environment variables (container-friendly)."""
+    # Check for custom tool configuration via environment variable
+    enabled_tools_env = os.getenv("JUSTIFI_ENABLED_TOOLS")
+    if enabled_tools_env:
+        if enabled_tools_env.lower() == "all":
+            return JustiFiConfig(enabled_tools="all")
+        else:
+            # Parse comma-separated list
+            enabled_tools_list = [tool.strip() for tool in enabled_tools_env.split(",")]
+            return JustiFiConfig(enabled_tools=enabled_tools_list)
 
-    # Check for predefined configuration modes
-    config_mode = os.getenv("JUSTIFI_CONFIG_MODE", "default").lower()
-
-    if config_mode == "production":
-        return PRODUCTION_CONFIG
-    if config_mode == "readonly":
-        return READ_ONLY_CONFIG
-    # Default configuration (all tools enabled)
+    # Default configuration (no tools enabled - secure by default)
     return JustiFiConfig()
 
 
@@ -131,4 +124,9 @@ async def main():
 
 
 if __name__ == "__main__":
+    asyncio.run(main())
+
+
+def cli_main():
+    """Console script entry point."""
     asyncio.run(main())

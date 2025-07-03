@@ -7,7 +7,7 @@ import pytest
 import respx
 from httpx import Response
 
-from justifi_mcp.config import JustiFiConfig, PayoutToolsConfig, ToolConfig
+from justifi_mcp.config import JustiFiConfig
 from justifi_mcp.toolkit import JustiFiToolkit
 
 # Mark all tests as async
@@ -36,22 +36,21 @@ def mock_payout_data():
 
 @pytest.fixture
 def basic_config():
-    """Basic test configuration."""
-    return JustiFiConfig(client_id="test_client_id", client_secret="test_client_secret")
+    """Basic test configuration with all tools enabled."""
+    return JustiFiConfig(
+        client_id="test_client_id",
+        client_secret="test_client_secret",
+        enabled_tools="all",
+    )
 
 
 @pytest.fixture
 def restricted_config():
-    """Restricted configuration with some tools disabled."""
+    """Restricted configuration with only some tools enabled."""
     return JustiFiConfig(
         client_id="test_client_id",
         client_secret="test_client_secret",
-        tools=PayoutToolsConfig(
-            retrieve=ToolConfig(enabled=True),
-            list=ToolConfig(enabled=True),
-            status=ToolConfig(enabled=False),  # Disabled
-            recent=ToolConfig(enabled=False),  # Disabled
-        ),
+        enabled_tools=["retrieve_payout", "list_payouts"],  # Only these enabled
     )
 
 
@@ -84,7 +83,11 @@ class TestJustiFiToolkitInitialization:
         config_dict = {
             "client_id": "dict_client_id",
             "client_secret": "dict_client_secret",
-            "tools": {"recent": {"enabled": False}},
+            "enabled_tools": [
+                "retrieve_payout",
+                "list_payouts",
+                "get_payout_status",
+            ],  # Exclude get_recent_payouts
             "context": {"environment": "production", "timeout": 15},
         }
 
@@ -219,7 +222,7 @@ class TestToolkitToolExecution:
             "Input Error" in result[0].text
             or "payout_id cannot be empty" in result[0].text
         )
-        assert "ValueError" in result[0].text
+        assert "ValidationError" in result[0].text
 
 
 class TestToolkitMCPIntegration:
@@ -291,14 +294,18 @@ class TestToolkitLangChainIntegration:
         assert "get_payout_status" in tool_names
         assert "get_recent_payouts" in tool_names
 
-    def test_langchain_tools_with_disabled_tools(self, basic_config):
+    def test_langchain_tools_with_disabled_tools(self):
         """Test LangChain tools with some tools disabled."""
         pytest.importorskip("langchain_core")
 
-        # Disable recent payouts
-        basic_config.tools.recent.enabled = False
+        # Create config with only some tools enabled
+        restricted_config = JustiFiConfig(
+            client_id="test_client_id",
+            client_secret="test_client_secret",
+            enabled_tools=["retrieve_payout", "list_payouts", "get_payout_status"],
+        )
 
-        toolkit = JustiFiToolkit(config=basic_config)
+        toolkit = JustiFiToolkit(config=restricted_config)
         langchain_tools = toolkit.get_langchain_tools()
 
         # Should have 3 enabled tools
@@ -454,17 +461,15 @@ class TestToolkitIntegration:
 
     def test_environment_specific_configuration(self):
         """Test environment-specific configuration scenarios."""
-        # Production configuration
+        # Production configuration - only allow read operations
         prod_config = JustiFiConfig(
             client_id="prod_id",
             client_secret="prod_secret",
-            tools=PayoutToolsConfig(
-                # Only allow read operations in production
-                retrieve=ToolConfig(enabled=True),
-                list=ToolConfig(enabled=True),
-                status=ToolConfig(enabled=True),
-                recent=ToolConfig(enabled=False),  # Disable for security
-            ),
+            enabled_tools=[
+                "retrieve_payout",
+                "list_payouts",
+                "get_payout_status",
+            ],  # Exclude recent for security
             context={
                 "environment": "production",
                 "timeout": 10,  # Shorter timeout

@@ -2,6 +2,8 @@
 
 A Model Context Protocol (MCP) server that provides AI agents with tools
 to interact with the JustiFi payment API.
+
+Now with multi-framework support for MCP, LangChain, OpenAI Agent SDK, and more.
 """
 
 __version__ = "2.0.0-dev"
@@ -9,7 +11,9 @@ __author__ = "JustiFi MCP Team"
 __email__ = "support@justifi.ai"
 
 # Export main components
-from .config import ContextConfig, JustiFiConfig, PayoutToolsConfig, ToolConfig
+# Framework adapters (for advanced usage)
+from .adapters.mcp import MCPAdapter
+from .config import ContextConfig, JustiFiConfig
 from .core import (
     APIError,
     AuthenticationError,
@@ -18,21 +22,19 @@ from .core import (
     RateLimitError,
     ValidationError,
 )
-from .payouts import (
+from .toolkit import JustiFiToolkit
+from .tools.payouts import (
     get_payout_status,
     get_recent_payouts,
     list_payouts,
     retrieve_payout,
 )
-from .toolkit import JustiFiToolkit
 
 __all__ = [
-    # Main toolkit interface
+    # Main toolkit interface (recommended)
     "JustiFiToolkit",
     # Configuration system
     "JustiFiConfig",
-    "ToolConfig",
-    "PayoutToolsConfig",
     "ContextConfig",
     # Core client
     "JustiFiClient",
@@ -42,9 +44,11 @@ __all__ = [
     "ValidationError",
     "APIError",
     "RateLimitError",
-    # Individual tools
+    # Individual tools (for direct usage)
     "retrieve_payout",
     "list_payouts",
     "get_payout_status",
     "get_recent_payouts",
+    # Framework adapters (advanced)
+    "MCPAdapter",
 ]

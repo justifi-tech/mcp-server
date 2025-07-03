@@ -1,7 +1,9 @@
-"""JustiFi MCP Integration - Payout Tools
+"""
+JustiFi Payout Tools - Framework-Agnostic Business Logic
 
-Tools for managing payouts (fund transfers) in JustiFi.
-Focus on payout operations for evaluation and testing.
+Pure business logic for payout operations, separated from any specific
+framework (MCP, LangChain, etc.). These functions return raw Python data
+structures and can be used by any framework adapter.
 """
 
 from __future__ import annotations
@@ -10,10 +12,12 @@ from typing import Any
 
 from langsmith import traceable
 
-from .core import JustiFiClient
+from ..core import JustiFiClient
+from .base import ValidationError, handle_tool_errors
 
 
 @traceable
+@handle_tool_errors
 async def retrieve_payout(client: JustiFiClient, payout_id: str) -> dict[str, Any]:
     """Retrieve a payout by its ID.
 
@@ -25,17 +29,19 @@ async def retrieve_payout(client: JustiFiClient, payout_id: str) -> dict[str, An
         JSON response from the JustiFi API with payout details.
 
     Raises:
-        ValueError: If payout_id is empty or invalid.
-        httpx.HTTPStatusError: For API errors.
-
+        ValidationError: If payout_id is empty or invalid.
+        ToolError: For API errors (wrapped from httpx.HTTPStatusError).
     """
     if not payout_id or not payout_id.strip():
-        raise ValueError("payout_id cannot be empty")
+        raise ValidationError(
+            "payout_id cannot be empty", field="payout_id", value=payout_id
+        )
 
     return await client.request("GET", f"/payouts/{payout_id}")
 
 
 @traceable
+@handle_tool_errors
 async def list_payouts(
     client: JustiFiClient,
     limit: int = 25,
@@ -45,25 +51,26 @@ async def list_payouts(
     """List payouts with cursor-based pagination.
 
     Args:
+        client: JustiFi client instance.
         limit: Number of payouts to return (default: 25, max: 100).
         after_cursor: Cursor for pagination (get payouts after this cursor).
         before_cursor: Cursor for pagination (get payouts before this cursor).
-        client: JustiFi client instance.
 
     Returns:
         JSON response with payouts list from the JustiFi API.
 
     Raises:
-        ValueError: If limit is invalid or cursors are both provided.
-        httpx.HTTPStatusError: For API errors.
-
+        ValidationError: If limit is invalid or cursors are both provided.
+        ToolError: For API errors (wrapped from httpx.HTTPStatusError).
     """
     # Validation
     if limit < 1 or limit > 100:
-        raise ValueError("limit must be between 1 and 100")
+        raise ValidationError(
+            "limit must be between 1 and 100", field="limit", value=limit
+        )
 
     if after_cursor and before_cursor:
-        raise ValueError("Cannot specify both after_cursor and before_cursor")
+        raise ValidationError("Cannot specify both after_cursor and before_cursor")
 
     params: dict[str, Any] = {"limit": limit}
     if after_cursor:
@@ -75,6 +82,7 @@ async def list_payouts(
 
 
 @traceable
+@handle_tool_errors
 async def get_payout_status(client: JustiFiClient, payout_id: str) -> str:
     """Get the status of a specific payout.
 
@@ -86,10 +94,8 @@ async def get_payout_status(client: JustiFiClient, payout_id: str) -> str:
         The status string of the payout (e.g., 'pending', 'completed', 'failed').
 
     Raises:
-        ValueError: If payout_id is empty or invalid.
-        httpx.HTTPStatusError: For API errors.
-        KeyError: If the response doesn't contain expected status field.
-
+        ValidationError: If payout_id is empty or invalid.
+        ToolError: For API errors or missing response fields.
     """
     payout_data = await retrieve_payout(client, payout_id)
 
@@ -101,6 +107,7 @@ async def get_payout_status(client: JustiFiClient, payout_id: str) -> str:
 
 
 @traceable
+@handle_tool_errors
 async def get_recent_payouts(
     client: JustiFiClient, limit: int = 10
 ) -> list[dict[str, Any]]:
@@ -114,12 +121,15 @@ async def get_recent_payouts(
         List of payout data dictionaries.
 
     Raises:
-        ValueError: If limit is invalid.
-        httpx.HTTPStatusError: For API errors.
-
+        ValidationError: If limit is invalid.
+        ToolError: For API errors or missing response fields.
     """
     if limit < 1 or limit > 25:
-        raise ValueError("limit must be between 1 and 25 for recent payouts")
+        raise ValidationError(
+            "limit must be between 1 and 25 for recent payouts",
+            field="limit",
+            value=limit,
+        )
 
     response = await list_payouts(client, limit=limit)
 

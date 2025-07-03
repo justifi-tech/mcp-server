@@ -117,9 +117,9 @@ async def main():
             print(f"Response: {response.content}")
 
             # Check if the model wants to use tools
-            if response.tool_calls:
-                print(f"🔧 Model wants to use {len(response.tool_calls)} tools:")
-                for tool_call in response.tool_calls:
+            if response.tool_calls:  # type: ignore[attr-defined]
+                print(f"🔧 Model wants to use {len(response.tool_calls)} tools:")  # type: ignore[attr-defined]
+                for tool_call in response.tool_calls:  # type: ignore[attr-defined]
                     print(f"   - {tool_call['name']}: {tool_call['args']}")
 
         except Exception as e:

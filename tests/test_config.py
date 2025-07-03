@@ -6,59 +6,12 @@ from unittest.mock import patch
 import pytest
 
 from justifi_mcp.config import (
-    DEFAULT_CONFIG,
-    PRODUCTION_CONFIG,
-    READ_ONLY_CONFIG,
-    SANDBOX_CONFIG,
     ContextConfig,
     JustiFiConfig,
-    PayoutToolsConfig,
-    ToolConfig,
 )
 
 # Mark all tests as async
 pytestmark = pytest.mark.asyncio
-
-
-class TestToolConfig:
-    """Test ToolConfig model."""
-
-    def test_default_tool_config(self):
-        """Test default tool configuration."""
-        config = ToolConfig()
-        assert config.enabled is True
-        assert config.timeout is None
-        assert config.rate_limit is None
-
-    def test_custom_tool_config(self):
-        """Test custom tool configuration."""
-        config = ToolConfig(enabled=False, timeout=60, rate_limit="premium")
-        assert config.enabled is False
-        assert config.timeout == 60
-        assert config.rate_limit == "premium"
-
-
-class TestPayoutToolsConfig:
-    """Test PayoutToolsConfig model."""
-
-    def test_default_payout_tools_config(self):
-        """Test default payout tools configuration."""
-        config = PayoutToolsConfig()
-        assert config.retrieve.enabled is True
-        assert config.list.enabled is True
-        assert config.status.enabled is True
-        assert config.recent.enabled is True
-
-    def test_custom_payout_tools_config(self):
-        """Test custom payout tools configuration."""
-        config = PayoutToolsConfig(
-            retrieve=ToolConfig(enabled=True),
-            list=ToolConfig(enabled=True),
-            status=ToolConfig(enabled=True),
-            recent=ToolConfig(enabled=False),  # Disable recent payouts
-        )
-        assert config.retrieve.enabled is True
-        assert config.recent.enabled is False
 
 
 class TestContextConfig:
@@ -108,7 +61,7 @@ class TestContextConfig:
 
 
 class TestJustiFiConfig:
-    """Test JustiFiConfig model."""
+    """Test JustiFiConfig model with whitelist-based tool selection."""
 
     @patch.dict(
         os.environ,
@@ -128,7 +81,9 @@ class TestJustiFiConfig:
     def test_config_from_parameters(self):
         """Test configuration from direct parameters."""
         config = JustiFiConfig(
-            client_id="param_client_id", client_secret="param_client_secret"
+            client_id="param_client_id",
+            client_secret="param_client_secret",
+            enabled_tools="all",
         )
         assert config.client_id == "param_client_id"
         assert config.client_secret == "param_client_secret"
@@ -141,35 +96,110 @@ class TestJustiFiConfig:
         ):
             JustiFiConfig()
 
-    def test_get_enabled_tools(self):
-        """Test getting enabled tools."""
+    def test_enabled_tools_list(self):
+        """Test enabled_tools with list of tool names."""
         config = JustiFiConfig(
             client_id="test_id",
             client_secret="test_secret",
-            tools=PayoutToolsConfig(
-                retrieve=ToolConfig(enabled=True),
-                list=ToolConfig(enabled=True),
-                status=ToolConfig(enabled=False),  # Disabled
-                recent=ToolConfig(enabled=True),
-            ),
+            enabled_tools=["retrieve_payout", "list_payouts"],
         )
 
         enabled_tools = config.get_enabled_tools()
-        assert "retrieve_payout" in enabled_tools
-        assert "list_payouts" in enabled_tools
-        assert "get_payout_status" not in enabled_tools  # Disabled
-        assert "get_recent_payouts" in enabled_tools
+        assert enabled_tools == {"retrieve_payout", "list_payouts"}
+        assert config.is_tool_enabled("retrieve_payout") is True
+        assert config.is_tool_enabled("list_payouts") is True
+        assert config.is_tool_enabled("get_payout_status") is False
+        assert config.is_tool_enabled("get_recent_payouts") is False
 
-    def test_is_tool_enabled(self):
-        """Test checking if specific tools are enabled."""
+    def test_enabled_tools_all(self):
+        """Test enabled_tools with 'all' value."""
         config = JustiFiConfig(
-            client_id="test_id",
-            client_secret="test_secret",
-            tools=PayoutToolsConfig(recent=ToolConfig(enabled=False)),
+            client_id="test_id", client_secret="test_secret", enabled_tools="all"
         )
 
-        assert config.is_tool_enabled("retrieve_payout") is True
+        enabled_tools = config.get_enabled_tools()
+        expected_tools = {
+            "retrieve_payout",
+            "list_payouts",
+            "get_payout_status",
+            "get_recent_payouts",
+        }
+        assert enabled_tools == expected_tools
+
+        # All tools should be enabled
+        for tool in expected_tools:
+            assert config.is_tool_enabled(tool) is True
+
+    def test_enabled_tools_empty_list(self):
+        """Test enabled_tools with empty list (no tools enabled)."""
+        config = JustiFiConfig(
+            client_id="test_id", client_secret="test_secret", enabled_tools=[]
+        )
+
+        enabled_tools = config.get_enabled_tools()
+        assert enabled_tools == set()
+
+        # No tools should be enabled
+        assert config.is_tool_enabled("retrieve_payout") is False
+        assert config.is_tool_enabled("list_payouts") is False
+        assert config.is_tool_enabled("get_payout_status") is False
         assert config.is_tool_enabled("get_recent_payouts") is False
+
+    def test_enabled_tools_validation_invalid_string(self):
+        """Test validation of enabled_tools with invalid string."""
+        with pytest.raises(
+            ValueError, match="enabled_tools string value must be 'all'"
+        ):
+            JustiFiConfig(
+                client_id="test_id",
+                client_secret="test_secret",
+                enabled_tools="invalid",
+            )
+
+    def test_enabled_tools_validation_invalid_tool(self):
+        """Test validation of enabled_tools with invalid tool name."""
+        with pytest.raises(ValueError, match="Unknown tool 'invalid_tool'"):
+            JustiFiConfig(
+                client_id="test_id",
+                client_secret="test_secret",
+                enabled_tools=["retrieve_payout", "invalid_tool"],
+            )
+
+    def test_enabled_tools_validation_invalid_type(self):
+        """Test validation of enabled_tools with invalid type."""
+        from pydantic import ValidationError
+
+        with pytest.raises(ValidationError) as exc_info:
+            JustiFiConfig(
+                client_id="test_id",
+                client_secret="test_secret",
+                enabled_tools=123,  # Invalid type
+            )
+
+        # Check that the error mentions the field and type issues
+        error_str = str(exc_info.value)
+        assert "enabled_tools" in error_str
+        assert "Input should be a valid" in error_str
+
+    def test_get_available_tools(self):
+        """Test getting all available tool names."""
+        config = JustiFiConfig(client_id="test_id", client_secret="test_secret")
+
+        available_tools = config.get_available_tools()
+        expected_tools = {
+            "retrieve_payout",
+            "list_payouts",
+            "get_payout_status",
+            "get_recent_payouts",
+        }
+        assert available_tools == expected_tools
+
+    def test_is_tool_enabled_nonexistent(self):
+        """Test checking if nonexistent tool is enabled."""
+        config = JustiFiConfig(
+            client_id="test_id", client_secret="test_secret", enabled_tools="all"
+        )
+
         assert config.is_tool_enabled("nonexistent_tool") is False
 
     def test_get_effective_timeout(self):
@@ -177,15 +207,12 @@ class TestJustiFiConfig:
         config = JustiFiConfig(
             client_id="test_id",
             client_secret="test_secret",
-            tools=PayoutToolsConfig(retrieve=ToolConfig(timeout=60)),  # Custom timeout
-            context=ContextConfig(timeout=30),  # Global timeout
+            context=ContextConfig(timeout=45),
         )
 
-        # Tool with custom timeout
-        assert config.get_effective_timeout("retrieve_payout") == 60
-
-        # Tool using global timeout
-        assert config.get_effective_timeout("list_payouts") == 30
+        # All tools use global timeout in new system
+        assert config.get_effective_timeout("retrieve_payout") == 45
+        assert config.get_effective_timeout("list_payouts") == 45
 
     def test_get_effective_base_url(self):
         """Test getting effective base URL."""
@@ -202,113 +229,47 @@ class TestJustiFiConfig:
         assert config.get_effective_base_url() == "https://api.justifi.ai/v1"
 
 
-class TestPredefinedConfigs:
-    """Test predefined configuration instances."""
+class TestConfigurationUsability:
+    """Test configuration usability and user experience."""
 
-    @patch.dict(
-        os.environ,
-        {"JUSTIFI_CLIENT_ID": "test_id", "JUSTIFI_CLIENT_SECRET": "test_secret"},
-    )
-    def test_default_config(self):
-        """Test default configuration."""
-        config = DEFAULT_CONFIG
-        assert config.context.environment == "sandbox"
-        assert config.context.timeout == 30
-        assert config.context.rate_limit == "standard"
+    def test_simple_configuration_examples(self):
+        """Test that simple configuration examples work as expected."""
+        # Example 1: Enable all tools
+        config1 = JustiFiConfig(
+            client_id="test_id", client_secret="test_secret", enabled_tools="all"
+        )
+        assert len(config1.get_enabled_tools()) == 4
 
-        # All tools should be enabled by default
-        enabled_tools = config.get_enabled_tools()
-        assert len(enabled_tools) == 4
-
-    @patch.dict(
-        os.environ,
-        {"JUSTIFI_CLIENT_ID": "test_id", "JUSTIFI_CLIENT_SECRET": "test_secret"},
-    )
-    def test_production_config(self):
-        """Test production configuration."""
-        config = PRODUCTION_CONFIG
-        assert config.context.environment == "production"
-        assert config.context.timeout == 15  # Shorter timeout
-        assert config.context.rate_limit == "premium"
-
-    @patch.dict(
-        os.environ,
-        {"JUSTIFI_CLIENT_ID": "test_id", "JUSTIFI_CLIENT_SECRET": "test_secret"},
-    )
-    def test_sandbox_config(self):
-        """Test sandbox configuration."""
-        config = SANDBOX_CONFIG
-        assert config.context.environment == "sandbox"
-        assert config.context.timeout == 30  # Longer timeout
-        assert config.context.rate_limit == "standard"
-
-    @patch.dict(
-        os.environ,
-        {"JUSTIFI_CLIENT_ID": "test_id", "JUSTIFI_CLIENT_SECRET": "test_secret"},
-    )
-    def test_read_only_config(self):
-        """Test read-only configuration."""
-        config = READ_ONLY_CONFIG
-        enabled_tools = config.get_enabled_tools()
-
-        # Should have most tools enabled except recent
-        assert "retrieve_payout" in enabled_tools
-        assert "list_payouts" in enabled_tools
-        assert "get_payout_status" in enabled_tools
-        assert "get_recent_payouts" not in enabled_tools  # Disabled
-
-
-class TestConfigurationSerialization:
-    """Test configuration serialization and deserialization."""
-
-    def test_config_to_dict(self):
-        """Test converting configuration to dictionary."""
-        config = JustiFiConfig(
+        # Example 2: Enable only specific tools
+        config2 = JustiFiConfig(
             client_id="test_id",
             client_secret="test_secret",
-            tools=PayoutToolsConfig(recent=ToolConfig(enabled=False)),
-            context=ContextConfig(environment="production", timeout=15),
+            enabled_tools=["retrieve_payout", "list_payouts"],
         )
+        enabled = config2.get_enabled_tools()
+        assert len(enabled) == 2
+        assert "retrieve_payout" in enabled
+        assert "list_payouts" in enabled
 
-        config_dict = config.dict()
-        assert config_dict["client_id"] == "test_id"
-        assert config_dict["tools"]["recent"]["enabled"] is False
-        assert config_dict["context"]["environment"] == "production"
-
-    def test_config_from_dict(self):
-        """Test creating configuration from dictionary."""
-        config_data = {
-            "client_id": "test_id",
-            "client_secret": "test_secret",
-            "tools": {
-                "payouts": {
-                    "retrieve": {"enabled": True},
-                    "list": {"enabled": True},
-                    "status": {"enabled": False},
-                    "recent": {"enabled": False},
-                }
-            },
-            "context": {
-                "environment": "production",
-                "timeout": 15,
-                "rate_limit": "premium",
-            },
-        }
-
-        # Note: This test demonstrates the intended structure,
-        # but the actual implementation uses nested Pydantic models
-        # so the structure is slightly different
-        config = JustiFiConfig(
-            client_id=config_data["client_id"],
-            client_secret=config_data["client_secret"],
-            tools=PayoutToolsConfig(
-                status=ToolConfig(enabled=False), recent=ToolConfig(enabled=False)
-            ),
-            context=ContextConfig(
-                environment="production", timeout=15, rate_limit="premium"
-            ),
+        # Example 3: No tools enabled (secure default)
+        config3 = JustiFiConfig(
+            client_id="test_id", client_secret="test_secret", enabled_tools=[]
         )
+        assert len(config3.get_enabled_tools()) == 0
 
-        assert config.client_id == "test_id"
-        assert config.is_tool_enabled("get_payout_status") is False
-        assert config.context.environment == "production"
+    def test_configuration_error_messages(self):
+        """Test that configuration errors provide helpful messages."""
+        # Test invalid tool name
+        try:
+            JustiFiConfig(
+                client_id="test_id",
+                client_secret="test_secret",
+                enabled_tools=["invalid_tool"],
+            )
+            raise AssertionError("Should have raised ValueError")
+        except ValueError as e:
+            assert "Unknown tool 'invalid_tool'" in str(e)
+            assert "Valid tools:" in str(e)
+            # Should list all valid tools
+            assert "retrieve_payout" in str(e)
+            assert "list_payouts" in str(e)

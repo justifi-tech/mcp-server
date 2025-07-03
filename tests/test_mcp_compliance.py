@@ -57,12 +57,19 @@ class TestMCPProtocolCompliance:
     @pytest.mark.asyncio
     async def test_tool_responses_are_valid_mcp_format(self):
         """Test that tool responses follow MCP format."""
-        config = JustiFiConfig(client_id="test", client_secret="test")
+        # Create config with disabled tool (only enable some tools)
+        config = JustiFiConfig(
+            client_id="test",
+            client_secret="test",
+            enabled_tools=[
+                "retrieve_payout",
+                "list_payouts",
+                "get_payout_status",
+            ],  # Exclude get_recent_payouts
+        )
         toolkit = JustiFiToolkit(config=config)
 
         # Test with a disabled tool (should return error in MCP format)
-        config.tools.recent.enabled = False
-
         result = await toolkit.call_tool("get_recent_payouts", {"limit": 5})
 
         # Should return list of TextContent
@@ -176,11 +183,19 @@ class TestToolSchemaQuality:
     @pytest.mark.asyncio
     async def test_error_handling_provides_guidance(self):
         """Test that error responses provide helpful guidance."""
-        config = JustiFiConfig(client_id="test", client_secret="test")
+        # Create config with disabled tool (only enable some tools)
+        config = JustiFiConfig(
+            client_id="test",
+            client_secret="test",
+            enabled_tools=[
+                "retrieve_payout",
+                "list_payouts",
+                "get_recent_payouts",
+            ],  # Exclude get_payout_status
+        )
         toolkit = JustiFiToolkit(config=config)
 
         # Test disabled tool
-        config.tools.status.enabled = False
         result = await toolkit.call_tool("get_payout_status", {"payout_id": "test"})
 
         error_text = result[0].text
@@ -192,9 +207,7 @@ class TestToolSchemaQuality:
         assert "Available tools:" in error_text
 
         # Should list actual available tools
-        enabled_tools = [
-            name for name, tool_config in config.get_enabled_tools().items()
-        ]
+        enabled_tools = config.get_enabled_tools()
         for tool_name in enabled_tools:
             assert tool_name in error_text
 
@@ -248,7 +261,9 @@ class TestUsagePatterns:
         """Test that tools mentioned in usage patterns actually exist."""
         from pathlib import Path
 
-        config = JustiFiConfig(client_id="test", client_secret="test")
+        config = JustiFiConfig(
+            client_id="test", client_secret="test", enabled_tools="all"
+        )
         toolkit = JustiFiToolkit(config=config)
 
         available_tools = set(toolkit.get_enabled_tools().keys())
@@ -270,7 +285,9 @@ class TestConfigurationQuality:
 
     def test_configuration_summary_is_informative(self):
         """Test that configuration summary provides useful information."""
-        config = JustiFiConfig(client_id="test", client_secret="test")
+        config = JustiFiConfig(
+            client_id="test", client_secret="test", enabled_tools="all"
+        )
         toolkit = JustiFiToolkit(config=config)
 
         summary = toolkit.get_configuration_summary()
@@ -294,11 +311,15 @@ class TestConfigurationQuality:
 
     def test_tool_filtering_works_correctly(self):
         """Test that tool filtering through configuration works."""
-        config = JustiFiConfig(client_id="test", client_secret="test")
-
-        # Disable some tools
-        config.tools.recent.enabled = False
-        config.tools.status.enabled = False
+        # Create config with only some tools enabled
+        config = JustiFiConfig(
+            client_id="test",
+            client_secret="test",
+            enabled_tools=[
+                "retrieve_payout",
+                "list_payouts",
+            ],  # Exclude get_recent_payouts and get_payout_status
+        )
 
         toolkit = JustiFiToolkit(config=config)
 

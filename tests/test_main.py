@@ -6,7 +6,7 @@ import pytest
 import respx
 from httpx import Response
 
-from justifi_mcp.config import PRODUCTION_CONFIG, READ_ONLY_CONFIG, JustiFiConfig
+from justifi_mcp.config import JustiFiConfig
 from justifi_mcp.toolkit import JustiFiToolkit
 from main import health_check, load_configuration
 
@@ -35,32 +35,19 @@ class TestMainConfiguration:
             config = load_configuration()
             assert isinstance(config, JustiFiConfig)
             assert config.context.environment == "sandbox"
-
-    @patch.dict("os.environ", {"JUSTIFI_CONFIG_MODE": "production"})
-    def test_load_configuration_production_mode(self):
-        """Test loading production configuration mode."""
-        config = load_configuration()
-        assert config == PRODUCTION_CONFIG
-        assert config.context.environment == "production"
-
-    @patch.dict("os.environ", {"JUSTIFI_CONFIG_MODE": "readonly"})
-    def test_load_configuration_readonly_mode(self):
-        """Test loading readonly configuration mode."""
-        config = load_configuration()
-        assert config == READ_ONLY_CONFIG
-        assert not config.is_tool_enabled("get_recent_payouts")
+            assert len(config.get_enabled_tools()) == 0  # No tools enabled by default
 
     @patch.dict(
         "os.environ",
-        {"JUSTIFI_CONFIG": '{"context": {"environment": "production", "timeout": 20}}'},
+        {"JUSTIFI_ENABLED_TOOLS": "retrieve_payout,list_payouts"},
     )
-    def test_load_configuration_json(self):
-        """Test loading configuration from JSON environment variable."""
+    def test_load_configuration_custom_tools(self):
+        """Test loading configuration with custom tool selection."""
         with patch("os.getenv") as mock_getenv:
 
             def getenv_side_effect(key, default=None):
-                if key == "JUSTIFI_CONFIG":
-                    return '{"context": {"environment": "production", "timeout": 20}}'
+                if key == "JUSTIFI_ENABLED_TOOLS":
+                    return "retrieve_payout,list_payouts"
                 if key == "JUSTIFI_CLIENT_ID":
                     return "test_id"
                 if key == "JUSTIFI_CLIENT_SECRET":
@@ -70,27 +57,24 @@ class TestMainConfiguration:
             mock_getenv.side_effect = getenv_side_effect
 
             config = load_configuration()
-            assert config.context.environment == "production"
-            assert config.context.timeout == 20
+            assert config.enabled_tools == ["retrieve_payout", "list_payouts"]
+            assert len(config.get_enabled_tools()) == 2
 
-    @patch.dict("os.environ", {"JUSTIFI_CONFIG": "invalid json"})
-    def test_load_configuration_invalid_json(self, capsys):
-        """Test loading configuration with invalid JSON."""
+    @patch.dict("os.environ", {"JUSTIFI_ENABLED_TOOLS": "all"})
+    def test_load_configuration_all_tools(self, capsys):
+        """Test loading configuration with 'all' tools enabled."""
         with patch("os.getenv") as mock_getenv:
             mock_getenv.side_effect = lambda key, default=None: {
-                "JUSTIFI_CONFIG": "invalid json",
+                "JUSTIFI_ENABLED_TOOLS": "all",
                 "JUSTIFI_CLIENT_ID": "test_id",
                 "JUSTIFI_CLIENT_SECRET": "test_secret",
             }.get(key, default)
 
             config = load_configuration()
 
-            # Should fall back to default config
-            assert config.context.environment == "sandbox"
-
-            # Should print warning to stderr
-            captured = capsys.readouterr()
-            assert "Warning: Invalid JUSTIFI_CONFIG JSON" in captured.err
+            # Should enable all tools
+            assert config.enabled_tools == "all"
+            assert len(config.get_enabled_tools()) == 4
 
 
 class TestHealthCheck:
@@ -146,8 +130,10 @@ class TestMainIntegration:
             return_value=Response(200, json=mock_token_response)
         )
 
-        # Create a toolkit like main.py does
-        config = JustiFiConfig(client_id="test_id", client_secret="test_secret")
+        # Create a toolkit like main.py does (with tools enabled)
+        config = JustiFiConfig(
+            client_id="test_id", client_secret="test_secret", enabled_tools="all"
+        )
         toolkit = JustiFiToolkit(config=config)
 
         # Verify toolkit is properly configured
@@ -162,22 +148,28 @@ class TestMainIntegration:
 
     def test_configuration_driven_tool_selection(self):
         """Test that different configurations enable different tools."""
-        # Production config (restricted)
-        prod_config = PRODUCTION_CONFIG
-        prod_toolkit = JustiFiToolkit(config=prod_config)
-        prod_summary = prod_toolkit.get_configuration_summary()
+        # All tools enabled config
+        all_config = JustiFiConfig(
+            client_id="test_id", client_secret="test_secret", enabled_tools="all"
+        )
+        all_toolkit = JustiFiToolkit(config=all_config)
+        all_summary = all_toolkit.get_configuration_summary()
 
-        # Read-only config (more restricted)
-        readonly_config = READ_ONLY_CONFIG
-        readonly_toolkit = JustiFiToolkit(config=readonly_config)
-        readonly_summary = readonly_toolkit.get_configuration_summary()
+        # Restricted config (only some tools)
+        restricted_config = JustiFiConfig(
+            client_id="test_id",
+            client_secret="test_secret",
+            enabled_tools=["retrieve_payout", "list_payouts", "get_payout_status"],
+        )
+        restricted_toolkit = JustiFiToolkit(config=restricted_config)
+        restricted_summary = restricted_toolkit.get_configuration_summary()
 
-        # Production should have all 4 tools
-        assert prod_summary["total_tools"] == 4
+        # All tools config should have all 4 tools
+        assert all_summary["total_tools"] == 4
 
-        # Read-only should have fewer tools (recent disabled)
-        assert readonly_summary["total_tools"] == 3
-        assert "get_recent_payouts" not in readonly_summary["enabled_tools"]
+        # Restricted should have fewer tools (recent disabled)
+        assert restricted_summary["total_tools"] == 3
+        assert "get_recent_payouts" not in restricted_summary["enabled_tools"]
 
     @patch.dict(
         "os.environ",

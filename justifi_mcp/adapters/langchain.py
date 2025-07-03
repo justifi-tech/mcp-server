@@ -133,21 +133,31 @@ class LangChainAdapter:
             import asyncio
 
             try:
-                # Run the async function synchronously
-                loop = asyncio.get_event_loop()
-                if loop.is_running():
-                    # If we're already in an async context, we need to handle this differently
+                # Try to get the current event loop
+                try:
+                    loop = asyncio.get_running_loop()
+                    # If we have a running loop, use it directly
                     import concurrent.futures
 
+                    def run_async():
+                        return asyncio.run(self.execute_tool(tool_name, **kwargs))
+
                     with concurrent.futures.ThreadPoolExecutor() as executor:
-                        future = executor.submit(
-                            asyncio.run, self.execute_tool(tool_name, **kwargs)
-                        )
+                        future = executor.submit(run_async)
                         result = future.result()
-                else:
-                    result = loop.run_until_complete(
-                        self.execute_tool(tool_name, **kwargs)
-                    )
+                except RuntimeError:
+                    # No running loop, safe to use asyncio.run
+                    result = asyncio.run(self.execute_tool(tool_name, **kwargs))
+
+                return json.dumps(result, indent=2, default=str)
+            except Exception as e:
+                return f"Error: {e}"
+
+        # Create async wrapper function for arun support
+        async def async_wrapper(**kwargs: Any) -> str:
+            """Async LangChain tool wrapper."""
+            try:
+                result = await self.execute_tool(tool_name, **kwargs)
                 return json.dumps(result, indent=2, default=str)
             except Exception as e:
                 return f"Error: {e}"
@@ -157,6 +167,7 @@ class LangChainAdapter:
             description=description,
             args_schema=InputModel,
             func=wrapper,
+            coroutine=async_wrapper,
         )
 
     def get_tool_schemas(self) -> list[dict[str, Any]]:

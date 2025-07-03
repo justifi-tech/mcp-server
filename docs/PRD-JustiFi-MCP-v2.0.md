@@ -21,7 +21,7 @@ Transform the JustiFi MCP server into the **premier payment integration platform
 
 ### Primary Competition: Stripe Agent Toolkit
 **Strengths:**
-- Multi-framework support (OpenAI, LangChain, Vercel AI, MCP)
+- Multi-framework support (OpenAI, LangChain, MCP)
 - Configuration-driven tool selection
 - Established developer ecosystem
 - Comprehensive documentation
@@ -38,7 +38,7 @@ Transform the JustiFi MCP server into the **premier payment integration platform
 ## 3. Goals & Success Criteria
 
 ### 3.1 Primary Goals (v2.0)
-1. **Multi-Framework Support**: Support 4+ AI frameworks (MCP, LangChain, OpenAI Agent SDK, Direct API)
+1. **Multi-Framework Support**: Support 3 core AI frameworks (MCP, LangChain, OpenAI Agent SDK)
 2. **Configuration System**: Stripe-like configuration for tool selection and context management
 3. **Package Distribution**: PyPI package with CLI interface (`pip install justifi-agent-toolkit`)
 4. **Extended Tool Coverage**: 20+ JustiFi tools across all major API endpoints
@@ -56,7 +56,7 @@ Transform the JustiFi MCP server into the **premier payment integration platform
 - 10,000+ monthly PyPI downloads
 - 10+ enterprise customers
 - 20+ active contributors
-- Support for 5+ major AI frameworks
+- Support for 3 core AI frameworks
 
 **Developer Experience:**
 - Setup time: <5 minutes from install to first API call
@@ -104,8 +104,7 @@ justifi-agent-toolkit/
 ├── frameworks/
 │   ├── mcp/                # MCP server (current implementation)
 │   ├── langchain/          # LangChain integration
-│   ├── openai/             # OpenAI Agent SDK
-│   └── direct/             # Direct API usage
+│   └── openai/             # OpenAI Agent SDK
 ├── cli/                    # Command-line interface
 ├── examples/               # Framework-specific examples
 └── tests/                  # Comprehensive test suite
@@ -215,7 +214,6 @@ openai_functions = toolkit.get_openai_functions()
 **Deliverables:**
 - [ ] **LangChain integration**: Full toolkit support for LangChain agents
 - [ ] **OpenAI Agent SDK**: Integration with OpenAI's agent framework
-- [ ] **Direct API usage**: Simple Python API for custom integrations
 - [ ] **Package preparation**: Prepare for PyPI distribution
 - [ ] **Advanced workflows**: Multi-step payment processes
 - [ ] **Environment management**: Sandbox/production switching
@@ -223,7 +221,6 @@ openai_functions = toolkit.get_openai_functions()
 **Success Criteria:**
 - LangChain integration works with all tools
 - OpenAI Agent SDK integration functional
-- Direct API provides simple Python interface
 - Package structure ready for distribution
 - Advanced workflows tested and documented
 - Environment switching works seamlessly

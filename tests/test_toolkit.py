@@ -384,8 +384,11 @@ class TestToolkitLangChainIntegration:
             # Execute the tool
             result = await retrieve_tool.arun({"payout_id": "po_test123"})
 
-            # Should return the mock response
-            assert result == mock_response
+            # LangChain tools return JSON strings, so parse and compare
+            import json
+
+            parsed_result = json.loads(result)
+            assert parsed_result == mock_response
 
 
 class TestToolkitFutureFrameworks:
@@ -399,13 +402,6 @@ class TestToolkitFutureFrameworks:
             NotImplementedError, match="OpenAI integration coming in Phase 3"
         ):
             toolkit.get_openai_functions()
-
-    def test_direct_api_not_implemented(self, basic_config):
-        """Test direct API integration placeholder."""
-        toolkit = JustiFiToolkit(config=basic_config)
-
-        with pytest.raises(NotImplementedError, match="Direct API coming in Phase 3"):
-            toolkit.get_direct_api()
 
 
 class TestToolkitIntegration:

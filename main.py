@@ -32,7 +32,11 @@ from justifi_mcp.toolkit import JustiFiToolkit
 async def health_check(toolkit: JustiFiToolkit) -> dict[str, Any]:
     """Simple health check to verify JustiFi API connectivity."""
     try:
-        token = await toolkit.client.get_access_token()
+        # Create a temporary MCP adapter to access the client
+        from justifi_mcp.adapters.mcp import MCPAdapter
+
+        adapter = MCPAdapter(toolkit.config)
+        token = await adapter.client.get_access_token()
         config_summary = toolkit.get_configuration_summary()
 
         return {

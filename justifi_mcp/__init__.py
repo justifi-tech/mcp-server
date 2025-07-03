@@ -45,7 +45,7 @@ __all__ = [
     "ValidationError",
     "APIError",
     "RateLimitError",
-    # Individual tools (for direct usage)
+    # Individual tools (for advanced/custom usage)
     "retrieve_payout",
     "list_payouts",
     "get_payout_status",

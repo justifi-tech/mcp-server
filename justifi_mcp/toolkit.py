@@ -161,7 +161,7 @@ class JustiFiToolkit:
         Raises:
             ImportError: If LangChain is not installed
         """
-        if not hasattr(self, "_langchain_adapter"):
+        if not self._langchain_adapter:
             from .adapters.langchain import LangChainAdapter
 
             self._langchain_adapter = LangChainAdapter(self.config)
@@ -174,7 +174,7 @@ class JustiFiToolkit:
         Returns:
             List of tool schema dictionaries
         """
-        if not hasattr(self, "_langchain_adapter"):
+        if not self._langchain_adapter:
             from .adapters.langchain import LangChainAdapter
 
             self._langchain_adapter = LangChainAdapter(self.config)
@@ -208,14 +208,3 @@ class JustiFiToolkit:
             NotImplementedError: OpenAI integration coming in Phase 3
         """
         raise NotImplementedError("OpenAI integration coming in Phase 3")
-
-    def get_direct_api(self) -> dict[str, Any]:
-        """Get direct API access for custom integrations.
-
-        Returns:
-            Dictionary with client and tool functions
-
-        Raises:
-            NotImplementedError: Direct API coming in Phase 3
-        """
-        raise NotImplementedError("Direct API coming in Phase 3")

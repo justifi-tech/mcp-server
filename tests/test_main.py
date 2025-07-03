@@ -104,12 +104,14 @@ class TestHealthCheck:
         config = JustiFiConfig(client_id="invalid_id", client_secret="invalid_secret")
         toolkit = JustiFiToolkit(config=config)
 
-        # Mock the get_access_token method to raise an exception
+        # Mock the MCPAdapter's client get_access_token method to raise an exception
         import unittest.mock
 
+        from justifi_mcp.adapters.mcp import MCPAdapter
+
         with unittest.mock.patch.object(
-            toolkit.client,
-            "get_access_token",
+            MCPAdapter,
+            "__init__",
             side_effect=Exception("Authentication failed"),
         ):
             result = await health_check(toolkit)

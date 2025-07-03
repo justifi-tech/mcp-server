@@ -18,6 +18,7 @@ keywords = [
     "ai",
     "langchain",
     "openai",
+    "agent-toolkit",
 ]
 classifiers = [
     "Development Status :: 4 - Beta",

@@ -73,6 +73,11 @@ class JustiFiConfig(BaseModel):
         if "client_secret" not in data or not data["client_secret"]:
             data["client_secret"] = os.getenv("JUSTIFI_CLIENT_SECRET")
 
+        # Handle context configuration
+        if "context" in data and data["context"] is None:
+            # Convert None to empty dict so Pydantic can create default ContextConfig
+            data["context"] = {}
+
         # Load base URL from environment if not in context
         if "context" in data and isinstance(data["context"], dict):
             if "base_url" not in data["context"] or not data["context"]["base_url"]:

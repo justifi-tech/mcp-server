@@ -14,7 +14,6 @@ AVAILABLE_ADAPTERS = {
     "langchain": LangChainAdapter,
     # Future adapters:
     # "openai": OpenAIAdapter,
-    # "crewai": CrewAIAdapter,
 }
 
 __all__ = [

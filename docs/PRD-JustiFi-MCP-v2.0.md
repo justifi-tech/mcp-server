@@ -21,7 +21,7 @@ Transform the JustiFi MCP server into the **premier payment integration platform
 
 ### Primary Competition: Stripe Agent Toolkit
 **Strengths:**
-- Multi-framework support (OpenAI, LangChain, CrewAI, Vercel AI, MCP)
+- Multi-framework support (OpenAI, LangChain, Vercel AI, MCP)
 - Configuration-driven tool selection
 - Established developer ecosystem
 - Comprehensive documentation
@@ -38,7 +38,7 @@ Transform the JustiFi MCP server into the **premier payment integration platform
 ## 3. Goals & Success Criteria
 
 ### 3.1 Primary Goals (v2.0)
-1. **Multi-Framework Support**: Support 5+ AI frameworks (MCP, LangChain, OpenAI Agent SDK, CrewAI, Direct API)
+1. **Multi-Framework Support**: Support 4+ AI frameworks (MCP, LangChain, OpenAI Agent SDK, Direct API)
 2. **Configuration System**: Stripe-like configuration for tool selection and context management
 3. **Package Distribution**: PyPI package with CLI interface (`pip install justifi-agent-toolkit`)
 4. **Extended Tool Coverage**: 20+ JustiFi tools across all major API endpoints
@@ -105,7 +105,6 @@ justifi-agent-toolkit/
 │   ├── mcp/                # MCP server (current implementation)
 │   ├── langchain/          # LangChain integration
 │   ├── openai/             # OpenAI Agent SDK
-│   ├── crewai/             # CrewAI integration
 │   └── direct/             # Direct API usage
 ├── cli/                    # Command-line interface
 ├── examples/               # Framework-specific examples

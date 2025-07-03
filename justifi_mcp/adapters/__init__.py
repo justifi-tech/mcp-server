@@ -12,8 +12,6 @@ from .mcp import MCPAdapter
 AVAILABLE_ADAPTERS = {
     "mcp": MCPAdapter,
     "langchain": LangChainAdapter,
-    # Future adapters:
-    # "openai": OpenAIAdapter,
 }
 
 __all__ = [

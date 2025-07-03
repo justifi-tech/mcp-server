@@ -1,7 +1,7 @@
 """JustiFi Agent Toolkit
 
 Framework-agnostic toolkit for JustiFi payment operations.
-Provides adapters for different AI frameworks (MCP, LangChain, OpenAI, etc.).
+Provides adapters for AI frameworks (MCP, LangChain) with direct usage support for OpenAI.
 """
 
 from __future__ import annotations
@@ -17,8 +17,8 @@ class JustiFiToolkit:
     """Multi-framework toolkit for JustiFi payment operations.
 
     Provides a unified interface to JustiFi tools that can be used across
-    different AI frameworks (MCP, LangChain, OpenAI, etc.) with configuration-driven
-    tool selection and context management.
+    AI frameworks (MCP, LangChain) with configuration-driven tool selection
+    and context management. OpenAI integration uses direct tool access.
 
     Examples:
         # Basic usage with all tools enabled
@@ -197,14 +197,3 @@ class JustiFiToolkit:
             self._langchain_adapter = LangChainAdapter(self.config)
 
         return await self._langchain_adapter.execute_tool(tool_name, **kwargs)
-
-    def get_openai_functions(self) -> list[dict[str, Any]]:
-        """Get OpenAI function definitions.
-
-        Returns:
-            List of OpenAI function definitions
-
-        Raises:
-            NotImplementedError: OpenAI integration coming in Phase 3
-        """
-        raise NotImplementedError("OpenAI integration coming in Phase 3")

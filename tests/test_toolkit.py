@@ -391,19 +391,6 @@ class TestToolkitLangChainIntegration:
             assert parsed_result == mock_response
 
 
-class TestToolkitFutureFrameworks:
-    """Test future framework integration placeholders."""
-
-    def test_openai_not_implemented(self, basic_config):
-        """Test OpenAI integration placeholder."""
-        toolkit = JustiFiToolkit(config=basic_config)
-
-        with pytest.raises(
-            NotImplementedError, match="OpenAI integration coming in Phase 3"
-        ):
-            toolkit.get_openai_functions()
-
-
 class TestToolkitIntegration:
     """Test toolkit integration scenarios."""
 

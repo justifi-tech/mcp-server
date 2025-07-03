@@ -3,7 +3,7 @@
 A Model Context Protocol (MCP) server that provides AI agents with tools
 to interact with the JustiFi payment API.
 
-Now with multi-framework support for MCP, LangChain, OpenAI Agent SDK, and more.
+Multi-framework support for MCP and LangChain, with direct usage examples for OpenAI.
 """
 
 __version__ = "2.0.0-dev"

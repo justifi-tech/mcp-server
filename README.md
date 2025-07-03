@@ -215,10 +215,25 @@ make drift-update
 
 ## 📚 Documentation
 
-- [Development Roadmap v2](docs/DEVELOPMENT-ROADMAP-v2.md)
-- [NPM Publishing Strategy](docs/NPM-PUBLISHING-ROADMAP.md)
-- [PRD v2.0](docs/PRD-JustiFi-MCP-v2.0.md)
-- [API Endpoint Inventory](docs/endpoint-inventory.md)
+- [PRD v2.0](docs/PRD-JustiFi-MCP-v2.0.md) - Strategic roadmap and framework strategy
+- [API Endpoint Inventory](docs/endpoint-inventory.md) - Verified JustiFi API endpoints
+
+## 🔌 Framework Integration
+
+### MCP (Model Context Protocol)
+- **Primary integration** for IDE usage (Cursor, VS Code, Windsurf)
+- Full MCP server with tool schemas and JSON-RPC 2.0 protocol
+- See [MCP Integration](#-mcp-integration) section above
+
+### LangChain
+- **Dedicated adapter** with StructuredTool wrappers
+- Async/sync compatibility for LangChain agents
+- Example: `examples/langchain_example.py`
+
+### OpenAI Function Calling
+- **Direct usage** - no adapter needed!
+- Our tool schemas are already OpenAI-compatible
+- Example: `examples/openai_example.py`
 
 ## 🔄 Migration from Complex Structure
 

@@ -38,7 +38,7 @@ Transform the JustiFi MCP server into the **premier payment integration platform
 ## 3. Goals & Success Criteria
 
 ### 3.1 Primary Goals (v2.0)
-1. **Multi-Framework Support**: Support 3 core AI frameworks (MCP, LangChain, OpenAI Agent SDK)
+1. **Multi-Framework Support**: Support 2 core AI frameworks (MCP, LangChain) with direct usage examples for OpenAI
 2. **Configuration System**: Stripe-like configuration for tool selection and context management
 3. **Package Distribution**: PyPI package with CLI interface (`pip install justifi-agent-toolkit`)
 4. **Extended Tool Coverage**: 20+ JustiFi tools across all major API endpoints
@@ -56,7 +56,7 @@ Transform the JustiFi MCP server into the **premier payment integration platform
 - 10,000+ monthly PyPI downloads
 - 10+ enterprise customers
 - 20+ active contributors
-- Support for 3 core AI frameworks
+- Support for 2 core AI frameworks + direct usage patterns
 
 **Developer Experience:**
 - Setup time: <5 minutes from install to first API call
@@ -86,6 +86,7 @@ Transform the JustiFi MCP server into the **premier payment integration platform
 |---------|--------------|------------|-----------|
 | Full-stack developer | Use JustiFi payments in Cursor with AI assistance | I can build payment flows without leaving my IDE | MCP |
 | Backend engineer | Import JustiFi tools into my LangChain application | I can add payment capabilities to my AI agents | LangChain |
+| AI developer | Use JustiFi tools with OpenAI function calling | I can add payment capabilities to my GPT applications | Direct Usage |
 | DevOps engineer | Configure different JustiFi tools per environment | I can control what operations are available where | Configuration |
 | Engineering manager | Deploy a standardized payment toolkit across teams | Everyone uses the same secure, tested integration | Enterprise |
 
@@ -103,8 +104,7 @@ justifi-agent-toolkit/
 │   └── tools.py            # Tool definitions
 ├── frameworks/
 │   ├── mcp/                # MCP server (current implementation)
-│   ├── langchain/          # LangChain integration
-│   └── openai/             # OpenAI Agent SDK
+│   └── langchain/          # LangChain integration
 ├── cli/                    # Command-line interface
 ├── examples/               # Framework-specific examples
 └── tests/                  # Comprehensive test suite
@@ -147,7 +147,9 @@ toolkit = JustiFiToolkit(
 # Framework-specific usage
 mcp_server = toolkit.get_mcp_server()
 langchain_tools = toolkit.get_langchain_tools()
-openai_functions = toolkit.get_openai_functions()
+
+# OpenAI usage (direct - no adapter needed)
+# OpenAI function calling uses our existing JSON schemas directly
 ```
 
 ### 5.3 Current Tool Coverage
@@ -208,22 +210,22 @@ openai_functions = toolkit.get_openai_functions()
 
 **Note:** Additional tools will be added organically as needed, not as part of planned scope expansion
 
-### Phase 3: Multi-Framework Support & Package Distribution (Weeks 7-10)
-**Goal:** Support multiple AI frameworks and prepare for distribution
+### Phase 3: Package Distribution & Advanced Features (Weeks 7-10)
+**Goal:** Prepare for distribution and add advanced features
 
 **Deliverables:**
-- [ ] **LangChain integration**: Full toolkit support for LangChain agents
-- [ ] **OpenAI Agent SDK**: Integration with OpenAI's agent framework
 - [ ] **Package preparation**: Prepare for PyPI distribution
+- [ ] **OpenAI examples**: Direct usage examples without adapter
 - [ ] **Advanced workflows**: Multi-step payment processes
 - [ ] **Environment management**: Sandbox/production switching
+- [ ] **CLI interface**: Command-line tool for setup and management
 
 **Success Criteria:**
-- LangChain integration works with all tools
-- OpenAI Agent SDK integration functional
 - Package structure ready for distribution
+- OpenAI integration examples documented and tested
 - Advanced workflows tested and documented
 - Environment switching works seamlessly
+- CLI interface provides good developer experience
 
 ### Phase 4: Enterprise Features (Weeks 11-15)
 **Goal:** Enterprise-ready platform with scaling capabilities

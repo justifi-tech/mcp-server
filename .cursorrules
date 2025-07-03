@@ -110,8 +110,8 @@ async def create_payment(
 ### Package Management
 - **ALWAYS use `uv` instead of `pip`**
 - Install packages: `uv pip install package_name`
-- Install from requirements: `uv pip install -r requirements.txt`
-- Add new dependencies to requirements.txt
+- Install project with dev dependencies: `uv pip install -e ".[dev]"`
+- Add new dependencies to `pyproject.toml` under `dependencies` or `[project.optional-dependencies]`
 
 ### Modular Architecture
 ```

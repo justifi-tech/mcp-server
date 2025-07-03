@@ -32,7 +32,7 @@ mcp-servers/
 │   └── endpoint-inventory.md   # Verified endpoints
 ├── archive/                  # Legacy code (safely archived)
 ├── main.py                   # Clean MCP server (215 lines)
-├── requirements.txt          # Minimal dependencies
+├── pyproject.toml            # Modern dependency management
 ├── docker-compose.yml        # Container setup
 ├── Dockerfile               # Production container
 ├── Makefile                 # Development commands

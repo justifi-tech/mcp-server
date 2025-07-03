@@ -11,22 +11,13 @@ ENV PYTHONUNBUFFERED=1
 # Install uv for fast package management
 RUN pip install uv
 
-# Copy requirements first for better caching
-COPY requirements.txt .
-
-# Install dependencies using uv
-RUN uv pip install --system -r requirements.txt
-
 # Development stage with auto-restart capability
 FROM base AS development
 
-# Install watchdog for auto-restart functionality
-RUN uv pip install --system watchdog
-
-# Copy pyproject.toml for dev dependencies
+# Copy pyproject.toml for dependency installation
 COPY pyproject.toml .
 
-# Install dev dependencies including LangChain
+# Install dev dependencies (includes all dependencies)
 RUN uv pip install --system -e ".[dev]"
 
 # Copy application code (will be overridden by volume mount in development)
@@ -41,15 +32,18 @@ CMD ["watchmedo", "auto-restart", "--directory", "/app", "--patterns", "*.py", "
 # Production stage (minimal and secure)
 FROM base AS production
 
+# Copy pyproject.toml for dependency installation
+COPY pyproject.toml .
+
+# Install production dependencies only
+RUN uv pip install --system .
+
 # Create non-root user for security
 RUN groupadd -r mcpuser && useradd -r -g mcpuser mcpuser
 
 # Copy only necessary application files with proper ownership
 COPY --chown=mcpuser:mcpuser main.py .
 COPY --chown=mcpuser:mcpuser justifi_mcp/ ./justifi_mcp/
-
-# Create necessary directories with proper permissions
-RUN mkdir -p /tmp && chown mcpuser:mcpuser /tmp
 
 # Set environment variables
 ENV PYTHONPATH=/app

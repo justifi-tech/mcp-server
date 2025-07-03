@@ -14,7 +14,14 @@ from mcp.server import Server
 from mcp.types import TextContent, Tool
 
 from .config import JustiFiConfig
-from .core import JustiFiClient
+from .core import (
+    APIError,
+    AuthenticationError,
+    JustiFiClient,
+    JustiFiError,
+    RateLimitError,
+    ValidationError,
+)
 from .payouts import (
     get_payout_status,
     get_recent_payouts,
@@ -94,6 +101,9 @@ class JustiFiToolkit:
             self.config = JustiFiConfig(**config_data)
 
         # Initialize client with configuration
+        if not self.config.client_id or not self.config.client_secret:
+            raise ValueError("JustiFi credentials are required")
+
         self.client = JustiFiClient(
             client_id=self.config.client_id, client_secret=self.config.client_secret
         )
@@ -230,7 +240,7 @@ class JustiFiToolkit:
             return [
                 TextContent(
                     type="text",
-                    text=f"Tool '{name}' is not enabled. Available tools: {available_tools}",
+                    text=f"❌ Tool '{name}' is not enabled.\n\nAvailable tools: {', '.join(available_tools)}\n\nTo enable this tool, update your configuration.",
                 )
             ]
 
@@ -239,7 +249,7 @@ class JustiFiToolkit:
             return [
                 TextContent(
                     type="text",
-                    text=f"Unknown tool: {name}",
+                    text=f"❌ Unknown tool: {name}\n\nThis tool is not implemented. Please check the tool name and try again.",
                 )
             ]
 
@@ -250,11 +260,68 @@ class JustiFiToolkit:
 
             # Format the response
             response_text = json.dumps(result, indent=2)
-            return [TextContent(type="text", text=response_text)]
+            return [TextContent(type="text", text=f"✅ Success:\n\n{response_text}")]
+
+        except ValidationError as e:
+            error_details = f"\n\nError code: {e.error_code}" if e.error_code else ""
+            if e.details:
+                error_details += f"\nDetails: {json.dumps(e.details, indent=2)}"
+
+            return [
+                TextContent(
+                    type="text",
+                    text=f"❌ Input Error: {str(e)}{error_details}\n\n💡 Please check your input parameters and try again.",
+                )
+            ]
+
+        except AuthenticationError as e:
+            error_details = f"\n\nError code: {e.error_code}" if e.error_code else ""
+
+            return [
+                TextContent(
+                    type="text",
+                    text=f"🔐 Authentication Error: {str(e)}{error_details}\n\n💡 Please check your JUSTIFI_CLIENT_ID and JUSTIFI_CLIENT_SECRET environment variables.",
+                )
+            ]
+
+        except RateLimitError as e:
+            return [
+                TextContent(
+                    type="text",
+                    text=f"⏱️ Rate Limit: {str(e)}\n\n💡 Please wait a moment before making another request.",
+                )
+            ]
+
+        except APIError as e:
+            error_details = f"\n\nError code: {e.error_code}" if e.error_code else ""
+            error_details += (
+                f"\nStatus code: {e.status_code}" if hasattr(e, "status_code") else ""
+            )
+
+            return [
+                TextContent(
+                    type="text",
+                    text=f"🔌 API Error: {str(e)}{error_details}\n\n💡 If this persists, please contact support.",
+                )
+            ]
+
+        except JustiFiError as e:
+            error_details = f"\n\nError code: {e.error_code}" if e.error_code else ""
+
+            return [
+                TextContent(
+                    type="text",
+                    text=f"⚠️ JustiFi Error: {str(e)}{error_details}",
+                )
+            ]
 
         except Exception as e:
-            error_msg = f"Error calling {name}: {type(e).__name__}: {str(e)}"
-            return [TextContent(type="text", text=error_msg)]
+            return [
+                TextContent(
+                    type="text",
+                    text=f"💥 Unexpected Error: {type(e).__name__}: {str(e)}\n\n💡 This is an unexpected error. Please contact support if it persists.",
+                )
+            ]
 
     def get_mcp_server(self, server_name: str = "justifi-toolkit-mcp-server") -> Server:
         """Get an MCP server configured with enabled tools.

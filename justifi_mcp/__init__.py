@@ -10,7 +10,14 @@ __email__ = "support@justifi.ai"
 
 # Export main components
 from .config import ContextConfig, JustiFiConfig, PayoutToolsConfig, ToolConfig
-from .core import JustiFiClient
+from .core import (
+    APIError,
+    AuthenticationError,
+    JustiFiClient,
+    JustiFiError,
+    RateLimitError,
+    ValidationError,
+)
 from .payouts import (
     get_payout_status,
     get_recent_payouts,
@@ -29,6 +36,12 @@ __all__ = [
     "ContextConfig",
     # Core client
     "JustiFiClient",
+    # Error classes
+    "JustiFiError",
+    "AuthenticationError",
+    "ValidationError",
+    "APIError",
+    "RateLimitError",
     # Individual tools
     "retrieve_payout",
     "list_payouts",

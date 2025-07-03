@@ -100,7 +100,7 @@ class TestHealthCheck:
     async def test_health_check_success(self, mock_token_response):
         """Test successful health check."""
         # Mock OAuth token request
-        respx.post("https://api.justifi.ai/oauth/token").mock(
+        respx.post("https://api.justifi.ai/v1/oauth/token").mock(
             return_value=Response(200, json=mock_token_response)
         )
 
@@ -142,7 +142,7 @@ class TestMainIntegration:
     async def test_toolkit_integration(self, mock_token_response):
         """Test that main.py properly integrates with the toolkit system."""
         # Mock OAuth token request
-        respx.post("https://api.justifi.ai/oauth/token").mock(
+        respx.post("https://api.justifi.ai/v1/oauth/token").mock(
             return_value=Response(200, json=mock_token_response)
         )
 

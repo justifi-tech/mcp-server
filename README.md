@@ -28,9 +28,7 @@ This MCP server specializes in payout management with these tools:
 
 2. **Install dependencies**:
    ```bash
-   pip install -r requirements.txt
-   # OR use uv for faster installs:
-   uv pip install -r requirements.txt
+   uv pip install -e ".[dev]"
    ```
 
 3. **Test the setup**:
@@ -61,22 +59,6 @@ make dev
 make shell
 ```
 
-## 🏗️ Project Structure
-
-```
-mcp-servers/
-├── justifi_mcp/           # Main package (clean, focused)
-│   ├── __init__.py        # Package exports
-│   ├── core.py            # OAuth2 client & HTTP utilities
-│   └── payouts.py         # Payout tools implementation
-├── tests/
-│   └── test_payout_tools.py  # Comprehensive payout tests (12 tests)
-├── eval/
-│   └── payout_operations.jsonl  # AI evaluation scenarios
-├── main.py                # MCP server entry point
-├── archive/               # Legacy code (tools/, main_old.py)
-└── docs/                  # Documentation & roadmaps
-```
 
 ## 🧪 Testing
 

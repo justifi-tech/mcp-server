@@ -79,7 +79,7 @@ class TestRetrievePayout:
     ):
         """Test successful payout retrieval."""
         # Mock OAuth token request
-        respx.post("https://api.justifi.ai/oauth/token").mock(
+        respx.post("https://api.justifi.ai/v1/oauth/token").mock(
             return_value=Response(200, json=mock_token_response)
         )
 
@@ -94,12 +94,12 @@ class TestRetrievePayout:
         assert result["data"]["status"] == "completed"
 
     @respx.mock
-    async def test_retrieve_payout_legacy_mode(
+    async def test_retrieve_payout_with_explicit_client(
         self, mock_token_response, mock_payout_data
     ):
-        """Test payout retrieval using legacy mode (no client)."""
+        """Test payout retrieval with explicitly created client."""
         # Mock OAuth token request
-        respx.post("https://api.justifi.ai/oauth/token").mock(
+        respx.post("https://api.justifi.ai/v1/oauth/token").mock(
             return_value=Response(200, json=mock_token_response)
         )
 
@@ -108,8 +108,10 @@ class TestRetrievePayout:
             return_value=Response(200, json=mock_payout_data)
         )
 
-        # This test is no longer valid since client is now required
-        client = JustiFiClient()
+        # Test with explicit credentials
+        client = JustiFiClient(
+            client_id="test_client", client_secret="test_secret"
+        )  # noqa: S106
         result = await retrieve_payout(client, "po_test123")
         assert result == mock_payout_data
 
@@ -125,7 +127,7 @@ class TestRetrievePayout:
     async def test_retrieve_payout_not_found(self, justifi_client, mock_token_response):
         """Test handling of 404 error."""
         # Mock OAuth token request
-        respx.post("https://api.justifi.ai/oauth/token").mock(
+        respx.post("https://api.justifi.ai/v1/oauth/token").mock(
             return_value=Response(200, json=mock_token_response)
         )
 
@@ -147,7 +149,7 @@ class TestListPayouts:
     ):
         """Test successful payouts listing."""
         # Mock OAuth token request
-        respx.post("https://api.justifi.ai/oauth/token").mock(
+        respx.post("https://api.justifi.ai/v1/oauth/token").mock(
             return_value=Response(200, json=mock_token_response)
         )
 
@@ -166,7 +168,7 @@ class TestListPayouts:
     ):
         """Test payouts listing with pagination."""
         # Mock OAuth token request
-        respx.post("https://api.justifi.ai/oauth/token").mock(
+        respx.post("https://api.justifi.ai/v1/oauth/token").mock(
             return_value=Response(200, json=mock_token_response)
         )
 
@@ -205,7 +207,7 @@ class TestGetPayoutStatus:
     ):
         """Test successful payout status retrieval."""
         # Mock OAuth token request
-        respx.post("https://api.justifi.ai/oauth/token").mock(
+        respx.post("https://api.justifi.ai/v1/oauth/token").mock(
             return_value=Response(200, json=mock_token_response)
         )
 
@@ -223,7 +225,7 @@ class TestGetPayoutStatus:
     ):
         """Test error handling when status field is missing."""
         # Mock OAuth token request
-        respx.post("https://api.justifi.ai/oauth/token").mock(
+        respx.post("https://api.justifi.ai/v1/oauth/token").mock(
             return_value=Response(200, json=mock_token_response)
         )
 
@@ -245,7 +247,7 @@ class TestGetRecentPayouts:
     ):
         """Test successful recent payouts retrieval."""
         # Mock OAuth token request
-        respx.post("https://api.justifi.ai/oauth/token").mock(
+        respx.post("https://api.justifi.ai/v1/oauth/token").mock(
             return_value=Response(200, json=mock_token_response)
         )
 

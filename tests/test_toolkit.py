@@ -164,7 +164,7 @@ class TestToolkitToolExecution:
     ):
         """Test successful tool execution."""
         # Mock OAuth token request
-        respx.post("https://api.justifi.ai/oauth/token").mock(
+        respx.post("https://api.justifi.ai/v1/oauth/token").mock(
             return_value=Response(200, json=mock_token_response)
         )
 
@@ -177,7 +177,16 @@ class TestToolkitToolExecution:
         result = await toolkit.call_tool("retrieve_payout", {"payout_id": "po_test123"})
 
         assert len(result) == 1
-        response_data = json.loads(result[0].text)
+        # Check that response includes success indicator and contains the data
+        response_text = result[0].text
+        assert "✅ Success:" in response_text
+        assert "po_test123" in response_text
+        assert "completed" in response_text
+
+        # Extract JSON from the formatted response
+        json_start = response_text.find("{")
+        json_part = response_text[json_start:]
+        response_data = json.loads(json_part)
         assert response_data["data"]["id"] == "po_test123"
 
     async def test_call_tool_disabled(self, restricted_config):
@@ -206,7 +215,10 @@ class TestToolkitToolExecution:
         result = await toolkit.call_tool("retrieve_payout", {"payout_id": ""})
 
         assert len(result) == 1
-        assert "Error calling retrieve_payout" in result[0].text
+        assert (
+            "Input Error" in result[0].text
+            or "payout_id cannot be empty" in result[0].text
+        )
         assert "ValueError" in result[0].text
 
 
@@ -349,7 +361,7 @@ class TestToolkitLangChainIntegration:
         # Mock the client request
         with respx.mock:
             # Mock OAuth token request
-            respx.post("https://api.justifi.ai/oauth/token").mock(
+            respx.post("https://api.justifi.ai/v1/oauth/token").mock(
                 return_value=Response(200, json=mock_token_response)
             )
 
@@ -397,7 +409,7 @@ class TestToolkitIntegration:
     async def test_full_workflow(self, basic_config, mock_token_response):
         """Test a complete workflow with the toolkit."""
         # Mock OAuth token request
-        respx.post("https://api.justifi.ai/oauth/token").mock(
+        respx.post("https://api.justifi.ai/v1/oauth/token").mock(
             return_value=Response(200, json=mock_token_response)
         )
 
@@ -427,7 +439,16 @@ class TestToolkitIntegration:
         result = await toolkit.call_tool("list_payouts", {"limit": 10})
         assert len(result) == 1
 
-        response_data = json.loads(result[0].text)
+        # Check that response includes success indicator and contains the data
+        response_text = result[0].text
+        assert "✅ Success:" in response_text
+        assert "po_test123" in response_text
+        assert "po_test456" in response_text
+
+        # Extract JSON from the formatted response
+        json_start = response_text.find("{")
+        json_part = response_text[json_start:]
+        response_data = json.loads(json_part)
         assert len(response_data["data"]) == 2
         assert response_data["data"][0]["id"] == "po_test123"
 

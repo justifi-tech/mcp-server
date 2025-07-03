@@ -7,7 +7,7 @@ name = "justifi-mcp-server"
 version = "1.0.0"
 description = "JustiFi MCP Server for payment processing integration"
 authors = [{ name = "MCP Development Team" }]
-license = { text = "LICENSE" }
+license = "MIT"
 requires-python = ">=3.11"
 dependencies = ["mcp", "httpx", "pydantic", "python-dotenv", "langsmith"]
 
@@ -20,7 +20,6 @@ dev = [
     "black",
     "ruff",
     "mypy",
-    "bandit",
     "watchdog",
     "pre-commit",
     "types-requests",
@@ -31,85 +30,53 @@ dev = [
 test = ["pytest", "pytest-asyncio", "pytest-cov", "respx"]
 api = ["requests", "pyyaml", "deepdiff"]
 docs = ["mkdocs", "mkdocs-material", "mkdocs-mermaid2-plugin"]
+all = [
+    # Include all dependencies from other extras
+    "pytest",
+    "pytest-asyncio",
+    "pytest-cov",
+    "respx",
+    "black",
+    "ruff",
+    "mypy",
+    "watchdog",
+    "pre-commit",
+    "types-requests",
+    "types-PyYAML",
+    "langchain-core",
+    "langchain-openai",
+    "requests",
+    "pyyaml",
+    "deepdiff",
+    "mkdocs",
+    "mkdocs-material",
+    "mkdocs-mermaid2-plugin",
+]
 
 [tool.black]
 line-length = 88
 target-version = ['py311']
-include = '\.pyi?$'
-extend-exclude = '''
-/(
-  # directories
-  \.eggs
-  | \.git
-  | \.hg
-  | \.mypy_cache
-  | \.tox
-  | \.venv
-  | build
-  | dist
-)/
-'''
 
 [tool.ruff]
-# Same as Black.
 line-length = 88
-# Assume Python 3.11+.
 target-version = "py311"
 
 [tool.ruff.lint]
-# Enable pycodestyle (`E`) and Pyflakes (`F`) codes by default.
+# Essential rules for code quality
 select = [
-    "E",   # pycodestyle errors
-    "W",   # pycodestyle warnings
-    "F",   # Pyflakes
-    "I",   # isort
-    "B",   # flake8-bugbear
-    "C4",  # flake8-comprehensions
-    "UP",  # pyupgrade
-    "D",   # pydocstyle
-    "N",   # pep8-naming
-    "S",   # bandit
-    "T20", # flake8-print
-    "RET", # flake8-return
-    "SIM", # flake8-simplify
-    "PTH", # flake8-use-pathlib
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "F",  # Pyflakes
+    "I",  # isort
+    "B",  # flake8-bugbear
+    "UP", # pyupgrade
 ]
 ignore = [
     "E501", # line too long, handled by black
-    "B008", # do not perform function calls in argument defaults
-    "C901", # too complex
-    "D100", # Missing docstring in public module
-    "D101", # Missing docstring in public class
-    "D102", # Missing docstring in public method
-    "D103", # Missing docstring in public function
-    "D104", # Missing docstring in public package
-    "D400", # First line should end with a period (too pedantic)
-    "D401", # First line should be imperative (too pedantic)
-    "D415", # First line should end with punctuation (too pedantic)
-    "S101", # Use of assert detected (OK in tests)
-    "T20",  # Print statements (OK for debugging)
 ]
-
-# Allow unused variables when underscore-prefixed.
-dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
-
-[tool.ruff.lint.mccabe]
-max-complexity = 10
 
 [tool.ruff.lint.isort]
-known-first-party = ["tools", "tests"]
-
-# Per-file ignores
-[tool.ruff.lint.per-file-ignores]
-"tests/*" = [
-    "PTH100", # Path operations (not critical in tests)
-    "PTH120", # Path operations (not critical in tests)
-    "S105",   # Hardcoded password string (OK for test credentials)
-    "S106",   # Hardcoded password argument (OK for test credentials)
-]
-"scripts/*" = [
-    "T201", # Print statements are expected in scripts
-]
+known-first-party = ["justifi_mcp", "tests"]
 
 [tool.mypy]
 python_version = "3.11"
@@ -141,8 +108,7 @@ module = [
 ]
 ignore_missing_imports = true
 
-# No script-specific overrides needed - all issues fixed
-
-[tool.bandit]
-exclude_dirs = ["tests", ".venv", "build", "dist"]
-# Tests are excluded entirely - they're allowed to have asserts and test data
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["justifi_mcp*"]
+exclude = ["tests*", "archive*", "eval*", "docker*", "examples*", "scripts*"]

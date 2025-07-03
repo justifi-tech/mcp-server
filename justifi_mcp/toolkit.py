@@ -6,28 +6,29 @@ Provides adapters for different AI frameworks (MCP, LangChain, OpenAI, etc.).
 
 from __future__ import annotations
 
-from typing import Any, cast
+from typing import Any
 
 from .adapters.mcp import MCPAdapter
 from .config import JustiFiConfig
-from .core import JustiFiClient
 from .tools import AVAILABLE_TOOLS
 
 
 class JustiFiToolkit:
-    """Framework-agnostic JustiFi Agent Toolkit.
+    """Multi-framework toolkit for JustiFi payment operations.
 
-    Provides consistent interfaces for JustiFi payment operations across
-    multiple AI frameworks (MCP, LangChain, OpenAI Agent SDK, etc.).
+    Provides a unified interface to JustiFi tools that can be used across
+    different AI frameworks (MCP, LangChain, OpenAI, etc.) with configuration-driven
+    tool selection and context management.
 
-    Example:
-        ```python
-        from justifi_mcp import JustiFiToolkit
+    Examples:
+        # Basic usage with all tools enabled
+        toolkit = JustiFiToolkit(
+            client_id="your_client_id",
+            client_secret="your_client_secret",
+            enabled_tools="all"
+        )
 
-        # Basic usage with environment variables
-        toolkit = JustiFiToolkit()
-
-        # With explicit configuration
+        # Selective tool enabling
         toolkit = JustiFiToolkit(
             client_id="your_client_id",
             client_secret="your_client_secret",
@@ -37,58 +38,55 @@ class JustiFiToolkit:
         # Framework-specific usage
         mcp_server = toolkit.get_mcp_server()
         langchain_tools = toolkit.get_langchain_tools()
-        ```
     """
 
     def __init__(
         self,
         client_id: str | None = None,
         client_secret: str | None = None,
+        enabled_tools: str | list[str] = "all",
+        context: dict[str, Any] | None = None,
         configuration: dict[str, Any] | None = None,
         config: JustiFiConfig | None = None,
         **kwargs: Any,
     ):
-        """Initialize JustiFi toolkit.
+        """Initialize JustiFi toolkit with configuration.
 
         Args:
-            client_id: JustiFi client ID (or from JUSTIFI_CLIENT_ID env var)
-            client_secret: JustiFi client secret (or from JUSTIFI_CLIENT_SECRET env var)
-            configuration: Dictionary configuration (legacy support)
-            config: Pre-built JustiFiConfig instance (takes precedence)
+            client_id: JustiFi API client ID
+            client_secret: JustiFi API client secret
+            enabled_tools: Tools to enable ("all" or list of tool names)
+            context: Additional context configuration
+            configuration: Legacy configuration dict support
+            config: Pre-configured JustiFiConfig instance
             **kwargs: Additional configuration parameters
-
         """
         if config:
+            # Use provided configuration object
             self.config = config
+        elif configuration:
+            # Legacy configuration dict support
+            self.config = JustiFiConfig(**configuration, **kwargs)
         else:
-            # Build config from parameters
-            config_data = {}
-            if client_id:
-                config_data["client_id"] = client_id
-            if client_secret:
-                config_data["client_secret"] = client_secret
-            if configuration:
-                config_data.update(configuration)
+            # Create new configuration from parameters
+            self.config = JustiFiConfig(
+                client_id=client_id,
+                client_secret=client_secret,
+                enabled_tools=enabled_tools,
+                context=context,
+                **kwargs,
+            )
 
-            # Add any additional kwargs
-            config_data.update(kwargs)
-
-            self.config = JustiFiConfig(**config_data)
-
-        # Validate credentials
-        if not self.config.client_id or not self.config.client_secret:
-            raise ValueError("JustiFi credentials are required")
-
-        # Initialize client
-        self.client = JustiFiClient(
-            client_id=self.config.client_id, client_secret=self.config.client_secret
-        )
-
-        # Initialize adapters (lazy-loaded)
+        # Initialize adapters as None for lazy loading
         self._mcp_adapter: MCPAdapter | None = None
+        self._langchain_adapter = None
 
     def get_enabled_tools(self) -> dict[str, Any]:
-        """Get dictionary of enabled tools and their functions."""
+        """Get currently enabled tools based on configuration.
+
+        Returns:
+            Dictionary mapping tool names to tool functions
+        """
         enabled_tools = {}
         enabled_tool_names = self.config.get_enabled_tools()
 
@@ -158,128 +156,47 @@ class JustiFiToolkit:
         """Get LangChain-compatible tools.
 
         Returns:
-            List of LangChain Tool instances
+            List of LangChain StructuredTool instances
 
         Raises:
             ImportError: If LangChain is not installed
         """
-        try:
-            from langchain_core.tools import StructuredTool
-            from pydantic import BaseModel, Field
-        except ImportError as e:
-            raise ImportError(
-                "LangChain is required for get_langchain_tools(). "
-                "Install with: pip install langchain-core"
-            ) from e
+        if not hasattr(self, "_langchain_adapter"):
+            from .adapters.langchain import LangChainAdapter
 
-        enabled_tools = self.get_enabled_tools()
-        langchain_tools = []
+            self._langchain_adapter = LangChainAdapter(self.config)
 
-        for tool_name, tool_func in enabled_tools.items():
-            # Create tool-specific input models and wrappers
-            if tool_name == "retrieve_payout":
+        return self._langchain_adapter.get_langchain_tools()  # type: ignore[no-any-return]
 
-                class RetrievePayoutInput(BaseModel):
-                    payout_id: str = Field(
-                        description="The ID of the payout to retrieve (e.g., 'po_ABC123XYZ')"
-                    )
+    def get_langchain_schemas(self) -> list[dict[str, Any]]:
+        """Get tool schemas for LangChain integration.
 
-                def create_retrieve_wrapper(func):
-                    async def retrieve_payout_wrapper(**kwargs: Any) -> dict[str, Any]:
-                        return cast(dict[str, Any], await func(self.client, **kwargs))
+        Returns:
+            List of tool schema dictionaries
+        """
+        if not hasattr(self, "_langchain_adapter"):
+            from .adapters.langchain import LangChainAdapter
 
-                    return retrieve_payout_wrapper
+            self._langchain_adapter = LangChainAdapter(self.config)
 
-                tool = StructuredTool(
-                    name="retrieve_payout",
-                    description="Retrieve details of a specific payout by ID",
-                    args_schema=RetrievePayoutInput,
-                    coroutine=create_retrieve_wrapper(tool_func),
-                )
-                langchain_tools.append(tool)
+        return self._langchain_adapter.get_tool_schemas()  # type: ignore[no-any-return]
 
-            elif tool_name == "list_payouts":
+    async def execute_langchain_tool(self, tool_name: str, **kwargs: Any) -> Any:
+        """Execute a tool directly with LangChain-style error handling.
 
-                class ListPayoutsInput(BaseModel):
-                    limit: int = Field(
-                        default=25,
-                        description="Number of payouts to return (default: 25, max: 100)",
-                        ge=1,
-                        le=100,
-                    )
-                    after_cursor: str | None = Field(
-                        default=None,
-                        description="Cursor for pagination (get payouts after this cursor)",
-                    )
-                    before_cursor: str | None = Field(
-                        default=None,
-                        description="Cursor for pagination (get payouts before this cursor)",
-                    )
+        Args:
+            tool_name: Name of the tool to execute
+            **kwargs: Tool arguments
 
-                def create_list_wrapper(func):
-                    async def list_payouts_wrapper(**kwargs: Any) -> dict[str, Any]:
-                        return cast(dict[str, Any], await func(self.client, **kwargs))
+        Returns:
+            Tool result
+        """
+        if not self._langchain_adapter:
+            from .adapters.langchain import LangChainAdapter
 
-                    return list_payouts_wrapper
+            self._langchain_adapter = LangChainAdapter(self.config)
 
-                tool = StructuredTool(
-                    name="list_payouts",
-                    description="List payouts with cursor-based pagination",
-                    args_schema=ListPayoutsInput,
-                    coroutine=create_list_wrapper(tool_func),
-                )
-                langchain_tools.append(tool)
-
-            elif tool_name == "get_payout_status":
-
-                class GetPayoutStatusInput(BaseModel):
-                    payout_id: str = Field(
-                        description="The ID of the payout to check status for (e.g., 'po_ABC123XYZ')"
-                    )
-
-                def create_status_wrapper(func):
-                    async def get_payout_status_wrapper(**kwargs: Any) -> str:
-                        return cast(str, await func(self.client, **kwargs))
-
-                    return get_payout_status_wrapper
-
-                tool = StructuredTool(
-                    name="get_payout_status",
-                    description="Get the status of a specific payout",
-                    args_schema=GetPayoutStatusInput,
-                    coroutine=create_status_wrapper(tool_func),
-                )
-                langchain_tools.append(tool)
-
-            elif tool_name == "get_recent_payouts":
-
-                class GetRecentPayoutsInput(BaseModel):
-                    limit: int = Field(
-                        default=10,
-                        description="Number of recent payouts to return (default: 10, max: 25)",
-                        ge=1,
-                        le=25,
-                    )
-
-                def create_recent_wrapper(func):
-                    async def get_recent_payouts_wrapper(
-                        **kwargs: Any,
-                    ) -> list[dict[str, Any]]:
-                        return cast(
-                            list[dict[str, Any]], await func(self.client, **kwargs)
-                        )
-
-                    return get_recent_payouts_wrapper
-
-                tool = StructuredTool(
-                    name="get_recent_payouts",
-                    description="Get the most recent payouts",
-                    args_schema=GetRecentPayoutsInput,
-                    coroutine=create_recent_wrapper(tool_func),
-                )
-                langchain_tools.append(tool)
-
-        return langchain_tools
+        return await self._langchain_adapter.execute_tool(tool_name, **kwargs)
 
     def get_openai_functions(self) -> list[dict[str, Any]]:
         """Get OpenAI function definitions.

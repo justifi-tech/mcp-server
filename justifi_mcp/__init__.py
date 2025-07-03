@@ -12,6 +12,7 @@ __email__ = "support@justifi.ai"
 
 # Export main components
 # Framework adapters (for advanced usage)
+from .adapters.langchain import LangChainAdapter
 from .adapters.mcp import MCPAdapter
 from .config import ContextConfig, JustiFiConfig
 from .core import (
@@ -51,4 +52,5 @@ __all__ = [
     "get_recent_payouts",
     # Framework adapters (advanced)
     "MCPAdapter",
+    "LangChainAdapter",
 ]

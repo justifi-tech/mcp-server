@@ -340,16 +340,15 @@ class TestToolkitLangChainIntegration:
         """Test graceful handling when LangChain is not installed."""
         toolkit = JustiFiToolkit(config=basic_config)
 
-        # Mock import error by patching the specific import
-        def mock_import(name, *args, **kwargs):
-            if name == "langchain_core.tools":
-                raise ImportError("No module named 'langchain_core'")
-            return __import__(name, *args, **kwargs)
-
+        # Mock the LangChain adapter import specifically
         with (
-            patch("builtins.__import__", side_effect=mock_import),
+            patch("justifi_mcp.adapters.langchain.LangChainAdapter") as mock_adapter,
             pytest.raises(ImportError, match="LangChain is required"),
         ):
+            # Make the adapter constructor raise ImportError
+            mock_adapter.side_effect = ImportError(
+                "LangChain is required for LangChainAdapter. Install with: pip install langchain-core"
+            )
             toolkit.get_langchain_tools()
 
     @pytest.mark.asyncio

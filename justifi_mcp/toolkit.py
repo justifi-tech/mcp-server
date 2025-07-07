@@ -46,7 +46,6 @@ class JustiFiToolkit:
         client_secret: str | None = None,
         enabled_tools: str | list[str] = "all",
         context: dict[str, Any] | None = None,
-        configuration: dict[str, Any] | None = None,
         config: JustiFiConfig | None = None,
         **kwargs: Any,
     ):
@@ -57,18 +56,12 @@ class JustiFiToolkit:
             client_secret: JustiFi API client secret
             enabled_tools: Tools to enable ("all" or list of tool names)
             context: Additional context configuration
-            configuration: Legacy configuration dict support
             config: Pre-configured JustiFiConfig instance
             **kwargs: Additional configuration parameters
         """
         if config:
-            # Use provided configuration object
             self.config = config
-        elif configuration:
-            # Legacy configuration dict support
-            self.config = JustiFiConfig(**configuration, **kwargs)
         else:
-            # Create new configuration from parameters
             self.config = JustiFiConfig(
                 client_id=client_id,
                 client_secret=client_secret,

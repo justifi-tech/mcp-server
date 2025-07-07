@@ -285,15 +285,14 @@ async def demonstrate_custom_orchestration():
     print("🔧 Custom Workflow: Detailed Payout Health Check")
 
     try:
-        # Step 1: Get recent payouts
         print("  1️⃣ Fetching recent payouts...")
-        recent_payouts = await toolkit.call_tool("list_payouts", {"limit": 5})
+        recent_payouts = await toolkit.call_tool("get_recent_payouts", {"limit": 10})
 
+        status_checks = []
         if recent_payouts and "data" in recent_payouts:
             payouts = recent_payouts["data"]
             print(f"     Found {len(payouts)} recent payouts")
 
-            # Step 2: Check status of each payout
             print("  2️⃣ Checking individual payout statuses...")
 
             for i, payout in enumerate(payouts[:3]):  # Check first 3

@@ -30,9 +30,9 @@ from justifi_mcp.config import JustiFiConfig
 from justifi_mcp.toolkit import JustiFiToolkit
 
 
-def setup_logging() -> None:
-    """Configure logging with environment variable support."""
-    log_level = os.getenv("LOG_LEVEL", "INFO").upper()
+def setup_logging(log_level: str = "INFO") -> None:
+    """Configure logging for the MCP server."""
+    logger = logging.getLogger()
 
     # Validate log level
     valid_levels = {"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"}
@@ -50,7 +50,6 @@ def setup_logging() -> None:
     )
 
     # Create logger for this module
-    logger = logging.getLogger(__name__)
     logger.info(f"Logging configured at {log_level} level")
 
 
@@ -102,15 +101,14 @@ def load_configuration() -> JustiFiConfig:
 
 
 async def main():
-    """Main entry point for the configuration-driven MCP server."""
+    """Main entry point for the MCP server."""
+    setup_logging(os.getenv("LOG_LEVEL", "INFO"))
+
+    logger = logging.getLogger(__name__)
+    logger.info("Starting JustiFi MCP Server initialization...")
+
     # Load environment variables first
     load_dotenv()
-
-    # Setup logging early
-    setup_logging()
-    logger = logging.getLogger(__name__)
-
-    logger.info("Starting JustiFi MCP Server initialization...")
 
     # Load configuration
     try:
@@ -118,21 +116,10 @@ async def main():
         logger.debug("Configuration loaded successfully")
     except Exception as e:
         logger.error(f"Failed to load configuration: {e}")
-        print(f"Error: Failed to load configuration: {e}", file=sys.stderr)
-        sys.exit(1)
+        raise
 
-    # Create toolkit with configuration
-    try:
-        toolkit = JustiFiToolkit(config=config)
-        logger.debug("Toolkit initialized successfully")
-    except Exception as e:
-        logger.error(f"Failed to initialize toolkit: {e}")
-        print(f"Error: Failed to initialize toolkit: {e}", file=sys.stderr)
-        print(
-            "Please check your JUSTIFI_CLIENT_ID and JUSTIFI_CLIENT_SECRET",
-            file=sys.stderr,
-        )
-        sys.exit(1)
+    toolkit = JustiFiToolkit(config=config)
+    logger.debug("Toolkit initialized successfully")
 
     # Optional health check on startup
     if "--health-check" in sys.argv:

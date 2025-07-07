@@ -225,7 +225,6 @@ class ProductionPayoutAgent:
         """Check if request is within rate limits."""
         current_time = time.time()
 
-        # Remove old requests outside the window
         self.rate_limiter["requests"] = [
             req_time
             for req_time in self.rate_limiter["requests"]

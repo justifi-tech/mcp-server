@@ -160,26 +160,85 @@ mcp_server = toolkit.get_mcp_server()
 langchain_tools = toolkit.get_langchain_tools()
 ```
 
-### 5.4 Target Tool Coverage (v2.0)
-**Core Payment Operations (8 tools):**
-- `create_payment`, `retrieve_payment`, `list_payments`, `update_payment`
-- `create_refund`, `retrieve_refund`, `list_refunds`
-- `capture_payment` (for auth/capture flow)
+### 5.4 Complete JustiFi API Analysis: Available vs Implemented
 
-**Payment Methods (4 tools):**
-- `create_payment_method`, `retrieve_payment_method`
-- `update_payment_method`, `delete_payment_method`
+#### ✅ Currently Implemented (4 tools):
+- `retrieve_payout` - GET `/payouts/{id}`
+- `list_payouts` - GET `/payouts`  
+- `get_payout_status` - GET `/payouts/{id}` (status only)
+- `get_recent_payouts` - GET `/payouts` (recent only)
 
-**Payouts (4 tools - current):**
-- `retrieve_payout`, `list_payouts`, `get_payout_status`, `get_recent_payouts`
+#### 🎯 HIGH PRIORITY - Core Payment Operations (8 tools):
 
-**Webhooks (3 tools):**
-- `create_webhook`, `list_webhooks`, `delete_webhook`
+| **Payments** | Endpoint | Status | Priority |
+|-------------|----------|--------|----------|
+| `create_payment` | POST `/payments` | ❌ **MISSING** | P1 - Critical |
+| `retrieve_payment` | GET `/payments/{id}` | ❌ **MISSING** | P1 - Critical |
+| `list_payments` | GET `/payments` | ❌ **MISSING** | P1 - Critical |
+| `capture_payment` | POST `/payments/{id}/capture` | ❌ **MISSING** | P2 - Important |
+| `void_payment` | POST `/payments/{id}/void` | ❌ **MISSING** | P2 - Important |
+| `create_refund` | POST `/payments/{id}/refunds` | ❌ **MISSING** | P1 - Critical |
+| `list_refunds` | GET `/payments/{id}/refunds` | ❌ **MISSING** | P2 - Important |
+| `list_payment_balance_transactions` | GET `/payments/{id}/payment_balance_transactions` | ❌ **MISSING** | P3 - Nice to have |
 
-**Balance & Reporting (2 tools):**
-- `list_balance_transactions`, `get_account_balance`
+#### 🎯 HIGH PRIORITY - Payment Methods (4 tools):
 
-**Total: ~21 atomic, composable tools**
+| **Payment Methods** | Endpoint | Status | Priority |
+|-------------------|----------|--------|----------|
+| `create_payment_method` | POST `/payment_methods` | ❌ **MISSING** | P1 - Critical |
+| `retrieve_payment_method` | GET `/payment_methods/{token}` | ❌ **MISSING** | P1 - Critical |
+| `list_payment_methods` | GET `/payment_methods` | ❌ **MISSING** | P2 - Important |
+| `clone_payment_method` | POST `/payment_methods/{token}/clone` | ❌ **MISSING** | P3 - Nice to have |
+
+#### 🎯 HIGH PRIORITY - Balance & Transactions (2 tools):
+
+| **Balance** | Endpoint | Status | Priority |
+|------------|----------|--------|----------|
+| `list_balance_transactions` | GET `/balance_transactions` | ❌ **MISSING** | P2 - Important |
+| `retrieve_balance_transaction` | GET `/balance_transactions/{id}` | ❌ **MISSING** | P3 - Nice to have |
+
+#### 🔶 MEDIUM PRIORITY - Advanced Features (7 tools):
+
+| **Category** | Tool | Endpoint | Priority |
+|-------------|------|----------|----------|
+| **Refunds** | `retrieve_refund` | GET `/refunds/{id}` | P2 |
+| **Refunds** | `list_all_refunds` | GET `/refunds` | P3 |
+| **Disputes** | `list_disputes` | GET `/disputes` | P3 |
+| **Disputes** | `retrieve_dispute` | GET `/disputes/{id}` | P3 |
+| **Disputes** | `submit_dispute_evidence` | POST `/disputes/{id}/evidence` | P3 |
+| **Payment Intents** | `create_payment_intent` | POST `/payment_intents` | P3 |
+| **Payment Intents** | `capture_payment_intent` | POST `/payment_intents/{id}/capture` | P3 |
+
+#### 🔻 LOW PRIORITY - Specialized Features:
+
+| **Category** | Endpoints | Count | Notes |
+|-------------|-----------|-------|-------|
+| **Sub-accounts** | `/sub_accounts/*` | 6 | Multi-tenant platform features |
+| **Checkouts** | `/checkouts/*` | 4 | Hosted checkout sessions |
+| **Terminals** | `/terminals/*` | 4 | Physical terminal management |
+| **Reports** | `/reports/*` | 2 | Complex reporting system |
+| **Web Components** | `/web_component_tokens` | 1 | Frontend integration tokens |
+
+#### 🎯 Recommended Implementation Priority (Phase 2):
+
+**Phase 2A: Core Payments (Weeks 4-6)**
+1. `create_payment` - Most critical missing piece
+2. `retrieve_payment` - Essential for payment tracking  
+3. `list_payments` - Payment history and search
+4. `create_refund` - Essential for customer service
+5. `list_refunds` - Refund management
+
+**Phase 2B: Payment Methods (Weeks 6-7)**  
+6. `create_payment_method` - Tokenization
+7. `retrieve_payment_method` - Payment method details
+8. `list_payment_methods` - Customer payment methods
+
+**Phase 2C: Advanced Payments (Week 8)**
+9. `capture_payment` - Auth/capture flow
+10. `void_payment` - Cancel payments
+11. `list_balance_transactions` - Account movements
+
+**Target: 15 total tools (from current 4) - covering 95% of common payment use cases**
 
 ---
 
@@ -205,17 +264,17 @@ langchain_tools = toolkit.get_langchain_tools()
 **Goal:** Add payment tools and perfect multi-framework support
 
 **Deliverables:**
-- [ ] **Payment tools**: Add 8 core payment operation tools
-- [ ] **Payment method tools**: Add 4 payment method tools  
-- [ ] **LangChain adapter**: Complete LangChain integration
-- [ ] **OpenAI examples**: Direct usage examples (no adapter needed)
-- [ ] **Comprehensive testing**: Framework-specific test suites
+- [ ] **Phase 2A (Weeks 4-6)**: Core payment tools - `create_payment`, `retrieve_payment`, `list_payments`, `create_refund`, `list_refunds`
+- [ ] **Phase 2B (Weeks 6-7)**: Payment method tools - `create_payment_method`, `retrieve_payment_method`, `list_payment_methods`
+- [ ] **Phase 2C (Week 8)**: Advanced tools - `capture_payment`, `void_payment`, `list_balance_transactions`
+- [ ] **Multi-framework support**: LangChain adapter ✅, OpenAI examples ✅
+- [ ] **Comprehensive testing**: Framework-specific test suites for all new tools
 
 **Success Criteria:**
-- 16+ high-quality atomic tools available
-- LangChain integration works seamlessly
-- OpenAI examples demonstrate direct usage
-- All frameworks have comprehensive test coverage
+- 15 total high-quality atomic tools (from current 4)
+- All P1 Critical tools implemented and tested
+- 95% coverage of common payment use cases
+- All frameworks work seamlessly with new tools
 - Tool schemas are clear and well-documented
 
 ### Phase 3: Distribution & Developer Experience (Weeks 9-12)

@@ -156,4 +156,4 @@ class JustiFiConfig(BaseModel):
 
     def get_effective_base_url(self) -> str:
         """Get effective base URL for API calls."""
-        return self.context.base_url or "https://api.justifi.ai/v1"
+        return self.context.base_url or "https://api.justifi.ai"

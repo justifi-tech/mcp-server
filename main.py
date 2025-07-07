@@ -17,6 +17,7 @@ Usage:
     JUSTIFI_ENABLED_TOOLS="retrieve_payout,list_payouts" python main.py
 """
 import asyncio
+import logging
 import os
 import sys
 from typing import Any
@@ -29,9 +30,37 @@ from justifi_mcp.config import JustiFiConfig
 from justifi_mcp.toolkit import JustiFiToolkit
 
 
+def setup_logging() -> None:
+    """Configure logging with environment variable support."""
+    log_level = os.getenv("LOG_LEVEL", "INFO").upper()
+
+    # Validate log level
+    valid_levels = {"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"}
+    if log_level not in valid_levels:
+        log_level = "INFO"
+
+    # Configure logging
+    logging.basicConfig(
+        level=getattr(logging, log_level),
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        handlers=[
+            # Only log to stderr to avoid interfering with MCP stdio communication
+            logging.StreamHandler(sys.stderr)
+        ],
+    )
+
+    # Create logger for this module
+    logger = logging.getLogger(__name__)
+    logger.info(f"Logging configured at {log_level} level")
+
+
 async def health_check(toolkit: JustiFiToolkit) -> dict[str, Any]:
     """Simple health check to verify JustiFi API connectivity."""
+    logger = logging.getLogger(__name__)
+
     try:
+        logger.debug("Starting health check...")
+
         # Create a temporary MCP adapter to access the client
         from justifi_mcp.adapters.mcp import MCPAdapter
 
@@ -39,47 +68,65 @@ async def health_check(toolkit: JustiFiToolkit) -> dict[str, Any]:
         token = await adapter.client.get_access_token()
         config_summary = toolkit.get_configuration_summary()
 
+        logger.debug("Health check completed successfully")
+
         return {
             "status": "healthy",
             "token_acquired": bool(token),
             "configuration": config_summary,
         }
     except Exception as e:
+        logger.error(f"Health check failed: {e}")
         return {"status": "unhealthy", "error": str(e)}
 
 
 def load_configuration() -> JustiFiConfig:
     """Load configuration from environment variables (container-friendly)."""
+    logger = logging.getLogger(__name__)
+
     # Check for custom tool configuration via environment variable
     enabled_tools_env = os.getenv("JUSTIFI_ENABLED_TOOLS")
     if enabled_tools_env:
+        logger.debug(f"Found JUSTIFI_ENABLED_TOOLS: {enabled_tools_env}")
         if enabled_tools_env.lower() == "all":
             return JustiFiConfig(enabled_tools="all")
         else:
             # Parse comma-separated list
             enabled_tools_list = [tool.strip() for tool in enabled_tools_env.split(",")]
+            logger.debug(f"Parsed enabled tools: {enabled_tools_list}")
             return JustiFiConfig(enabled_tools=enabled_tools_list)
 
     # Default configuration (no tools enabled - secure by default)
+    logger.debug("Using default configuration (no tools enabled)")
     return JustiFiConfig()
 
 
 async def main():
     """Main entry point for the configuration-driven MCP server."""
-    # Load environment variables
+    # Load environment variables first
     load_dotenv()
+
+    # Setup logging early
+    setup_logging()
+    logger = logging.getLogger(__name__)
+
+    logger.info("Starting JustiFi MCP Server initialization...")
 
     # Load configuration
     try:
         config = load_configuration()
+        logger.debug("Configuration loaded successfully")
     except Exception as e:
+        logger.error(f"Failed to load configuration: {e}")
         print(f"Error: Failed to load configuration: {e}", file=sys.stderr)
         sys.exit(1)
 
     # Create toolkit with configuration
     try:
         toolkit = JustiFiToolkit(config=config)
+        logger.debug("Toolkit initialized successfully")
     except Exception as e:
+        logger.error(f"Failed to initialize toolkit: {e}")
         print(f"Error: Failed to initialize toolkit: {e}", file=sys.stderr)
         print(
             "Please check your JUSTIFI_CLIENT_ID and JUSTIFI_CLIENT_SECRET",
@@ -89,15 +136,18 @@ async def main():
 
     # Optional health check on startup
     if "--health-check" in sys.argv:
+        logger.info("Performing JustiFi API health check...")
         print("Performing JustiFi API health check...", file=sys.stderr)
         health_result = await health_check(toolkit)
 
         if health_result["status"] == "healthy":
+            logger.info("Health check passed")
             print("✅ JustiFi API connection successful", file=sys.stderr)
             print(
                 f"📊 Configuration: {health_result['configuration']}", file=sys.stderr
             )
         else:
+            logger.error(f"Health check failed: {health_result['error']}")
             print(
                 f"❌ JustiFi API connection failed: {health_result['error']}",
                 file=sys.stderr,
@@ -107,6 +157,11 @@ async def main():
     # Get configuration summary for startup info
     config_summary = toolkit.get_configuration_summary()
     enabled_tools = config_summary["enabled_tools"]
+
+    logger.info(f"Server configured with {len(enabled_tools)} enabled tools")
+    logger.debug(f"Enabled tools: {enabled_tools}")
+    logger.debug(f"Base URL: {config_summary['base_url']}")
+    logger.debug(f"Environment: {config_summary['environment']}")
 
     print(
         "🚀 Starting JustiFi MCP Server with Configuration Support...", file=sys.stderr
@@ -121,6 +176,7 @@ async def main():
 
     # Get the configured MCP server
     server = toolkit.get_mcp_server("justifi-mcp-server")
+    logger.info("MCP server ready, starting stdio communication...")
 
     # Run the stdio server
     async with stdio_server() as streams:

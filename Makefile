@@ -45,6 +45,8 @@ dev: env-check build
 	@echo "🛑 Press Ctrl+C to stop"
 	docker-compose up mcp-dev
 
+
+
 # Interactive development shell
 shell: env-check build
 	@echo "🐚 Opening interactive development shell..."

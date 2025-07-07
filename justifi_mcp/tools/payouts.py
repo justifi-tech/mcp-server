@@ -37,7 +37,7 @@ async def retrieve_payout(client: JustiFiClient, payout_id: str) -> dict[str, An
             "payout_id cannot be empty", field="payout_id", value=payout_id
         )
 
-    return await client.request("GET", f"/payouts/{payout_id}")
+    return await client.request("GET", f"/v1/payouts/{payout_id}")
 
 
 @traceable
@@ -78,7 +78,7 @@ async def list_payouts(
     if before_cursor:
         params["before_cursor"] = before_cursor
 
-    return await client.request("GET", "/payouts", params=params)
+    return await client.request("GET", "/v1/payouts", params=params)
 
 
 @traceable

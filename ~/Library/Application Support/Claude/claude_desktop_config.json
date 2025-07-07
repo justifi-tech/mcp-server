@@ -1,0 +1,15 @@
+{
+    "globalShortcut": "Alt+Ctrl+Cmd+Space",
+    "mcpServers": {
+        "justifi-container": {
+            "command": "docker",
+            "args": [
+                "exec",
+                "-i",
+                "mcp-servers-mcp-dev-1",
+                "python",
+                "main.py"
+            ]
+        }
+    }
+}

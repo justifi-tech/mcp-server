@@ -31,6 +31,7 @@ services:
     # For stdio MCP testing
     stdin_open: true
 
+
 networks:
   default:
     name: mcp_network 

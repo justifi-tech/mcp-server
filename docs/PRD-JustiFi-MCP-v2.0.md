@@ -1,19 +1,23 @@
 # Product Requirements Document (PRD)
-JustiFi Agent Toolkit – v2.0 "The Payment Integration Platform"  
-Prepared by: AI Assistant | Date: 2025-01-25 | **Strategic Pivot**
+JustiFi MCP Server – v2.0 "The Payment Tool Platform"  
+Prepared by: AI Assistant | Date: 2025-01-25 | **Architectural Refinement**
 
 ---
 
 ## 1. Executive Summary & Vision
 
 ### Mission Statement
-Transform the JustiFi MCP server into the **premier payment integration platform** for AI-assisted development, directly competing with and surpassing the Stripe Agent Toolkit in functionality, developer experience, and ecosystem adoption.
+Transform the JustiFi MCP server into the **premier payment tool platform** for AI-assisted development, providing atomic, composable tools that AI agents can orchestrate into sophisticated payment workflows.
 
 ### Strategic Positioning
-- **MCP-Native**: Built for IDE integration from day one (vs. Stripe's multi-framework retrofitting)
-- **Payment-Specialized**: Deep JustiFi expertise with payment-optimized workflows
+- **MCP-Native**: Built for IDE integration from day one with proper MCP architectural principles
+- **Atomic Tools**: Single-purpose, composable tools that agents orchestrate (not hardcoded workflows)
+- **Payment-Specialized**: Deep JustiFi expertise with payment-optimized tool design
 - **Developer-First**: Superior developer experience with modern tooling and practices
-- **Open Source**: Community-driven development with MIT license for maximum adoption
+- **Agent-Centric**: Tools designed for AI agent composition, not human workflows
+
+### Architectural Philosophy
+**MCP servers provide tools, agents provide intelligence.** We build atomic, reliable tools that AI agents can combine creatively, rather than hardcoding business logic or workflows.
 
 ---
 
@@ -28,10 +32,10 @@ Transform the JustiFi MCP server into the **premier payment integration platform
 
 **Our Competitive Advantages:**
 - **MCP-First Design**: Superior IDE integration (Cursor, VS Code, Windsurf)
+- **Atomic Tool Design**: Properly composable tools vs. monolithic functions
 - **Payment Specialization**: Deep domain expertise vs. Stripe's broader approach
 - **Modern Architecture**: Container-first, auto-restart development, superior debugging
-- **AI-Optimized**: Tools designed specifically for AI agent usage patterns
-- **Developer Experience**: Interactive setup, comprehensive testing, better error handling
+- **AI-Optimized**: Tools designed specifically for AI agent composition patterns
 
 ---
 
@@ -40,34 +44,35 @@ Transform the JustiFi MCP server into the **premier payment integration platform
 ### 3.1 Primary Goals (v2.0)
 1. **Multi-Framework Support**: Support 2 core AI frameworks (MCP, LangChain) with direct usage examples for OpenAI
 2. **Configuration System**: Stripe-like configuration for tool selection and context management
-3. **Package Distribution**: PyPI package with CLI interface (`pip install justifi-agent-toolkit`)
-4. **Extended Tool Coverage**: 20+ JustiFi tools across all major API endpoints
-5. **Enterprise Features**: Multi-tenant architecture, advanced security, high availability
-6. **Community Ecosystem**: Open source launch with 1000+ GitHub stars target
+3. **Atomic Tool Excellence**: 15-20 high-quality, single-purpose tools across JustiFi API endpoints
+4. **Package Distribution**: PyPI package with CLI interface (`pip install justifi-mcp-server`)
+5. **Developer Experience**: Superior tooling for development, testing, and deployment
+6. **Community Ecosystem**: Open source launch with focus on tool quality over quantity
 
 ### 3.2 Success Metrics
 **Technical Excellence:**
-- Test Coverage: >95% across all frameworks
-- Performance: P95 tool latency <1s, P99 <2s
-- Reliability: 99.9% uptime for hosted services
-- Security: Zero critical vulnerabilities
+- Test Coverage: >95% across all tools and frameworks
+- Tool Reliability: 99.9% success rate for valid inputs
+- Performance: P95 tool latency <500ms, P99 <1s
+- MCP Compliance: 100% protocol adherence
 
 **Market Adoption:**
-- 10,000+ monthly PyPI downloads
-- 10+ enterprise customers
-- 20+ active contributors
-- Support for 2 core AI frameworks + direct usage patterns
+- 5,000+ monthly PyPI downloads
+- 500+ GitHub stars
+- 10+ production deployments
+- Featured in 2+ AI framework documentation
 
 **Developer Experience:**
-- Setup time: <5 minutes from install to first API call
-- Documentation satisfaction: >90%
-- Issue resolution: <24 hours for critical issues
+- Setup time: <2 minutes from install to first tool call
+- Tool discovery: Clear, searchable tool schemas
+- Error handling: Actionable error messages with suggestions
 
 ### 3.3 Non-Goals (Explicitly Out of Scope)
-- **JustiFi API Modifications**: We integrate with existing APIs, don't change them
-- **Payment Processing**: We're a toolkit, not a payment processor
-- **Hosted Services**: Focus on self-hosted and package distribution
-- **Non-Payment APIs**: Stay focused on payment domain expertise
+- **Multi-step workflows**: Agents orchestrate, servers provide tools
+- **Business logic**: No hardcoded payment processes or analysis
+- **UI/Dashboards**: Focus on API tools, not user interfaces
+- **Hosted services**: Self-hosted and package distribution only
+- **Non-payment APIs**: Stay focused on payment domain expertise
 
 ---
 
@@ -76,334 +81,262 @@ Transform the JustiFi MCP server into the **premier payment integration platform
 ### Primary Personas
 | Persona | Primary Use Case | Key Pain Points |
 |---------|------------------|-----------------|
-| **Full-Stack Developer** | Integrate payments in AI-assisted development | Context switching, API complexity, poor debugging |
-| **Backend Engineer** | Build payment workflows with AI assistance | Lack of payment domain knowledge, integration complexity |
-| **DevOps Engineer** | Deploy and monitor payment integrations | Poor observability, difficult debugging, scaling issues |
-| **Engineering Manager** | Standardize payment integration across teams | Inconsistent implementations, security concerns, knowledge silos |
+| **AI Agent Developer** | Build agents that handle payments intelligently | Need reliable, atomic tools for composition |
+| **Full-Stack Developer** | Use AI assistance for payment integration in IDEs | Want seamless IDE integration with good tool discovery |
+| **Backend Engineer** | Integrate payment tools into LangChain applications | Need framework-native tool integration |
+| **DevOps Engineer** | Deploy and monitor payment tool infrastructure | Want reliable, observable, configurable tools |
 
 ### User Stories
 | As a... | I want to... | So that... | Framework |
 |---------|--------------|------------|-----------|
-| Full-stack developer | Use JustiFi payments in Cursor with AI assistance | I can build payment flows without leaving my IDE | MCP |
-| Backend engineer | Import JustiFi tools into my LangChain application | I can add payment capabilities to my AI agents | LangChain |
+| AI agent developer | Atomic payment tools with clear schemas | My agent can compose them into complex workflows | All |
+| Full-stack developer | JustiFi tools in Cursor with AI assistance | I can build payment flows without leaving my IDE | MCP |
+| Backend engineer | Import JustiFi tools into my LangChain app | I can add payment capabilities to my AI agents | LangChain |
 | AI developer | Use JustiFi tools with OpenAI function calling | I can add payment capabilities to my GPT applications | Direct Usage |
-| DevOps engineer | Configure different JustiFi tools per environment | I can control what operations are available where | Configuration |
-| Engineering manager | Deploy a standardized payment toolkit across teams | Everyone uses the same secure, tested integration | Enterprise |
+| DevOps engineer | Configure different tools per environment | I can control what operations are available where | Configuration |
 
 ---
 
 ## 5. Technical Architecture
 
-### 5.1 Multi-Framework Architecture
+### 5.1 MCP-Centric Architecture
 ```
-justifi-agent-toolkit/
-├── core/                    # Shared business logic
-│   ├── client.py           # JustiFi API client
-│   ├── auth.py             # OAuth2 management
+justifi-mcp-server/
+├── justifi_mcp/             # Core package
+│   ├── core.py             # JustiFi API client & auth
 │   ├── config.py           # Configuration system
-│   └── tools.py            # Tool definitions
-├── frameworks/
-│   ├── mcp/                # MCP server (current implementation)
-│   └── langchain/          # LangChain integration
-├── cli/                    # Command-line interface
-├── examples/               # Framework-specific examples
-└── tests/                  # Comprehensive test suite
+│   ├── toolkit.py          # Multi-framework interface
+│   ├── tools/              # Atomic tool implementations
+│   │   ├── payments.py     # Payment tools
+│   │   ├── payouts.py      # Payout tools (current)
+│   │   ├── payment_methods.py # Payment method tools
+│   │   └── webhooks.py     # Webhook tools
+│   └── adapters/           # Framework adapters
+│       ├── mcp.py          # MCP server adapter
+│       └── langchain.py    # LangChain adapter
+├── examples/               # Framework usage examples
+├── tests/                  # Comprehensive test suite
+└── main.py                 # MCP server entry point
 ```
 
-### 5.2 Configuration System (Stripe-Inspired)
+### 5.2 Tool Design Principles
+**Atomic & Composable:**
 ```python
-from justifi_agent_toolkit import JustiFiToolkit
+# ✅ Good: Single-purpose, composable tools
+async def retrieve_payment(payment_id: str) -> dict:
+    """Get one payment by ID"""
+    
+async def list_payments(limit: int = 25, after_cursor: str = None) -> dict:
+    """List payments with pagination"""
+    
+async def create_refund(payment_id: str, amount_cents: int) -> dict:
+    """Create refund for a payment"""
+
+# ❌ Bad: Multi-step workflows (belongs in agent layer)
+async def analyze_payment_health(date_range: str) -> dict:
+    """Multi-step analysis workflow"""  # This is agent work!
+```
+
+### 5.3 Configuration System (Stripe-Inspired)
+```python
+from justifi_mcp import JustiFiToolkit
 
 toolkit = JustiFiToolkit(
     client_id=os.getenv("JUSTIFI_CLIENT_ID"),
     client_secret=os.getenv("JUSTIFI_CLIENT_SECRET"),
-    configuration={
-        "actions": {
-            "payments": {
-                "create": True,
-                "retrieve": True,
-                "list": True,
-                "refund": False  # Disable for some environments
-            },
-            "payment_methods": {
-                "create": True,
-                "retrieve": True
-            },
-            "webhooks": {
-                "create": True,
-                "list": True,
-                "delete": False  # Restrict webhook deletion
-            }
-        },
-        "context": {
-            "environment": "sandbox",     # or "production"
-            "account_id": "acct_123",     # Multi-tenant support
-            "rate_limit": "standard",     # or "premium"
-            "timeout": 30                 # Request timeout
-        }
+    enabled_tools=[
+        "retrieve_payment", "list_payments",  # Selective enabling
+        "retrieve_payout", "list_payouts"
+    ],
+    context={
+        "environment": "sandbox",     # or "production"
+        "rate_limit": "standard",     # or "premium"  
+        "timeout": 30                 # Request timeout
     }
 )
 
 # Framework-specific usage
 mcp_server = toolkit.get_mcp_server()
 langchain_tools = toolkit.get_langchain_tools()
-
-# OpenAI usage (direct - no adapter needed)
-# OpenAI function calling uses our existing JSON schemas directly
 ```
 
-### 5.3 Current Tool Coverage
-**Current (v1.1): 10 Tools**
-- **Payment Tools (5)**: create, retrieve, list, refund, list_refunds
-- **Payment Method Tools (2)**: create, retrieve  
-- **Payout Tools (2)**: retrieve, list
-- **Balance Transaction Tools (1)**: list
+### 5.4 Target Tool Coverage (v2.0)
+**Core Payment Operations (8 tools):**
+- `create_payment`, `retrieve_payment`, `list_payments`, `update_payment`
+- `create_refund`, `retrieve_refund`, `list_refunds`
+- `capture_payment` (for auth/capture flow)
 
-**v2.0 Focus: Quality Enhancement**
-- **Enhanced Configuration**: Allow selective tool enabling/disabling
-- **Improved Error Handling**: Better validation and user feedback
-- **Multi-Framework Support**: Same tools, multiple integration methods
-- **Advanced Workflows**: Combine existing tools for complex operations
+**Payment Methods (4 tools):**
+- `create_payment_method`, `retrieve_payment_method`
+- `update_payment_method`, `delete_payment_method`
 
-**Future Tool Expansion (Organic Growth)**
-- Additional tools will be added based on user demand and use cases
-- Focus on perfecting existing functionality before expanding scope
+**Payouts (4 tools - current):**
+- `retrieve_payout`, `list_payouts`, `get_payout_status`, `get_recent_payouts`
+
+**Webhooks (3 tools):**
+- `create_webhook`, `list_webhooks`, `delete_webhook`
+
+**Balance & Reporting (2 tools):**
+- `list_balance_transactions`, `get_account_balance`
+
+**Total: ~21 atomic, composable tools**
 
 ---
 
 ## 6. Implementation Phases
 
-### Phase 1: Configuration & Multi-Framework Foundation (Weeks 1-3)
-**Goal:** Match Stripe's configurability and prepare multi-framework support
+### Phase 1: Core Tool Foundation (Weeks 1-3)
+**Goal:** Perfect atomic tool design with enhanced configuration
 
 **Deliverables:**
-- [ ] Configuration system with tool filtering
-- [ ] Context injection (environment, account, rate limiting)
-- [ ] Extract core business logic from MCP-specific code
-- [ ] Design plugin architecture for framework adapters
-- [ ] Implement LangChain adapter as proof-of-concept
+- [ ] **Enhanced configuration system**: Tool filtering and context injection
+- [ ] **Improved current tools**: Better error handling for existing 4 payout tools
+- [ ] **Framework-agnostic core**: Extract business logic from MCP specifics
+- [ ] **Tool quality standards**: Comprehensive schemas, validation, error handling
+- [ ] **Testing foundation**: Unit tests for all tools with mocked API responses
 
 **Success Criteria:**
-- Configuration-driven tool selection works
-- Context properly injected into API calls
-- LangChain integration functional
-- All existing tests pass
-
-### Phase 2: Core Python Implementation & Testing (Weeks 4-6)
-**Goal:** Perfect existing tools with solid Python foundation and comprehensive testing
-
-**Deliverables:**
-- [ ] **Configuration system**: Stripe-like tool filtering and context management
-- [ ] **Multi-framework foundation**: Extract core logic from MCP-specific implementation
-- [ ] **Enhanced existing tools**: Improve our current 10 tools with better error handling
-- [ ] **Comprehensive test suite**: Unit, integration, and MCP compliance tests
-- [ ] **Robust error handling**: Clear user feedback and graceful failure management
-- [ ] **Complete documentation**: API documentation and usage examples
-
-**Success Criteria:**
-- Configuration system allows flexible tool selection from existing tools
+- Configuration-driven tool selection works perfectly
+- All current tools have comprehensive error handling
 - Core business logic is framework-agnostic
-- All existing tools enhanced with better error handling and validation
-- Test coverage >95% across all functionality
-- Error handling provides clear user guidance
-- Documentation covers all implemented features
+- Test coverage >95% for existing functionality
 
-**Note:** Additional tools will be added organically as needed, not as part of planned scope expansion
-
-### Phase 3: Package Distribution & Advanced Features (Weeks 7-10)
-**Goal:** Prepare for distribution and add advanced features
+### Phase 2: Tool Expansion & Multi-Framework (Weeks 4-8)
+**Goal:** Add payment tools and perfect multi-framework support
 
 **Deliverables:**
-- [ ] **Package preparation**: Prepare for PyPI distribution
-- [ ] **OpenAI examples**: Direct usage examples without adapter
-- [ ] **Advanced workflows**: Multi-step payment processes
+- [ ] **Payment tools**: Add 8 core payment operation tools
+- [ ] **Payment method tools**: Add 4 payment method tools  
+- [ ] **LangChain adapter**: Complete LangChain integration
+- [ ] **OpenAI examples**: Direct usage examples (no adapter needed)
+- [ ] **Comprehensive testing**: Framework-specific test suites
+
+**Success Criteria:**
+- 16+ high-quality atomic tools available
+- LangChain integration works seamlessly
+- OpenAI examples demonstrate direct usage
+- All frameworks have comprehensive test coverage
+- Tool schemas are clear and well-documented
+
+### Phase 3: Distribution & Developer Experience (Weeks 9-12)
+**Goal:** Package distribution and superior developer experience
+
+**Deliverables:**
+- [ ] **PyPI package**: Production-ready package distribution
+- [ ] **CLI interface**: Setup, configuration, and testing commands
 - [ ] **Environment management**: Sandbox/production switching
-- [ ] **CLI interface**: Command-line tool for setup and management
+- [ ] **Enhanced documentation**: Comprehensive guides and examples
+- [ ] **Development tooling**: Better debugging, monitoring, observability
 
 **Success Criteria:**
-- Package structure ready for distribution
-- OpenAI integration examples documented and tested
-- Advanced workflows tested and documented
-- Environment switching works seamlessly
-- CLI interface provides good developer experience
+- PyPI package installs and works immediately
+- CLI provides excellent developer experience
+- Environment switching is seamless
+- Documentation covers all use cases
+- Development workflow is smooth and efficient
 
-### Phase 4: Enterprise Features (Weeks 11-15)
-**Goal:** Enterprise-ready platform with scaling capabilities
+### Phase 4: Enterprise & Community (Weeks 13-16)
+**Goal:** Enterprise readiness and community building
 
 **Deliverables:**
-- [ ] Multi-tenant architecture
-- [ ] Advanced security and compliance features
-- [ ] High availability deployment
-- [ ] Usage analytics and monitoring
-- [ ] Admin dashboard for tenant management
+- [ ] **Enhanced security**: Advanced authentication and authorization
+- [ ] **Performance optimization**: Caching, connection pooling, rate limiting
+- [ ] **Monitoring & observability**: Comprehensive logging and metrics
+- [ ] **Community preparation**: Open source preparation and documentation
+- [ ] **Enterprise features**: Multi-tenant configuration, audit logging
 
 **Success Criteria:**
-- Multi-tenant isolation works
-- Security audit passes
-- High availability tested
-- Enterprise customers can deploy
-
-### Phase 5: Open Source Launch & Community (Weeks 16+)
-**Goal:** Build thriving open source community
-
-**Deliverables:**
-- [ ] MIT license open source release
-- [ ] Contributor guidelines and governance
-- [ ] Community tools and plugin architecture
-- [ ] IDE integrations (Cursor, VS Code, Windsurf)
-- [ ] Developer certification program
-
-**Success Criteria:**
-- 1000+ GitHub stars
-- 20+ active contributors
-- Plugin ecosystem established
-- IDE integrations working
+- Enterprise security requirements met
+- Performance benchmarks achieved
+- Monitoring provides actionable insights
+- Ready for open source community launch
+- Enterprise deployment patterns documented
 
 ---
 
-## 7. Risk Assessment & Mitigation
+## 7. Quality Assurance & Testing Strategy
 
-### High-Risk Items
-| Risk | Impact | Probability | Mitigation |
-|------|--------|-------------|------------|
-| **JustiFi API Changes** | High | Medium | API drift monitoring, versioning strategy |
-| **Framework Compatibility** | High | Medium | Comprehensive testing, framework-specific CI |
-| **Performance Degradation** | Medium | Low | Performance benchmarking, regression testing |
-| **Security Vulnerabilities** | High | Low | Regular security audits, automated scanning |
-| **Community Adoption** | Medium | Medium | Strong documentation, developer advocacy |
+### MCP Server Quality Focus
+- **Tool Reliability**: Each tool works correctly for all valid inputs
+- **MCP Protocol Compliance**: Perfect JSON-RPC 2.0 and schema compliance
+- **Tool Schema Quality**: Clear descriptions, comprehensive parameters, examples
+- **Error Handling**: Actionable error messages with suggestions
+- **Performance**: Consistent sub-second response times
 
-### Technical Dependencies
-- **JustiFi API Stability**: Monitor for breaking changes
-- **Framework Compatibility**: Keep up with framework updates
-- **Python Ecosystem**: Manage dependency conflicts
-- **Container Security**: Regular base image updates
-
----
-
-## 8. Quality Assurance & Testing Strategy
-
-### Testing Pyramid
+### Testing Approach
 ```
 ┌─────────────────────────────────────┐
-│         E2E Tests (10%)             │  Real API integration
+│    Integration Tests (20%)          │  Real API + framework testing
 ├─────────────────────────────────────┤
-│      Integration Tests (20%)        │  Framework-specific testing
-├─────────────────────────────────────┤
-│        Unit Tests (70%)             │  Core logic testing
+│       Unit Tests (80%)              │  Tool logic + mocked APIs
 └─────────────────────────────────────┘
 ```
 
-### Quality Gates
-- **All tests pass**: Unit, integration, and E2E
-- **Performance benchmarks**: Meet latency requirements
-- **Security scans**: Clean vulnerability reports
-- **Documentation**: Up-to-date and comprehensive
-- **Linting**: Code quality standards maintained
-
-### MCP Server Quality Assurance
-- **Tool Reliability**: Do our tools work correctly and consistently?
-- **MCP Protocol Compliance**: Proper message format and schema validation
-- **Tool Schema Quality**: Clear descriptions, comprehensive parameters, helpful examples
-- **Integration Testing**: End-to-end functionality with MCP clients
-- **Developer Experience**: Easy-to-use tools with good error messages
+**No E2E tests needed** - MCP servers are infrastructure components, not user applications.
 
 ---
 
-## 9. Go-to-Market Strategy
+## 8. Success Measurement & KPIs
 
-### Launch Sequence
-1. **Stealth Development** (Weeks 1-12): Build core functionality
-2. **Alpha Release** (Week 13): Limited developer preview
-3. **Beta Release** (Week 15): Public beta with feedback collection
-4. **v2.0 Launch** (Week 16): Full public release with marketing push
-5. **Community Building** (Week 17+): Developer advocacy and ecosystem growth
+### Technical Excellence KPIs
+- **Tool Reliability**: >99.9% success rate for valid inputs
+- **Response Time**: P95 <500ms, P99 <1s
+- **Test Coverage**: >95% across all tools
+- **Error Rate**: <0.1% for production deployments
 
-### Marketing Channels
-- **Developer Communities**: Reddit, Stack Overflow, Discord
-- **Technical Blogs**: Medium, Dev.to, company engineering blogs
-- **Conference Presentations**: PyCon, AI conferences, payment industry events
-- **Documentation SEO**: Optimize for "JustiFi integration" searches
-- **GitHub Showcase**: Featured repositories, trending projects
+### Adoption KPIs
+- **Package Downloads**: 5,000+ monthly PyPI downloads
+- **Community**: 500+ GitHub stars, 10+ contributors
+- **Integration**: Featured in 2+ AI framework docs
+- **Production Usage**: 10+ production deployments
 
-### Success Metrics
-- **Awareness**: 10,000+ developers aware of the toolkit
-- **Adoption**: 1,000+ active users within 6 months
-- **Engagement**: 100+ community contributions
-- **Revenue Impact**: Enable $1M+ in JustiFi payment volume
+### Developer Experience KPIs
+- **Setup Time**: <2 minutes install-to-first-call
+- **Issue Resolution**: <48 hours for tool bugs
+- **Documentation**: >90% satisfaction in surveys
+- **Tool Discovery**: Clear, searchable schemas
 
 ---
 
-## 10. Resource Requirements
+## 9. Resource Requirements & Timeline
 
-### Development Team
-- **Lead Developer** (1 FTE): Architecture, core development
-- **Framework Specialists** (2 FTE): Multi-framework integration
-- **DevOps Engineer** (0.5 FTE): CI/CD, deployment, monitoring
-- **Technical Writer** (0.5 FTE): Documentation, examples, tutorials
-- **Community Manager** (0.5 FTE): Developer relations, support
+### Development Focus
+- **1 Senior Developer**: Core tools and architecture (full-time)
+- **1 Framework Specialist**: Multi-framework integration (part-time)
+- **DevOps Support**: CI/CD and deployment (as-needed)
 
-### Infrastructure
-- **CI/CD**: GitHub Actions, automated testing
-- **Package Distribution**: PyPI, npm (if TypeScript added)
-- **Documentation**: GitHub Pages, custom domain
-- **Monitoring**: LangSmith, application monitoring
-- **Security**: Automated vulnerability scanning
+### 16-Week Timeline
+- **Weeks 1-3**: Core foundation and configuration
+- **Weeks 4-8**: Tool expansion and multi-framework
+- **Weeks 9-12**: Distribution and developer experience  
+- **Weeks 13-16**: Enterprise features and community prep
 
 ### Budget Estimate
-- **Development**: $500K (team costs for 6 months)
-- **Infrastructure**: $5K/month (CI/CD, hosting, monitoring)
-- **Marketing**: $50K (conferences, content creation)
-- **Total**: ~$580K for v2.0 development and launch
+- **Development**: $200K (focused team for 4 months)
+- **Infrastructure**: $2K/month (CI/CD, testing, monitoring)
+- **Total**: ~$210K for complete v2.0 development
 
 ---
 
-## 11. Success Measurement & KPIs
-
-### Leading Indicators (Weekly)
-- **Development Velocity**: Story points completed
-- **Test Coverage**: Percentage and trend
-- **Documentation Coverage**: APIs documented
-- **Community Engagement**: GitHub stars, issues, PRs
-
-### Lagging Indicators (Monthly)
-- **Package Downloads**: PyPI installation count
-- **Active Users**: Unique users per month
-- **Enterprise Adoption**: Paid customer count
-- **Community Health**: Contributor count, issue resolution time
-
-### Success Thresholds (6 months post-launch)
-- **🎯 Primary**: 10,000+ monthly PyPI downloads
-- **🎯 Secondary**: 1,000+ GitHub stars
-- **🎯 Tertiary**: 10+ enterprise customers
-- **🎯 Stretch**: Featured in major AI framework documentation
-
----
-
-## 12. Approval & Next Steps
-
-### Immediate Actions (Week 1)
-1. **Stakeholder Alignment**: Confirm strategic direction
-2. **Resource Allocation**: Secure development team
-3. **Technical Spike**: Validate multi-framework architecture
-4. **Competitive Analysis**: Deep dive on Stripe Agent Toolkit
+## 10. Approval & Next Steps
 
 ### Decision Points
-- [ ] **Go/No-Go Decision**: Commit to v2.0 strategic direction
-- [ ] **Framework Priority**: Which frameworks to support first
-- [ ] **Open Source Timing**: When to open source the project
-- [ ] **Enterprise Features**: Which enterprise features are must-haves
+- [ ] **Architectural Approach**: Confirm atomic tool focus vs. workflow focus
+- [ ] **Tool Scope**: Approve 21-tool target for v2.0
+- [ ] **Timeline**: Commit to 16-week development timeline
+- [ ] **Resource Allocation**: Secure focused development team
 
 ### Success Criteria for Approval
-- [ ] Technical feasibility validated
+- [ ] MCP architectural principles confirmed
+- [ ] Tool scope and quality standards agreed upon
 - [ ] Resource requirements approved
-- [ ] Market opportunity confirmed
-- [ ] Competitive positioning agreed upon
+- [ ] Timeline and milestones confirmed
 
 ---
 
-**Status:** 🚧 **AWAITING APPROVAL**  
-**Next Phase:** Technical spike and architecture validation  
-**Timeline:** 6 months to v2.0 launch  
-**Investment:** ~$580K total development cost
+**Status:** 🎯 **READY FOR FOCUSED EXECUTION**  
+**Next Phase:** Core tool foundation and configuration system  
+**Timeline:** 16 weeks to v2.0 launch  
+**Investment:** ~$210K focused development cost
 
-This PRD represents a strategic pivot from incremental improvement to market leadership in AI-assisted payment integration. The v2.0 approach positions us to compete directly with Stripe while leveraging our MCP-native advantages and payment domain expertise. 
+This PRD reflects the correct MCP server architecture: **atomic tools for agent composition**, not hardcoded workflows or business logic. We build the tools, agents build the intelligence. 

@@ -128,6 +128,12 @@ class JustiFiConfig(BaseModel):
                 # Balance transaction tools
                 "list_balance_transactions",
                 "retrieve_balance_transaction",
+                # Dispute tools
+                "list_disputes",
+                "retrieve_dispute",
+                # Checkout tools
+                "list_checkouts",
+                "retrieve_checkout",
             }
 
             for tool in v:
@@ -159,6 +165,12 @@ class JustiFiConfig(BaseModel):
             # Balance transaction tools
             "list_balance_transactions",
             "retrieve_balance_transaction",
+            # Dispute tools
+            "list_disputes",
+            "retrieve_dispute",
+            # Checkout tools
+            "list_checkouts",
+            "retrieve_checkout",
         }
 
     def get_enabled_tools(self) -> set[str]:

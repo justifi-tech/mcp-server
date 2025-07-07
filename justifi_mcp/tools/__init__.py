@@ -9,6 +9,14 @@ from .balances import (
     list_balance_transactions,
     retrieve_balance_transaction,
 )
+from .checkouts import (
+    list_checkouts,
+    retrieve_checkout,
+)
+from .disputes import (
+    list_disputes,
+    retrieve_dispute,
+)
 from .payment_methods import (
     retrieve_payment_method,
 )
@@ -47,6 +55,12 @@ AVAILABLE_TOOLS = {
     # Balance transaction tools
     "list_balance_transactions": list_balance_transactions,
     "retrieve_balance_transaction": retrieve_balance_transaction,
+    # Dispute tools
+    "list_disputes": list_disputes,
+    "retrieve_dispute": retrieve_dispute,
+    # Checkout tools
+    "list_checkouts": list_checkouts,
+    "retrieve_checkout": retrieve_checkout,
 }
 
 # Tool metadata for framework adapters
@@ -270,6 +284,98 @@ TOOL_SCHEMAS = {
             "required": ["balance_transaction_id"],
         },
     },
+    "list_disputes": {
+        "name": "list_disputes",
+        "description": "List disputes with optional pagination using cursor-based pagination.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "limit": {
+                    "type": "integer",
+                    "description": "Number of disputes to return (1-100, default: 25)",
+                    "minimum": 1,
+                    "maximum": 100,
+                    "default": 25,
+                },
+                "after_cursor": {
+                    "type": "string",
+                    "description": "Cursor for pagination - returns results after this cursor",
+                },
+                "before_cursor": {
+                    "type": "string",
+                    "description": "Cursor for pagination - returns results before this cursor",
+                },
+            },
+            "required": [],
+        },
+    },
+    "retrieve_dispute": {
+        "name": "retrieve_dispute",
+        "description": "Retrieve detailed information about a specific dispute by ID.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "dispute_id": {
+                    "type": "string",
+                    "description": "The unique identifier for the dispute (e.g., 'dp_ABC123XYZ')",
+                }
+            },
+            "required": ["dispute_id"],
+        },
+    },
+    "list_checkouts": {
+        "name": "list_checkouts",
+        "description": "List checkouts with optional pagination and filtering by payment mode, status, and payment status.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "limit": {
+                    "type": "integer",
+                    "description": "Number of checkouts to return (1-100, default: 25)",
+                    "minimum": 1,
+                    "maximum": 100,
+                    "default": 25,
+                },
+                "after_cursor": {
+                    "type": "string",
+                    "description": "Cursor for pagination - returns results after this cursor",
+                },
+                "before_cursor": {
+                    "type": "string",
+                    "description": "Cursor for pagination - returns results before this cursor",
+                },
+                "payment_mode": {
+                    "type": "string",
+                    "description": "Filter by payment mode",
+                    "enum": ["bnpl", "ecom"],
+                },
+                "status": {
+                    "type": "string",
+                    "description": "Filter by checkout status",
+                    "enum": ["created", "completed", "attempted", "expired"],
+                },
+                "payment_status": {
+                    "type": "string",
+                    "description": "Filter by payment status",
+                },
+            },
+            "required": [],
+        },
+    },
+    "retrieve_checkout": {
+        "name": "retrieve_checkout",
+        "description": "Retrieve detailed information about a specific checkout by ID.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "checkout_id": {
+                    "type": "string",
+                    "description": "The unique identifier for the checkout (e.g., 'co_ABC123XYZ')",
+                }
+            },
+            "required": ["checkout_id"],
+        },
+    },
 }
 
 __all__ = [
@@ -292,4 +398,10 @@ __all__ = [
     # Balance transaction tools
     "list_balance_transactions",
     "retrieve_balance_transaction",
+    # Dispute tools
+    "list_disputes",
+    "retrieve_dispute",
+    # Checkout tools
+    "list_checkouts",
+    "retrieve_checkout",
 ]

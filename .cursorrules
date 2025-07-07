@@ -128,7 +128,7 @@ tools/justifi/
 Required:
 - `JUSTIFI_CLIENT_ID` - JustiFi API Client ID
 - `JUSTIFI_CLIENT_SECRET` - JustiFi API Client Secret
-- `JUSTIFI_BASE_URL` - JustiFi API Base URL (default: https://api.justifi.ai/v1)
+- `JUSTIFI_BASE_URL` - JustiFi API Base URL (default: https://api.justifi.ai)
 
 Optional:
 - `LANGCHAIN_API_KEY` - LangSmith tracing (recommended)

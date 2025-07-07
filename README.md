@@ -2,6 +2,28 @@
 
 A **payout-focused** Model Context Protocol (MCP) server for AI-assisted payment management. This server provides 4 comprehensive tools for payout operations through the JustiFi API.
 
+## 🏗️ MCP Architecture
+
+**This is an MCP SERVER** - it provides JustiFi payment tools to AI applications via the MCP protocol:
+
+```
+┌─────────────────┐    MCP Protocol     ┌──────────────────┐    JustiFi API
+│   MCP Client    │◄──────────────────►│   MCP Server     │◄─────────────────►
+│ (AI App)        │   (JSON-RPC/stdio) │ (This Project)   │   (Payment API)
+│                 │                     │                 │
+│ • Claude Desktop│                     │ • No AI models  │
+│ • Cursor IDE    │                     │ • Only JustiFi  │
+│ • Custom Apps   │                     │   credentials   │
+│ • LangChain     │                     │ • Tool provider │
+└─────────────────┘                     └──────────────────┘
+```
+
+**Key Points:**
+- ✅ **Server Role**: Provides payment tools, doesn't need AI model credentials
+- ✅ **Client Integration**: Works with any MCP client (Claude, Cursor, custom apps)
+- ✅ **Clean Separation**: Payment logic (server) vs AI reasoning (clients)
+- ✅ **Examples Available**: See [`examples/`](./examples/) for client-side integration patterns
+
 ## 🎯 Focus: Payout Operations
 
 This MCP server specializes in payout management with these tools:
@@ -110,7 +132,7 @@ python -m pytest tests/test_payout_tools.py::TestGetRecentPayouts -v
 
 ## 🌐 Environment Variables
 
-Required:
+**MCP Server Requirements (Only JustiFi):**
 ```bash
 JUSTIFI_CLIENT_ID=your_client_id
 JUSTIFI_CLIENT_SECRET=your_client_secret
@@ -128,10 +150,13 @@ JUSTIFI_ENABLED_TOOLS="retrieve_payout,get_payout_status"    # Custom combinatio
 
 Optional:
 ```bash
-JUSTIFI_BASE_URL=https://api.justifi.ai/v1  # Default
-LANGCHAIN_API_KEY=your_langsmith_key        # For tracing
+JUSTIFI_BASE_URL=https://api.justifi.ai     # Default (no /v1 suffix)
+LANGCHAIN_API_KEY=your_langsmith_key        # For tracing/observability
 LANGCHAIN_TRACING_V2=true                   # Enable tracing
+LOG_LEVEL=INFO                              # DEBUG, INFO, WARNING, ERROR
 ```
+
+**Note**: No AI model API keys needed! Those are handled by MCP clients, not this server.
 
 ## 🔍 Available Tools
 

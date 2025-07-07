@@ -121,6 +121,13 @@ class JustiFiConfig(BaseModel):
                 "list_payments",
                 # Payment method tools
                 "retrieve_payment_method",
+                # Refund tools
+                "list_refunds",
+                "retrieve_refund",
+                "list_payment_refunds",
+                # Balance transaction tools
+                "list_balance_transactions",
+                "retrieve_balance_transaction",
             }
 
             for tool in v:
@@ -145,6 +152,13 @@ class JustiFiConfig(BaseModel):
             "list_payments",
             # Payment method tools
             "retrieve_payment_method",
+            # Refund tools
+            "list_refunds",
+            "retrieve_refund",
+            "list_payment_refunds",
+            # Balance transaction tools
+            "list_balance_transactions",
+            "retrieve_balance_transaction",
         }
 
     def get_enabled_tools(self) -> set[str]:

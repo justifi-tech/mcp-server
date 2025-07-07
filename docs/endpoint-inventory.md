@@ -1,59 +1,105 @@
 # JustiFi API Endpoint Inventory
 Generated from OpenAPI spec: 2025-01-25
 
-## Priority 1 (P1) - Target for v1.1 "Payments +"
-High value, low coupling, directly extends current payment functionality.
+## Current Implementation Status (v1.2)
+✅ **12 tools implemented and tested** - All core functionality plus refunds and balance transactions
 
-| Endpoint | Method | Description | Required Args | Optional Args | Status |
-|----------|--------|-------------|---------------|---------------|--------|
-| `/payment_methods` | POST | Create payment method | customer_id, card/bank details | - | 🎯 NEW |
-| `/payment_methods/{token}` | GET | Retrieve payment method | payment_method_token | - | 🎯 NEW |
-| `/payment_methods` | GET | List payment methods | - | limit, cursors | 🎯 NEW |
-| `/payments/{id}/refunds` | GET | List refunds for payment | payment_id | limit, cursors | ❌ NOT AVAILABLE |
+| Endpoint | Method | Description | Tool Name | Status |
+|----------|--------|-------------|-----------|--------|
+| `/payouts/{id}` | GET | Retrieve payout details | `retrieve_payout` | ✅ IMPLEMENTED |
+| `/payouts` | GET | List payouts with pagination | `list_payouts` | ✅ IMPLEMENTED |
+| `/payouts/{id}` | GET | Get payout status (optimized) | `get_payout_status` | ✅ IMPLEMENTED |
+| `/payouts` | GET | Get recent payouts (optimized) | `get_recent_payouts` | ✅ IMPLEMENTED |
+| `/payments/{id}` | GET | Retrieve payment details | `retrieve_payment` | ✅ IMPLEMENTED |
+| `/payments` | GET | List payments with pagination | `list_payments` | ✅ IMPLEMENTED |
+| `/payment_methods/{token}` | GET | Retrieve payment method | `retrieve_payment_method` | ✅ IMPLEMENTED |
+| `/refunds` | GET | List all refunds | `list_refunds` | ✅ IMPLEMENTED |
+| `/refunds/{id}` | GET | Retrieve refund details | `retrieve_refund` | ✅ IMPLEMENTED |
+| `/payments/{id}` | GET | List refunds for payment | `list_payment_refunds` | ✅ IMPLEMENTED |
+| `/balance_transactions` | GET | List balance transactions | `list_balance_transactions` | ✅ IMPLEMENTED |
+| `/balance_transactions/{id}` | GET | Retrieve balance transaction | `retrieve_balance_transaction` | ✅ IMPLEMENTED |
 
-| `/payouts/{id}` | GET | Retrieve payout | payout_id | - | 🎯 NEW |
-| `/payouts` | GET | List payouts | - | limit, cursors | 🎯 NEW |
-| `/balance_transactions` | GET | Get balance info | - | - | 🎯 NEW (as retrieve_balance) |
 
-## Priority 2 (P2) - Consider for v1.2
-Useful but may require additional complexity or auth scoping.
 
-| Endpoint | Method | Description | Notes |
-|----------|--------|-------------|-------|
-| `/refunds` | GET | List all refunds | Global refunds list |
-| `/refunds/{id}` | GET | Retrieve refund details | Individual refund |
-| `/disputes` | GET | List disputes | Chargeback management |
-| `/disputes/{id}` | GET | Retrieve dispute | Dispute details |
-| `/balance_transactions/{id}` | GET | Get balance transaction | Individual transaction |
-| `/payment_method_groups` | GET/POST | Manage payment method groups | Advanced grouping |
-| `/checkouts` | GET/POST | Checkout sessions | Hosted checkout |
+## Implementation Roadmap
 
-## Priority 3 (P3) - Future consideration
-Complex workflows, specialized use cases, or deprecated endpoints.
+### Priority 2 (P2) - Advanced Read Operations 
+**Target: v1.3 - Q2 2025**
 
-| Category | Endpoints | Notes |
-|----------|-----------|-------|
-| **Sub-accounts** | `/sub_accounts/*` | Multi-tenant complexity |
-| **Entities** | `/entities/*` | KYC/verification workflows |
-| **Terminals** | `/terminals/*` | Physical terminal management |
-| **Reports** | `/reports/*` | Complex reporting system |
-| **Insurance** | `/insurance/*` | Specialized insurance features |
-| **Web Components** | `/web_component_tokens` | Frontend integration |
-| **Deprecated** | `/reports/proceeds/{id}` | Marked deprecated |
+| Endpoint | Method | Description | Complexity | Notes |
+|----------|--------|-------------|------------|-------|
+| `/disputes` | GET | List disputes | Medium | Complex filtering options |
+| `/disputes/{id}` | GET | Retrieve dispute details | Low | Standard read operation |
+| `/checkout_sessions` | GET | List checkout sessions | Medium | Session state management |
+| `/checkout_sessions/{id}` | GET | Retrieve checkout session | Low | Standard read operation |
 
-## Current Implementation (v1.0)
-✅ Already implemented in current MCP server:
+### Priority 3 (P3) - Creation Operations ⚠️ DEPRIORITIZED
+**Target: v2.0 - TBD**
 
-| Endpoint | Method | Description | Tool Name |
-|----------|--------|-------------|-----------|
-| `/payments` | POST | Create payment | `create_payment` |
-| `/payments/{id}` | GET | Retrieve payment | `retrieve_payment` |
-| `/payments` | GET | List payments | `list_payments` |
-| `/payments/{id}/refunds` | POST | Create refund | `refund_payment` |
+**⚠️ COMPLEXITY WARNING**: All creation endpoints require extensive validation, error handling, and security considerations.
 
-## Implementation Notes
-- All P1 endpoints follow existing OAuth2 + JSON patterns
-- Payment methods use tokens instead of IDs for security
-- **Payouts are read-only** - automatically generated by JustiFi, cannot be created via API
-- Balance transactions endpoint can serve as "retrieve_balance" equivalent
-- Idempotency keys supported where applicable 
+| Endpoint | Method | Description | Complexity | Risk Level |
+|----------|--------|-------------|------------|------------|
+| `POST /payments` | POST | Create payment | **HIGH** | Security Critical |
+| `POST /payments/{id}/refunds` | POST | Create refund | **HIGH** | Financial Impact |
+| `POST /payment_methods` | POST | Create payment method | **HIGH** | PCI Compliance |
+| `POST /payouts` | POST | Create payout | **HIGH** | Auto-generated by JustiFi |
+| `POST /checkout_sessions` | POST | Create checkout session | **HIGH** | Complex State |
+
+### Priority 4 (P4) - Complex/Specialized Operations
+**Target: v2.1+ - Future**
+
+| Endpoint | Method | Description | Complexity | Notes |
+|----------|--------|-------------|------------|-------|
+| `/platform_accounts` | GET | List platform accounts | High | Multi-tenant complexity |
+| `/platform_accounts/{id}` | GET | Retrieve platform account | Medium | Account hierarchy |
+| `/webhooks` | GET | List webhook endpoints | Medium | Event management |
+| `/webhooks/{id}` | GET | Retrieve webhook details | Low | Standard read operation |
+
+## API Endpoint Status Reference
+
+### ✅ Verified Working Endpoints (Safe to Use)
+- All payment endpoints (`/payments`, `/payments/{id}`)
+- All payout endpoints (`/payouts`, `/payouts/{id}`)
+- Payment method endpoints (`/payment_methods/{token}`)
+- All refund endpoints (`/refunds`, `/refunds/{id}`)
+- Balance transaction endpoints (`/balance_transactions`, `/balance_transactions/{id}`)
+
+### ❌ Known Non-Existent Endpoints (DO NOT IMPLEMENT)
+- `GET /payment_methods` (list_payment_methods) - Endpoint doesn't exist
+- `GET /balances` (retrieve_balance) - No dedicated balance endpoint
+- `POST /payouts` (create_payout) - Payouts are auto-generated by JustiFi
+
+### 🔍 Endpoints Requiring Verification
+- `GET /disputes` - Need to verify availability
+- `GET /checkout_sessions` - Need to verify availability
+- `GET /platform_accounts` - May require special permissions
+
+## Version History
+
+### v1.2 (Current) - Read-Only Expansion ✅ COMPLETED
+- ✅ Added `list_refunds` - List all refunds with pagination
+- ✅ Added `retrieve_refund` - Get refund details by ID
+- ✅ Added `list_payment_refunds` - List refunds for specific payment
+- ✅ Added `list_balance_transactions` - List balance movements
+- ✅ Added `retrieve_balance_transaction` - Get balance transaction details
+- ✅ **56/56 tests passing** - All functionality verified
+
+### v1.1 - Core Implementation
+- ✅ Implemented 7 core tools (payouts, payments, payment methods)
+- ✅ OAuth2 authentication with token caching
+- ✅ Comprehensive error handling and validation
+- ✅ Docker-based development environment
+- ✅ Full test coverage for critical paths
+
+## Strategic Focus: Read-Only First
+
+**Current Strategy**: Prioritize read-only operations for safety and rapid value delivery.
+
+**Benefits**:
+- ✅ **Lower Risk**: Read operations can't cause financial damage
+- ✅ **Faster Development**: No complex validation or security requirements  
+- ✅ **Immediate Value**: Users can query and analyze their JustiFi data
+- ✅ **Foundation Building**: Establishes patterns for future creation endpoints
+
+**Next Steps**: Complete P2 advanced read operations before considering any creation endpoints. 

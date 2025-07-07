@@ -144,15 +144,35 @@ Optional:
 7. Export from `tools/justifi/__init__.py`
 8. Add to `TOOL_DISPATCH` dictionary in main.py
 9. Add Tool definition to `handle_list_tools()`
-10. Write comprehensive tests
+10. Write focused tests for critical error scenarios only
 
-### Testing Requirements
-- Write tests for all new tools in appropriate test file
+### Testing Philosophy - Focus on Value, Not Coverage
+- **ONLY write tests that prevent customer-facing bugs**
+- **NEVER chase test coverage percentages** - they're "a waste of time and even worse a pain in the future to maintain"
+- Most test suites are "70% waste that just makes refactoring painful" - focus on the valuable 30%
+
+#### Tests Worth Writing (Real Value):
+- **Authentication failures** - Users will hit OAuth/credential issues
+- **Invalid configurations** - Users will misconfigure tools/credentials
+- **Network timeouts** - API calls will fail in production
+- **Malformed API responses** - External APIs change/break
+- **Tool execution with bad data** - Users will pass invalid inputs
+- **One success test per tool** - Proves the happy path works
+
+#### Tests NOT Worth Writing (Garbage):
+- Constructor parameter variations - Testing that constructors work
+- Schema consistency checks - Testing implementation details
+- Getter/setter validation - Testing that getters return what setters set
+- Framework adapter creation - Testing that adapters instantiate
+- Configuration summary structure - Testing object property access
+- Tool count matching - Testing that lists match themselves
+- "Full workflow" tests - Just combining other tests
+
+#### Testing Standards:
 - Mock external API calls using respx
 - Use `pytest.mark.asyncio` for async test functions
-- Test both success and error cases
-- Maintain ≥90% test coverage
-- All tests must pass: 36/36 currently passing
+- Keep tests minimal and focused on error scenarios users will encounter
+- All tests must pass - currently passing after cleanup
 
 ### Auto-Restart Development Workflow
 ```bash

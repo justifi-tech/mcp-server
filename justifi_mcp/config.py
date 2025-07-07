@@ -111,10 +111,16 @@ class JustiFiConfig(BaseModel):
         if isinstance(v, list):
             # Validate that all tool names are valid
             valid_tools = {
+                # Payout tools
                 "retrieve_payout",
                 "list_payouts",
                 "get_payout_status",
                 "get_recent_payouts",
+                # Payment tools
+                "retrieve_payment",
+                "list_payments",
+                # Payment method tools
+                "retrieve_payment_method",
             }
 
             for tool in v:
@@ -129,10 +135,16 @@ class JustiFiConfig(BaseModel):
     def get_available_tools(self) -> set[str]:
         """Get set of all available tool names."""
         return {
+            # Payout tools
             "retrieve_payout",
             "list_payouts",
             "get_payout_status",
             "get_recent_payouts",
+            # Payment tools
+            "retrieve_payment",
+            "list_payments",
+            # Payment method tools
+            "retrieve_payment_method",
         }
 
     def get_enabled_tools(self) -> set[str]:

@@ -48,57 +48,55 @@ This MCP server specializes in payout management with these tools:
    # Edit .env with your JustiFi API credentials
    ```
 
-2. **Install dependencies**:
+2. **Install dependencies** (optional for local development):
    ```bash
    uv pip install -e ".[dev]"
    ```
 
 3. **Test the setup**:
    ```bash
-   make test-local
+   make test
    ```
 
 ## 🔧 Development Commands
 
-### Local Development (Fastest)
+All development uses Docker containers for consistency:
+
 ```bash
-# Run MCP server locally
-make dev-local
-
-# Run tests locally
-make test-local
-```
-
-### Container Development
-```bash
-# Start development environment
-make dev-start
-
-# Run MCP server with auto-restart in container
+# Start MCP server with auto-restart
 make dev
 
-# Interactive shell in container
-make shell
-```
+# Run all tests
+make test
 
+# Interactive development shell
+make shell
+
+# View logs
+make logs
+
+# Code formatting and linting
+make format
+make lint
+
+# Clean up containers
+make clean
+```
 
 ## 🧪 Testing
 
 ### All Tests
 ```bash
-# Run in container (full environment)
+# Run all tests (94 tests total)
 make test
-
-# Run locally (faster)
-make test-local
 ```
 
-### Individual Test Classes
+### Individual Test Files
 ```bash
-python -m pytest tests/test_payout_tools.py::TestRetrievePayout -v
-python -m pytest tests/test_payout_tools.py::TestListPayouts -v
-python -m pytest tests/test_payout_tools.py::TestGetPayoutStatus -v
-python -m pytest tests/test_payout_tools.py::TestGetRecentPayouts -v
+# Run specific test files
+docker-compose run --rm dev pytest tests/test_payout_tools.py -v
+docker-compose run --rm dev pytest tests/test_main.py -v
+docker-compose run --rm dev pytest tests/test_mcp_compliance.py -v
 ```
 
 ## 🔌 MCP Integration
@@ -193,29 +191,13 @@ Get the most recent payouts (optimized for recency).
 }
 ```
 
-## 🧠 AI Evaluation
-
-Test the MCP server with AI scenarios:
-```bash
-# Run evaluation suite
-make eval
-
-# View evaluation scenarios
-cat eval/payout_operations.jsonl
-```
-
 ## 🔄 API Drift Monitoring
 
 Monitor JustiFi API changes automatically:
 ```bash
 # Check for API changes
 make drift-check
-
-# Force update API specification
-make drift-update
 ```
-
-**Configuration**: Set `JUSTIFI_OPENAPI_URL` environment variable with the correct JustiFi OpenAPI specification URL.
 
 **Automation**: GitHub Actions workflow runs weekly to detect API changes and create PRs/issues automatically.
 
@@ -223,9 +205,9 @@ make drift-update
 
 ### Clean & Focused
 - **Payout specialization**: 4 focused tools vs generic approach
-- **Flat package structure**: `justifi_mcp/` (not `src/justifi_mcp/`)
+- **Multi-framework support**: MCP (primary), LangChain, OpenAI examples
 - **Container-first development**: Docker for consistency
-- **Comprehensive testing**: 12 tests covering all scenarios
+- **Comprehensive testing**: 94 tests covering all scenarios
 
 ### OAuth2 Flow
 - Automatic token acquisition and caching
@@ -240,8 +222,8 @@ make drift-update
 
 ## 📚 Documentation
 
-- [PRD v2.0](docs/PRD-JustiFi-MCP-v2.0.md) - Strategic roadmap and framework strategy
 - [API Endpoint Inventory](docs/endpoint-inventory.md) - Verified JustiFi API endpoints
+- [API Drift Monitoring](docs/API-DRIFT-MONITORING.md) - Automated API change detection
 
 ## 🔌 Framework Integration
 
@@ -253,33 +235,12 @@ make drift-update
 ### LangChain
 - **Dedicated adapter** with StructuredTool wrappers
 - Async/sync compatibility for LangChain agents
-- Example: `examples/langchain_example.py`
+- Examples: [`examples/langchain/`](./examples/langchain/)
 
 ### OpenAI Function Calling
 - **Direct usage** - no adapter needed!
 - Our tool schemas are already OpenAI-compatible
-- Example: `examples/openai_example.py`
-
-## 🔄 Migration from Complex Structure
-
-The legacy complex structure (10 tools, `tools/justifi/`) has been archived in `archive/`. This focused approach provides:
-- ✅ Cleaner codebase
-- ✅ Faster development
-- ✅ Better testing
-- ✅ Specialized payout expertise
-
-## 🚢 Production Deployment
-
-```bash
-# Build production container
-make prod-build
-
-# Run production container
-make prod-run
-
-# Health check
-make prod-health
-```
+- Examples: [`examples/openai/`](./examples/openai/)
 
 ## 🤝 Contributing
 

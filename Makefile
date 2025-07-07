@@ -7,6 +7,7 @@ help:
 	@echo "Development:"
 	@echo "  dev         - Start MCP server with auto-restart"
 	@echo "  shell       - Open interactive development shell"
+	@echo "  logs        - View logs"
 	@echo ""
 	@echo "Testing:"
 	@echo "  test        - Run all tests"
@@ -45,7 +46,9 @@ dev: env-check build
 	@echo "🛑 Press Ctrl+C to stop"
 	docker-compose up mcp-dev
 
-
+logs:
+	@echo "🔍 Viewing logs..."
+	docker-compose logs -f mcp-dev
 
 # Interactive development shell
 shell: env-check build

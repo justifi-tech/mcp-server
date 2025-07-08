@@ -4,9 +4,9 @@ import pytest
 import respx
 from httpx import Response
 
-from justifi_mcp.config import JustiFiConfig
-from justifi_mcp.core import JustiFiClient
-from justifi_mcp.tools.balances import (
+from python.config import JustiFiConfig
+from python.core import JustiFiClient
+from python.tools.balances import (
     list_balance_transactions,
     retrieve_balance_transaction,
 )

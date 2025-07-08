@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 import pytest
 
-from justifi_mcp.config import (
+from python.config import (
     ContextConfig,
     JustiFiConfig,
 )

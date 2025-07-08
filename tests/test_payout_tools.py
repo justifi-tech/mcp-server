@@ -4,9 +4,9 @@ import pytest
 import respx
 from httpx import Response
 
-from justifi_mcp.core import JustiFiClient
-from justifi_mcp.tools.base import ToolError, ValidationError
-from justifi_mcp.tools.payouts import (
+from python.core import JustiFiClient
+from python.tools.base import ToolError, ValidationError
+from python.tools.payouts import (
     get_payout_status,
     get_recent_payouts,
     list_payouts,

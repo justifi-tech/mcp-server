@@ -1,4 +1,4 @@
-.PHONY: help dev test shell format lint clean build
+.PHONY: help dev test shell format lint clean build logs
 
 # Default target
 help:
@@ -44,7 +44,7 @@ dev: env-check build
 	@echo "🚀 Starting MCP server with auto-restart..."
 	@echo "💡 Server will automatically restart when Python files change"
 	@echo "🛑 Press Ctrl+C to stop"
-	docker-compose up mcp-dev
+	docker-compose up mcp-dev -d
 
 logs:
 	@echo "🔍 Viewing logs..."

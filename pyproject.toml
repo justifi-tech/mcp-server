@@ -9,7 +9,16 @@ description = "JustiFi MCP Server with multi-framework support for payment proce
 authors = [{ name = "JustiFi MCP Team", email = "support@justifi.ai" }]
 license = "MIT"
 requires-python = ">=3.11"
-dependencies = ["mcp", "httpx", "pydantic", "python-dotenv", "langsmith"]
+dependencies = [
+    "mcp",
+    "fastmcp",
+    "httpx",
+    "pydantic",
+    "python-dotenv",
+    "langsmith",
+    "starlette",
+    "uvicorn",
+]
 keywords = [
     "mcp",
     "model-context-protocol",

@@ -4,9 +4,9 @@ import pytest
 import respx
 from httpx import Response
 
-from justifi_mcp.config import JustiFiConfig
-from justifi_mcp.core import JustiFiClient
-from justifi_mcp.tools.refunds import (
+from python.config import JustiFiConfig
+from python.core import JustiFiClient
+from python.tools.refunds import (
     list_payment_refunds,
     list_refunds,
     retrieve_refund,

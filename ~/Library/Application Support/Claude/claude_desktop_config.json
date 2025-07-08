@@ -1,14 +1,12 @@
 {
     "globalShortcut": "Alt+Ctrl+Cmd+Space",
     "mcpServers": {
-        "justifi-container": {
-            "command": "docker",
+        "justifi": {
+            "command": "npx",
             "args": [
-                "exec",
-                "-i",
-                "mcp-servers-mcp-dev-1",
-                "python",
-                "main.py"
+                "-y",
+                "mcp-remote",
+                "http://localhost:3000/mcp"
             ]
         }
     }

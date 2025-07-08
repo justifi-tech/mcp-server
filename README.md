@@ -24,6 +24,53 @@ A **payout-focused** Model Context Protocol (MCP) server for AI-assisted payment
 - ✅ **Clean Separation**: Payment logic (server) vs AI reasoning (clients)
 - ✅ **Examples Available**: See [`examples/`](./examples/) for client-side integration patterns
 
+## 🚀 FastMCP Architecture
+
+JustiFi MCP Server now uses FastMCP for improved transport flexibility and reduced boilerplate.
+
+### Transport Options
+
+#### Stdio (Default - Local AI Clients)
+```bash
+python main.py
+```
+
+#### HTTP (Web-based AI Clients)
+```bash
+MCP_TRANSPORT=http MCP_PORT=3000 python main.py
+```
+
+#### Server-Sent Events
+```bash
+MCP_TRANSPORT=sse MCP_PORT=3000 python main.py
+```
+
+### Architecture
+
+```
+justifi-mcp-server/
+├── ModelContextProtocol/    # FastMCP implementation
+│   ├── server.py           # FastMCP server setup  
+│   └── config.py           # Transport configuration
+├── python/                 # Core tools and utilities
+│   ├── core.py            # JustiFi API client
+│   ├── tools/             # Tool implementations
+│   └── adapters/          # Framework adapters
+└── main.py                # FastMCP entry point
+```
+
+### Multi-Framework Support Preserved
+
+The FastMCP migration preserves full multi-framework support:
+
+```python
+# LangChain (unchanged)
+from python.adapters.langchain import JustiFiLangChainAdapter
+
+# OpenAI (unchanged) 
+from python.tools.payments import retrieve_payment
+```
+
 ## 🎯 Focus: Payout Operations
 
 This MCP server specializes in payout management with these tools:

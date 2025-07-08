@@ -4,9 +4,9 @@ import pytest
 import respx
 from httpx import Response
 
-from justifi_mcp.core import JustiFiClient
-from justifi_mcp.tools.base import ToolError, ValidationError
-from justifi_mcp.tools.disputes import list_disputes, retrieve_dispute
+from python.core import JustiFiClient
+from python.tools.base import ToolError, ValidationError
+from python.tools.disputes import list_disputes, retrieve_dispute
 
 
 @pytest.fixture

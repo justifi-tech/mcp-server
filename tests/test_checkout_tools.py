@@ -4,9 +4,9 @@ import pytest
 import respx
 from httpx import Response
 
-from justifi_mcp.core import JustiFiClient
-from justifi_mcp.tools.base import ToolError, ValidationError
-from justifi_mcp.tools.checkouts import list_checkouts, retrieve_checkout
+from python.core import JustiFiClient
+from python.tools.base import ToolError, ValidationError
+from python.tools.checkouts import list_checkouts, retrieve_checkout
 
 
 @pytest.fixture

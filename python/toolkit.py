@@ -1,23 +1,41 @@
 """JustiFi Agent Toolkit
 
 Framework-agnostic toolkit for JustiFi payment operations.
-Provides adapters for AI frameworks (MCP, LangChain) with direct usage support for OpenAI.
+Provides adapters for AI frameworks (LangChain) with direct usage support for OpenAI.
 """
 
 from __future__ import annotations
 
 from typing import Any
 
-from .adapters.mcp import MCPAdapter
 from .config import JustiFiConfig
-from .tools import AVAILABLE_TOOLS
+
+# Simple tool registry for the toolkit
+_TOOL_NAMES = [
+    "list_balance_transactions",
+    "retrieve_balance_transaction",
+    "list_checkouts",
+    "retrieve_checkout",
+    "list_disputes",
+    "retrieve_dispute",
+    "retrieve_payment_method",
+    "list_payments",
+    "retrieve_payment",
+    "get_payout_status",
+    "get_recent_payouts",
+    "list_payouts",
+    "retrieve_payout",
+    "list_payment_refunds",
+    "list_refunds",
+    "retrieve_refund",
+]
 
 
 class JustiFiToolkit:
     """Multi-framework toolkit for JustiFi payment operations.
 
     Provides a unified interface to JustiFi tools that can be used across
-    AI frameworks (MCP, LangChain) with configuration-driven tool selection
+    AI frameworks (LangChain) with configuration-driven tool selection
     and context management. OpenAI integration uses direct tool access.
 
     Examples:
@@ -36,7 +54,6 @@ class JustiFiToolkit:
         )
 
         # Framework-specific usage
-        mcp_server = toolkit.get_mcp_server()
         langchain_tools = toolkit.get_langchain_tools()
     """
 
@@ -71,7 +88,6 @@ class JustiFiToolkit:
             )
 
         # Initialize adapters as None for lazy loading
-        self._mcp_adapter: MCPAdapter | None = None
         self._langchain_adapter = None
 
     def get_enabled_tools(self) -> dict[str, Any]:
@@ -83,9 +99,14 @@ class JustiFiToolkit:
         enabled_tools = {}
         enabled_tool_names = self.config.get_enabled_tools()
 
+        # Import tools dynamically to avoid circular imports
+        from . import tools
+
         for tool_name in enabled_tool_names:
-            if tool_name in AVAILABLE_TOOLS:
-                enabled_tools[tool_name] = AVAILABLE_TOOLS[tool_name]
+            if tool_name in _TOOL_NAMES:
+                tool_func = getattr(tools, tool_name, None)
+                if tool_func:
+                    enabled_tools[tool_name] = tool_func
 
         return enabled_tools
 
@@ -100,50 +121,10 @@ class JustiFiToolkit:
             "rate_limit": self.config.context.rate_limit,
             "enabled_tools": list(enabled_tools.keys()),
             "total_tools": len(enabled_tools),
-            "available_tools": list(AVAILABLE_TOOLS.keys()),
+            "available_tools": _TOOL_NAMES,
         }
 
     # Framework-specific methods
-
-    def get_mcp_server(self, server_name: str = "justifi-toolkit-mcp-server") -> Any:
-        """Get an MCP server with JustiFi tools.
-
-        Args:
-            server_name: Name for the MCP server
-
-        Returns:
-            Configured MCP server instance
-        """
-        if not self._mcp_adapter:
-            self._mcp_adapter = MCPAdapter(self.config)
-
-        return self._mcp_adapter.create_mcp_server(server_name)
-
-    async def call_tool(self, name: str, arguments: dict[str, Any]) -> Any:
-        """Call a tool directly (framework-agnostic).
-
-        Args:
-            name: Tool name
-            arguments: Tool arguments
-
-        Returns:
-            Tool result (format depends on framework)
-        """
-        if not self._mcp_adapter:
-            self._mcp_adapter = MCPAdapter(self.config)
-
-        return await self._mcp_adapter.call_tool(name, arguments)
-
-    def get_tool_schemas(self) -> Any:
-        """Get tool schemas for the current framework.
-
-        Returns:
-            List of tool schemas (format depends on framework)
-        """
-        if not self._mcp_adapter:
-            self._mcp_adapter = MCPAdapter(self.config)
-
-        return self._mcp_adapter.get_enabled_tool_schemas()
 
     def get_langchain_tools(self) -> list[Any]:
         """Get LangChain-compatible tools.

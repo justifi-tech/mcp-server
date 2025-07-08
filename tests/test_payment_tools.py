@@ -8,10 +8,10 @@ import pytest
 import respx
 from httpx import Response
 
-from justifi_mcp.core import JustiFiClient
-from justifi_mcp.tools.base import ToolError, ValidationError
-from justifi_mcp.tools.payment_methods import retrieve_payment_method
-from justifi_mcp.tools.payments import list_payments, retrieve_payment
+from python.core import JustiFiClient
+from python.tools.base import ToolError, ValidationError
+from python.tools.payment_methods import retrieve_payment_method
+from python.tools.payments import list_payments, retrieve_payment
 
 
 @pytest.fixture

@@ -17,12 +17,12 @@ Unlike other frameworks, OpenAI function calling works directly with our existin
 - **Best for**: Getting started, understanding the basics
 
 ### 2. **Advanced Workflows** (`advanced_workflows.py`)
-- **Purpose**: Sophisticated AI-driven payout analysis workflows
+- **Purpose**: Sophisticated AI-driven payment analysis workflows
 - **Features**:
   - Multi-step AI analysis with tool feedback
   - Parallel tool execution for performance
   - Streaming responses with tool integration
-  - Custom PayoutAnalysisAssistant class
+  - Custom PaymentAnalysisAssistant class
   - Iterative analysis with conversation memory
 - **Best for**: Complex analysis tasks, production workflows
 
@@ -75,7 +75,7 @@ import openai
 toolkit = JustiFiToolkit(
     client_id="your_id",
     client_secret="your_secret",
-    enabled_tools=["list_payouts", "retrieve_payout"]
+    enabled_tools=["list_payouts", "retrieve_payout", "list_payments", "retrieve_payment"]
 )
 
 # 2. Convert schemas to OpenAI format
@@ -95,7 +95,7 @@ for tool_name in toolkit.get_enabled_tools():
 client = openai.AsyncOpenAI()
 response = await client.chat.completions.create(
     model="gpt-4",
-    messages=[{"role": "user", "content": "Analyze recent payouts"}],
+    messages=[{"role": "user", "content": "Analyze recent payments and payouts"}],
     tools=openai_functions,
     tool_choice="auto"
 )
@@ -113,14 +113,14 @@ if response.choices[0].message.tool_calls:
 ## 📊 **Example Use Cases**
 
 ### Financial Analysis
-- Automated payout performance reports
+- Automated payment and payout performance reports
 - Risk assessment and anomaly detection
 - Trend analysis and forecasting
 - Compliance monitoring
 
 ### Operations Management
-- Payout status monitoring
-- Failed payment investigation
+- Payment and payout status monitoring
+- Failed transaction investigation
 - Performance optimization recommendations
 - Automated alerting systems
 

@@ -16,7 +16,6 @@ Therefore, our quality focus is on:
 
 ### 1. Unit & Integration Tests (Primary)
 - **Location**: `tests/` directory
-- **Coverage**: 70/70 tests passing
 - **Focus**: Tool functionality, configuration, error handling
 
 ### 2. MCP Protocol Compliance

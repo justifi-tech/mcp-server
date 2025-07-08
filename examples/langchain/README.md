@@ -81,7 +81,7 @@ from langchain_openai import ChatOpenAI
 toolkit = JustiFiToolkit(
     client_id="your_id",
     client_secret="your_secret",
-    enabled_tools=["list_payouts", "retrieve_payout"]
+    enabled_tools=["list_payouts", "retrieve_payout", "list_payments", "retrieve_payment"]
 )
 
 # 2. Get LangChain tools via adapter
@@ -91,7 +91,7 @@ langchain_tools = toolkit.get_langchain_tools()
 llm = ChatOpenAI(model="gpt-4", temperature=0.1)
 
 prompt = ChatPromptTemplate.from_messages([
-    ("system", "You are a financial analyst with access to payout tools."),
+    ("system", "You are a financial analyst with access to comprehensive payment management tools."),
     ("user", "{input}"),
     MessagesPlaceholder(variable_name="agent_scratchpad"),
 ])
@@ -101,7 +101,7 @@ agent = create_openai_tools_agent(llm, langchain_tools, prompt)
 agent_executor = AgentExecutor(agent=agent, tools=langchain_tools, verbose=True)
 
 # 5. Execute
-result = await agent_executor.ainvoke({"input": "Analyze recent payouts"})
+result = await agent_executor.ainvoke({"input": "Analyze recent payments and payouts"})
 ```
 
 ## 📊 **Agent Types Demonstrated**
@@ -118,7 +118,7 @@ result = await agent_executor.ainvoke({"input": "Analyze recent payouts"})
 
 ### Specialized Agents
 - **Purpose**: Domain-specific agents for particular tasks
-- **Examples**: PayoutAnalysisAgent, PayoutReportingAgent
+- **Examples**: PaymentAnalysisAgent, PayoutReportingAgent, DisputeHandlingAgent
 - **Features**: Custom prompts, specialized memory, task-focused tools
 
 ### Multi-Agent Systems
@@ -171,19 +171,19 @@ all_tools = toolkit.get_langchain_tools() + [custom_tool]
 ## 📊 **Example Use Cases**
 
 ### Financial Analysis Workflows
-- Multi-step payout trend analysis
+- Multi-step payment and payout trend analysis
 - Risk assessment with reasoning traces
 - Compliance checking with audit trails
 - Performance optimization recommendations
 
 ### Automated Reporting
 - Executive summary generation
-- Scheduled payout status reports
+- Scheduled payment and payout status reports
 - Anomaly detection and alerting
 - Data-driven insights and recommendations
 
 ### Interactive Analysis
-- Conversational payout exploration
+- Conversational payment exploration
 - Follow-up questions with context
 - Iterative analysis refinement
 - Memory-based investigation flows

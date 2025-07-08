@@ -1,6 +1,6 @@
 # JustiFi MCP Server
 
-A **payout-focused** Model Context Protocol (MCP) server for AI-assisted payment management. This server provides 4 comprehensive tools for payout operations through the JustiFi API.
+A comprehensive **Model Context Protocol (MCP) server** for AI-assisted payment management. This server provides JustiFi payment tools across all major payment operations through the JustiFi API.
 
 ## 🏗️ MCP Architecture
 
@@ -26,7 +26,7 @@ A **payout-focused** Model Context Protocol (MCP) server for AI-assisted payment
 
 ## 🚀 FastMCP Architecture
 
-JustiFi MCP Server now uses FastMCP for improved transport flexibility and reduced boilerplate.
+JustiFi MCP Server uses FastMCP for transport flexibility and reduced boilerplate.
 
 ### Transport Options
 
@@ -59,25 +59,53 @@ justifi-mcp-server/
 └── main.py                # FastMCP entry point
 ```
 
-### Multi-Framework Support Preserved
+### Multi-Framework Support
 
-The FastMCP migration preserves full multi-framework support:
+The server provides multi-framework support:
 
 ```python
-# LangChain (unchanged)
+# LangChain
 from python.adapters.langchain import JustiFiLangChainAdapter
 
-# OpenAI (unchanged) 
+# OpenAI
 from python.tools.payments import retrieve_payment
 ```
 
-## 🎯 Focus: Payout Operations
+## 🎯 Comprehensive Payment Management
 
-This MCP server specializes in payout management with these tools:
+This MCP server provides complete payment management capabilities across multiple domains:
+
+### Payment Tools
+- `retrieve_payment` - Get detailed payment information
+- `list_payments` - List payments with pagination
+
+### Payout Tools
 - `retrieve_payout` - Get detailed payout information
-- `list_payouts` - List payouts with pagination
+- `list_payouts` - List payouts with pagination  
 - `get_payout_status` - Quick status check for payouts
 - `get_recent_payouts` - Get the most recent payouts
+
+### Refund Tools
+- `retrieve_refund` - Get refund details by ID
+- `list_refunds` - List all refunds with pagination
+- `list_payment_refunds` - List refunds for a specific payment
+
+### Balance Transaction Tools
+- `list_balance_transactions` - List fund movements with filtering
+- `retrieve_balance_transaction` - Get specific balance transaction
+
+### Dispute Tools
+- `list_disputes` - List disputes with pagination
+- `retrieve_dispute` - Get dispute details by ID
+
+### Checkout Tools
+- `list_checkouts` - List checkouts with filtering
+- `retrieve_checkout` - Get checkout details by ID
+
+### Payment Method Tools
+- `retrieve_payment_method` - Get payment method by token
+
+
 
 ## 🚀 Quick Start
 
@@ -134,7 +162,7 @@ make clean
 
 ### All Tests
 ```bash
-# Run all tests (94 tests total)
+# Run all tests
 make test
 ```
 
@@ -142,8 +170,8 @@ make test
 ```bash
 # Run specific test files
 docker-compose run --rm dev pytest tests/test_payout_tools.py -v
+docker-compose run --rm dev pytest tests/test_payment_tools.py -v
 docker-compose run --rm dev pytest tests/test_main.py -v
-docker-compose run --rm dev pytest tests/test_mcp_compliance.py -v
 ```
 
 ## 🔌 MCP Integration
@@ -153,7 +181,7 @@ docker-compose run --rm dev pytest tests/test_mcp_compliance.py -v
    ```json
    {
      "mcpServers": {
-       "justifi-payouts": {
+       "justifi": {
          "command": "python",
          "args": ["main.py"],
          "cwd": "/path/to/mcp-servers"
@@ -163,17 +191,72 @@ docker-compose run --rm dev pytest tests/test_mcp_compliance.py -v
    ```
 
 ### Claude Desktop
-1. Add to your MCP settings:
+
+Claude Desktop supports MCP servers through its configuration file. Choose one of these methods:
+
+#### Method 1: Direct Python Execution (Stdio)
+1. **Start the server** in stdio mode:
+   ```bash
+   cd /path/to/mcp-servers
+   python main.py
+   ```
+
+2. **Configure Claude Desktop** by editing your config file:
+   - **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+   - **Windows**: `%APPDATA%/Claude/claude_desktop_config.json`
+   - **Linux**: `~/.config/Claude/claude_desktop_config.json`
+
    ```json
    {
      "mcpServers": {
-       "justifi-payouts": {
+       "justifi": {
          "command": "python",
-         "args": ["/path/to/mcp-servers/main.py"]
+         "args": ["/path/to/mcp-servers/main.py"],
+         "env": {
+           "JUSTIFI_CLIENT_ID": "your_client_id",
+           "JUSTIFI_CLIENT_SECRET": "your_client_secret",
+           "JUSTIFI_ENABLED_TOOLS": "all"
+         }
        }
      }
    }
    ```
+
+#### Method 2: HTTP Mode with mcp-remote
+1. **Start the server** in HTTP mode:
+   ```bash
+   cd /path/to/mcp-servers
+   MCP_TRANSPORT=http MCP_PORT=3000 python main.py
+   ```
+
+2. **Configure Claude Desktop** to use mcp-remote:
+   ```json
+   {
+     "mcpServers": {
+       "justifi": {
+         "command": "npx",
+         "args": [
+           "-y",
+           "mcp-remote",
+           "http://localhost:3000/mcp"
+         ]
+       }
+     }
+   }
+   ```
+
+3. **Set environment variables** in your shell before starting the server:
+   ```bash
+   export JUSTIFI_CLIENT_ID="your_client_id"
+   export JUSTIFI_CLIENT_SECRET="your_client_secret"
+   export JUSTIFI_ENABLED_TOOLS="all"
+   ```
+
+#### Verification
+After configuration, restart Claude Desktop and you should see JustiFi payment tools available in your conversations. You can test with prompts like:
+- "List recent payouts"
+- "Get the status of payout po_ABC123"
+- "Show me payment details for py_XYZ789"
 
 ## 🌐 Environment Variables
 
@@ -198,45 +281,9 @@ Optional:
 JUSTIFI_BASE_URL=https://api.justifi.ai     # Default (no /v1 suffix)
 LANGCHAIN_API_KEY=your_langsmith_key        # For tracing/observability
 LANGCHAIN_TRACING_V2=true                   # Enable tracing
-LOG_LEVEL=INFO                              # DEBUG, INFO, WARNING, ERROR
 ```
 
 **Note**: No AI model API keys needed! Those are handled by MCP clients, not this server.
-
-## 🔍 Available Tools
-
-### `retrieve_payout`
-Get complete payout details by ID.
-```json
-{
-  "payout_id": "po_ABC123XYZ"
-}
-```
-
-### `list_payouts`
-List payouts with cursor-based pagination.
-```json
-{
-  "limit": 25,
-  "after_cursor": "optional_cursor"
-}
-```
-
-### `get_payout_status`
-Quick status check (returns just the status string).
-```json
-{
-  "payout_id": "po_ABC123XYZ"
-}
-```
-
-### `get_recent_payouts`
-Get the most recent payouts (optimized for recency).
-```json
-{
-  "limit": 10
-}
-```
 
 ## 🔄 API Drift Monitoring
 
@@ -250,11 +297,11 @@ make drift-check
 
 ## 🏛️ Architecture
 
-### Clean & Focused
-- **Payout specialization**: 4 focused tools vs generic approach
+### Clean & Comprehensive
+- **Full payment management**: Tools across all payment domains
 - **Multi-framework support**: MCP (primary), LangChain, OpenAI examples
 - **Container-first development**: Docker for consistency
-- **Comprehensive testing**: 94 tests covering all scenarios
+- **Focused testing**: Critical error scenarios only
 
 ### OAuth2 Flow
 - Automatic token acquisition and caching
@@ -291,9 +338,9 @@ make drift-check
 
 ## 🤝 Contributing
 
-1. Focus on payout operations
+1. Focus on comprehensive payment management
 2. Follow Python best practices
-3. Add comprehensive tests
+3. Add tests for critical error scenarios only
 4. Use container development environment
 5. Update documentation
 

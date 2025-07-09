@@ -232,14 +232,14 @@ class ProductionPayoutAssistant:
             await self._check_rate_limit()
 
             system_prompt = """You are a professional financial analysis assistant specializing in payout data.
-            
+
             Guidelines:
             - Be precise and data-driven in your analysis
             - Always verify data before making conclusions
             - Highlight any anomalies or concerning patterns
             - Provide actionable recommendations
             - If you encounter errors, explain them clearly
-            
+
             Available tools: list_payouts, retrieve_payout, get_payout_status, get_recent_payouts"""
 
             messages = [
@@ -269,7 +269,6 @@ class ProductionPayoutAssistant:
                     assistant_message.tool_calls
                     and iteration < self.config.max_tool_calls_per_conversation
                 ):
-
                     logger.info(
                         f"Processing {len(assistant_message.tool_calls)} tool calls (iteration {iteration + 1})"
                     )
@@ -484,7 +483,7 @@ async def demonstrate_production_patterns():
     print("⚡ Performance test completed:")
     print(f"   • Duration: {duration:.2f} seconds")
     print(f"   • Successful requests: {successful}/{len(tasks)}")
-    print(f"   • Average time per request: {duration/len(tasks):.2f}s")
+    print(f"   • Average time per request: {duration / len(tasks):.2f}s")
 
     print("\n✅ Production patterns demonstration complete!")
 

@@ -72,19 +72,19 @@ class PayoutAnalysisAssistant:
         """Perform advanced payout trend analysis based on user query."""
 
         system_prompt = """You are a financial analysis assistant specializing in payout data analysis.
-        
+
         You have access to JustiFi payout tools to:
         - List payouts with pagination
         - Get detailed payout information
         - Check payout statuses
         - Retrieve recent payouts
-        
+
         When analyzing payouts:
         1. Always start with recent payouts to understand current state
         2. Look for patterns in amounts, timing, and status
         3. Identify any failed or pending payouts that need attention
         4. Provide actionable insights and recommendations
-        
+
         Be thorough but concise in your analysis."""
 
         messages = [
@@ -288,7 +288,6 @@ async def demonstrate_custom_orchestration():
         print("  1️⃣ Fetching recent payouts...")
         recent_payouts = await toolkit.call_tool("get_recent_payouts", {"limit": 10})
 
-        status_checks = []
         if recent_payouts and "data" in recent_payouts:
             payouts = recent_payouts["data"]
             print(f"     Found {len(payouts)} recent payouts")
@@ -308,7 +307,7 @@ async def demonstrate_custom_orchestration():
                     )
                     amount = payout.get("amount", 0)
                     print(
-                        f"     Payout {i+1}: {payout_id} - Status: {status} - Amount: ${amount/100:.2f}"
+                        f"     Payout {i + 1}: {payout_id} - Status: {status} - Amount: ${amount / 100:.2f}"
                     )
 
             print("  ✅ Health check complete!")

@@ -225,9 +225,7 @@ class JustiFiClient:
                     and e.response.status_code != 429
                 ):
                     await self._handle_client_error(e)
-                    return (
-                        {}
-                    )  # This line won't be reached due to exception, but satisfies linter
+                    return {}  # This line won't be reached due to exception, but satisfies linter
 
                 # Retry on server errors (5xx) and rate limits (429)
                 if attempt < retries and (
@@ -242,9 +240,7 @@ class JustiFiClient:
 
                 # Final attempt failed
                 await self._handle_server_error(e)
-                return (
-                    {}
-                )  # This line won't be reached due to exception, but satisfies linter
+                return {}  # This line won't be reached due to exception, but satisfies linter
 
             except httpx.RequestError as e:
                 logger.warning(f"Network error on attempt {attempt + 1}: {e}")

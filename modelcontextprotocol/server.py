@@ -11,15 +11,22 @@ from python.core import JustiFiClient
 
 
 def create_mcp_server() -> FastMCP:
-    """Create and configure FastMCP server with JustiFi tools."""
+    """Create and configure the FastMCP server with all JustiFi tools."""
     # Initialize FastMCP server
-    mcp = FastMCP("JustiFi Payment Server")
+    mcp: FastMCP = FastMCP("JustiFi Payment Server")
 
     # Load configuration
     config = JustiFiConfig()
+
+    # Ensure we have valid credentials
+    client_id = config.client_id
+    client_secret = config.client_secret
+    if not client_id or not client_secret:
+        raise ValueError("JustiFi client_id and client_secret must be configured")
+
     client = JustiFiClient(
-        client_id=config.client_id,
-        client_secret=config.client_secret,
+        client_id=client_id,
+        client_secret=client_secret,
     )
 
     # Register all JustiFi tools
@@ -48,7 +55,9 @@ def register_tools(mcp: FastMCP, client: JustiFiClient) -> None:
 
     @mcp.tool
     async def list_payouts(
-        limit: int = 25, after_cursor: str = None, before_cursor: str = None
+        limit: int = 25,
+        after_cursor: str | None = None,
+        before_cursor: str | None = None,
     ) -> dict[str, Any]:
         """List payouts with optional pagination using cursor-based pagination.
 

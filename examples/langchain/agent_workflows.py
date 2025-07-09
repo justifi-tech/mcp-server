@@ -255,7 +255,7 @@ async def demonstrate_react_agent():
     agent = PayoutAnalysisAgent()
 
     # Example analysis with step-by-step reasoning
-    query = """I need to understand our payout performance this week. 
+    query = """I need to understand our payout performance this week.
     Can you analyze our recent payouts and tell me:
     1. How many payouts we've processed
     2. What's our success rate
@@ -346,8 +346,8 @@ async def demonstrate_multi_agent_workflow():
         print("🔄 Step 2: Reporting agent creates action plan based on analysis")
 
         # Pass analysis results to reporting agent
-        report_prompt = f"""Based on this analysis: {analysis_result['output'][:500]}
-        
+        f"""Based on this analysis: {analysis_result["output"][:500]}
+
         Create an executive summary report with:
         1. Key findings summary
         2. Immediate action items
@@ -422,7 +422,7 @@ async def demonstrate_custom_tool_integration():
             (
                 "system",
                 """You are a financial analyst with access to payout data and calculation tools.
-        
+
         When asked for metrics:
         1. First get the payout data using JustiFi tools
         2. Then use the calculate_payout_metrics tool to compute statistics

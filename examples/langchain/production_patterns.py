@@ -324,7 +324,6 @@ class ProductionPayoutAgent:
             }
 
         async with self._session_context(session_id) as metrics:
-
             # Setup memory if enabled
             memory = None
             if self.config.enable_memory:
@@ -490,7 +489,8 @@ async def demonstrate_production_deployment():
 
     # Test with invalid input
     error_result = await agent.analyze_with_retry(
-        "x" * 6000, session_id="prod_demo_002"  # Too long input
+        "x" * 6000,
+        session_id="prod_demo_002",  # Too long input
     )
 
     print(

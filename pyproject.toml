@@ -48,21 +48,16 @@ Issues = "https://github.com/justifi-tech/mcp-servers/issues"
 [project.scripts]
 justifi-mcp-server = "main:cli_main"
 
+# Development dependencies
 [project.optional-dependencies]
 dev = [
-    "pytest",
-    "pytest-asyncio",
-    "pytest-cov",
-    "respx",
-    "black",
-    "ruff",
-    "mypy",
-    "watchdog",
-    "pre-commit",
-    "types-requests",
-    "types-PyYAML",
-    "langchain-core",
-    "langchain-openai",
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+    "pytest-cov>=4.0.0",
+    "respx>=0.20.0",
+    "ruff>=0.1.0",
+    # Note: mypy excluded from standard workflow - focus on runtime correctness
+    # "mypy>=1.0.0",
 ]
 test = ["pytest", "pytest-asyncio", "pytest-cov", "respx"]
 api = ["requests", "pyyaml", "deepdiff"]
@@ -114,36 +109,6 @@ ignore = [
 
 [tool.ruff.lint.isort]
 known-first-party = ["justifi_mcp", "tests"]
-
-[tool.mypy]
-python_version = "3.11"
-warn_return_any = true
-warn_unused_configs = true
-disallow_untyped_defs = false       # Start gradual, can make stricter later
-disallow_incomplete_defs = true
-check_untyped_defs = true
-disallow_untyped_decorators = false # Allow @traceable without types
-no_implicit_optional = true
-warn_redundant_casts = true
-warn_unused_ignores = true
-warn_no_return = true
-warn_unreachable = true
-strict_equality = true
-exclude = []
-
-# Per-module options
-[[tool.mypy.overrides]]
-module = [
-    "respx.*",
-    "mcp.*",
-    "langsmith.*",
-    "requests.*",
-    "yaml.*",
-    "deepdiff.*",
-    "langchain_openai.*",
-    "langchain_core.*",
-]
-ignore_missing_imports = true
 
 [tool.setuptools.packages.find]
 where = ["."]

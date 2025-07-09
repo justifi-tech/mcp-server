@@ -21,7 +21,8 @@ pytestmark = pytest.mark.asyncio
 def justifi_client():
     """Create a test JustiFi client."""
     return JustiFiClient(
-        client_id="test_client", client_secret="test_secret"  # noqa: S106
+        client_id="test_client",
+        client_secret="test_secret",  # noqa: S106
     )
 
 

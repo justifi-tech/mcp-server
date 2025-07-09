@@ -17,6 +17,7 @@ Usage:
     # Health check
     python main.py --health-check
 """
+
 import asyncio
 import logging
 import os
@@ -62,7 +63,7 @@ async def health_check() -> dict[str, Any]:
 
         # Test FastMCP server creation
         mcp = create_mcp_server()
-        logger.debug("FastMCP server created successfully")
+        logger.debug(f"FastMCP server created successfully: {type(mcp).__name__}")
 
         # Test JustiFi API connectivity by creating client
         from python.config import JustiFiConfig

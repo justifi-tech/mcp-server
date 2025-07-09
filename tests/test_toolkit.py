@@ -6,6 +6,7 @@ import pytest
 
 from python.config import JustiFiConfig
 from python.toolkit import JustiFiToolkit
+from python.tools.base import ValidationError
 
 # Mark all tests as async
 pytestmark = pytest.mark.asyncio
@@ -57,5 +58,5 @@ class TestJustiFiToolkitCriticalErrors:
         toolkit = JustiFiToolkit(config=basic_config)
 
         # Test that trying to execute a tool with invalid input raises an error
-        with pytest.raises(Exception):  # This will raise during actual tool execution
+        with pytest.raises(ValidationError):
             await toolkit.execute_langchain_tool("retrieve_payout", payout_id="")

@@ -4,8 +4,8 @@ import pytest
 import respx
 from httpx import Response
 
-from python.config import JustiFiConfig
 from python.core import JustiFiClient
+from python.tools.base import ToolError, ValidationError
 from python.tools.refunds import (
     list_payment_refunds,
     list_refunds,
@@ -18,8 +18,8 @@ pytestmark = pytest.mark.asyncio
 @pytest.fixture
 def mock_client():
     """Create a mock JustiFi client."""
-    config = JustiFiConfig(client_id="test_id", client_secret="test_secret")
-    return JustiFiClient(config.client_id, config.client_secret)
+    # Use explicit string values to avoid type issues
+    return JustiFiClient("test_id", "test_secret")
 
 
 @pytest.fixture
@@ -133,14 +133,14 @@ class TestListRefunds:
 
     async def test_list_refunds_invalid_limit(self, mock_client):
         """Test list_refunds with invalid limit."""
-        with pytest.raises(Exception) as exc_info:
+        with pytest.raises(ValidationError) as exc_info:
             await list_refunds(mock_client, limit=0)
 
         assert "limit must be an integer between 1 and 100" in str(exc_info.value)
 
     async def test_list_refunds_both_cursors(self, mock_client):
         """Test list_refunds with both cursors (should fail)."""
-        with pytest.raises(Exception) as exc_info:
+        with pytest.raises(ValidationError) as exc_info:
             await list_refunds(
                 mock_client, after_cursor="after", before_cursor="before"
             )
@@ -172,14 +172,14 @@ class TestRetrieveRefund:
 
     async def test_retrieve_refund_empty_id(self, mock_client):
         """Test retrieve_refund with empty refund_id."""
-        with pytest.raises(Exception) as exc_info:
+        with pytest.raises(ValidationError) as exc_info:
             await retrieve_refund(mock_client, "")
 
         assert "refund_id must be a non-empty string" in str(exc_info.value)
 
     async def test_retrieve_refund_whitespace_id(self, mock_client):
         """Test retrieve_refund with whitespace refund_id."""
-        with pytest.raises(Exception) as exc_info:
+        with pytest.raises(ValidationError) as exc_info:
             await retrieve_refund(mock_client, "   ")
 
         assert "refund_id cannot be empty or contain only whitespace" in str(
@@ -196,8 +196,10 @@ class TestRetrieveRefund:
             return_value=Response(404, json={"error": "Not found"})
         )
 
-        with pytest.raises(Exception):
+        with pytest.raises(ToolError) as exc_info:
             await retrieve_refund(mock_client, "re_nonexistent")
+
+        assert "Resource not found" in str(exc_info.value)
 
 
 class TestListPaymentRefunds:
@@ -224,7 +226,7 @@ class TestListPaymentRefunds:
 
     async def test_list_payment_refunds_empty_id(self, mock_client):
         """Test list_payment_refunds with empty payment_id."""
-        with pytest.raises(Exception) as exc_info:
+        with pytest.raises(ValidationError) as exc_info:
             await list_payment_refunds(mock_client, "")
 
         assert "payment_id must be a non-empty string" in str(exc_info.value)

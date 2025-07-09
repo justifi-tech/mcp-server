@@ -4,12 +4,12 @@ import pytest
 import respx
 from httpx import Response
 
-from python.config import JustiFiConfig
 from python.core import JustiFiClient
 from python.tools.balances import (
     list_balance_transactions,
     retrieve_balance_transaction,
 )
+from python.tools.base import ToolError, ValidationError
 
 pytestmark = pytest.mark.asyncio
 
@@ -17,8 +17,8 @@ pytestmark = pytest.mark.asyncio
 @pytest.fixture
 def mock_client():
     """Create a mock JustiFi client."""
-    config = JustiFiConfig(client_id="test_id", client_secret="test_secret")
-    return JustiFiClient(config.client_id, config.client_secret)
+    # Use explicit string values to avoid type issues
+    return JustiFiClient("test_id", "test_secret")
 
 
 @pytest.fixture
@@ -134,21 +134,21 @@ class TestListBalanceTransactions:
 
     async def test_list_balance_transactions_invalid_limit(self, mock_client):
         """Test list_balance_transactions with invalid limit."""
-        with pytest.raises(Exception) as exc_info:
+        with pytest.raises(ValidationError) as exc_info:
             await list_balance_transactions(mock_client, limit=0)
 
         assert "limit must be an integer between 1 and 100" in str(exc_info.value)
 
     async def test_list_balance_transactions_limit_too_high(self, mock_client):
         """Test list_balance_transactions with limit too high."""
-        with pytest.raises(Exception) as exc_info:
+        with pytest.raises(ValidationError) as exc_info:
             await list_balance_transactions(mock_client, limit=101)
 
         assert "limit must be an integer between 1 and 100" in str(exc_info.value)
 
     async def test_list_balance_transactions_both_cursors(self, mock_client):
         """Test list_balance_transactions with both cursors (should fail)."""
-        with pytest.raises(Exception) as exc_info:
+        with pytest.raises(ValidationError) as exc_info:
             await list_balance_transactions(
                 mock_client, after_cursor="after", before_cursor="before"
             )
@@ -181,7 +181,7 @@ class TestRetrieveBalanceTransaction:
 
     async def test_retrieve_balance_transaction_empty_id(self, mock_client):
         """Test retrieve_balance_transaction with empty balance_transaction_id."""
-        with pytest.raises(Exception) as exc_info:
+        with pytest.raises(ValidationError) as exc_info:
             await retrieve_balance_transaction(mock_client, "")
 
         assert "balance_transaction_id must be a non-empty string" in str(
@@ -190,7 +190,7 @@ class TestRetrieveBalanceTransaction:
 
     async def test_retrieve_balance_transaction_whitespace_id(self, mock_client):
         """Test retrieve_balance_transaction with whitespace balance_transaction_id."""
-        with pytest.raises(Exception) as exc_info:
+        with pytest.raises(ValidationError) as exc_info:
             await retrieve_balance_transaction(mock_client, "   ")
 
         assert (
@@ -200,7 +200,7 @@ class TestRetrieveBalanceTransaction:
 
     async def test_retrieve_balance_transaction_none_id(self, mock_client):
         """Test retrieve_balance_transaction with None balance_transaction_id."""
-        with pytest.raises(Exception) as exc_info:
+        with pytest.raises(ValidationError) as exc_info:
             await retrieve_balance_transaction(mock_client, None)
 
         assert "balance_transaction_id must be a non-empty string" in str(
@@ -219,7 +219,7 @@ class TestRetrieveBalanceTransaction:
             return_value=Response(404, json={"error": "Not found"})
         )
 
-        with pytest.raises(Exception):
+        with pytest.raises(ToolError):
             await retrieve_balance_transaction(mock_client, "bt_nonexistent")
 
     @respx.mock
@@ -234,5 +234,5 @@ class TestRetrieveBalanceTransaction:
             return_value=Response(500, json={"error": "Internal server error"})
         )
 
-        with pytest.raises(Exception):
+        with pytest.raises(ToolError):
             await retrieve_balance_transaction(mock_client, "bt_test123")

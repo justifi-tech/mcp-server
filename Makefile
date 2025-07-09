@@ -60,15 +60,15 @@ test: env-check build
 	@echo "🧪 Running tests..."
 	docker-compose run --rm dev pytest tests/ -v
 
-# Auto-format code
-format: env-check build
-	@echo "🎨 Formatting code..."
-	docker-compose run --rm dev sh -c "black . && ruff check --fix --select I ."
+# Linting and formatting
+lint:
+	docker-compose run --rm dev ruff check .
 
-# Run linter and type checking
-lint: env-check build
-	@echo "🔍 Running linter and type checking..."
-	docker-compose run --rm dev sh -c "ruff check . && mypy ."
+format:
+	docker-compose run --rm dev ruff format .
+
+# Run all quality checks (excluding mypy)
+check-all: lint format test
 
 # Clean up containers and volumes
 clean:

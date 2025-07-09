@@ -24,8 +24,14 @@ class MCPConfig(BaseModel):
     @classmethod
     def from_env(cls) -> "MCPConfig":
         """Create configuration from environment variables."""
+        transport_str = os.getenv("MCP_TRANSPORT", "stdio")
+        # Ensure transport is a valid TransportType
+        transport: TransportType = (
+            transport_str if transport_str in ["stdio", "http", "sse"] else "stdio"
+        )
+
         return cls(
-            transport=os.getenv("MCP_TRANSPORT", "stdio"),
+            transport=transport,
             host=os.getenv("MCP_HOST", "127.0.0.1"),
             port=int(os.getenv("MCP_PORT", "3000")),
         )

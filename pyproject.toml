@@ -108,9 +108,9 @@ ignore = [
 ]
 
 [tool.ruff.lint.isort]
-known-first-party = ["justifi_mcp", "tests"]
+known-first-party = ["python", "modelcontextprotocol", "tests"]
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["justifi_mcp*"]
+include = ["python*", "modelcontextprotocol*"]
 exclude = ["tests*", "archive*", "eval*", "docker*", "examples*", "scripts*"]

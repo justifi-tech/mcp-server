@@ -321,8 +321,8 @@ from typing import Any, Dict
 from fastmcp import FastMCP
 
 # Import JustiFi tools from Python directory
-from Python.core import JustiFiClient
-from Python.config import JustiFiConfig
+from python.core import JustiFiClient
+from python.config import JustiFiConfig
 
 
 def create_mcp_server() -> FastMCP:
@@ -358,7 +358,7 @@ def register_tools(mcp: FastMCP, client: JustiFiClient) -> None:
         Returns:
             Payout object with ID, status, amount, and details
         """
-        from Python.tools.payouts import retrieve_payout as _retrieve_payout
+        from python.tools.payouts import retrieve_payout as _retrieve_payout
         return await _retrieve_payout(client, payout_id)
     
     @mcp.tool
@@ -377,7 +377,7 @@ def register_tools(mcp: FastMCP, client: JustiFiClient) -> None:
         Returns:
             Paginated list of payouts with page_info for navigation
         """
-        from Python.tools.payouts import list_payouts as _list_payouts
+        from python.tools.payouts import list_payouts as _list_payouts
         return await _list_payouts(client, limit, after_cursor, before_cursor)
     
     @mcp.tool
@@ -390,7 +390,7 @@ def register_tools(mcp: FastMCP, client: JustiFiClient) -> None:
         Returns:
             Payment object with ID, status, amount, and details
         """
-        from Python.tools.payments import retrieve_payment as _retrieve_payment
+        from python.tools.payments import retrieve_payment as _retrieve_payment
         return await _retrieve_payment(client, payment_id)
     
     @mcp.tool
@@ -409,7 +409,7 @@ def register_tools(mcp: FastMCP, client: JustiFiClient) -> None:
         Returns:
             Paginated list of payments with page_info for navigation
         """
-        from Python.tools.payments import list_payments as _list_payments
+        from python.tools.payments import list_payments as _list_payments
         return await _list_payments(client, limit, after_cursor, before_cursor)
 ```
 
@@ -613,8 +613,8 @@ async def health_check() -> dict[str, Any]:
         logger.debug("FastMCP server created successfully")
 
         # Test JustiFi API connectivity by creating client
-        from Python.core import JustiFiClient
-        from Python.config import JustiFiConfig
+        from python.core import JustiFiClient
+from python.config import JustiFiConfig
         
         config = JustiFiConfig()
         client = JustiFiClient(
@@ -1073,10 +1073,10 @@ The FastMCP migration preserves full multi-framework support:
 
 ```python
 # LangChain (unchanged)
-from Python.adapters.langchain import JustiFiLangChainAdapter
+from python.adapters.langchain import JustiFiLangChainAdapter
 
 # OpenAI (unchanged) 
-from Python.tools.payments import retrieve_payment
+from python.tools.payments import retrieve_payment
 ```
 ```
 

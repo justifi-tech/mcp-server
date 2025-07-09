@@ -110,7 +110,7 @@ async def get_payout_status(client: JustiFiClient, payout_id: str) -> str:
 @handle_tool_errors
 async def get_recent_payouts(
     client: JustiFiClient, limit: int = 10
-) -> list[dict[str, Any]]:
+) -> dict[str, Any]:
     """Get the most recent payouts.
 
     Args:
@@ -118,7 +118,7 @@ async def get_recent_payouts(
         limit: Number of recent payouts to return (default: 10, max: 25).
 
     Returns:
-        List of payout data dictionaries.
+        Dictionary containing list of payout data and metadata.
 
     Raises:
         ValidationError: If limit is invalid.
@@ -135,6 +135,10 @@ async def get_recent_payouts(
 
     try:
         payouts_data: list[dict[str, Any]] = response["data"]
-        return payouts_data
+        return {
+            "payouts": payouts_data,
+            "count": len(payouts_data),
+            "limit": limit
+        }
     except KeyError as e:
         raise KeyError(f"Payouts response missing expected field: {e}") from e

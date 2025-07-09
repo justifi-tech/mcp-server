@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 import pytest
 
-from ModelContextProtocol.main import health_check
+from modelcontextprotocol.main import health_check
 from python.config import JustiFiConfig
 
 # Mark all tests as async

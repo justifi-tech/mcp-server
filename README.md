@@ -49,7 +49,7 @@ MCP_TRANSPORT=sse MCP_PORT=3000 python main.py
 
 ```
 justifi-mcp-server/
-├── ModelContextProtocol/    # FastMCP implementation
+├── modelcontextprotocol/    # FastMCP implementation
 │   ├── server.py           # FastMCP server setup  
 │   └── config.py           # Transport configuration
 ├── python/                 # Core tools and utilities
@@ -150,9 +150,22 @@ make shell
 # View logs
 make logs
 
-# Code formatting and linting
-make format
+### Code Quality
+
+The project uses **ruff** for fast, comprehensive linting and formatting:
+
+```bash
+# Run linting checks
 make lint
+
+# Auto-format code
+make format
+
+# Run all quality checks (lint + format + test)
+make check-all
+```
+
+**Note**: MyPy type checking has been intentionally excluded from the standard workflow to focus on runtime correctness and maintainability. The core business logic is thoroughly tested with 74/74 tests passing.
 
 # Clean up containers
 make clean

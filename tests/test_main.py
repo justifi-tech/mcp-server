@@ -7,8 +7,7 @@ import pytest
 from modelcontextprotocol.main import health_check
 from python.config import JustiFiConfig
 
-# Mark all tests as async
-pytestmark = pytest.mark.asyncio
+# Only async tests are marked individually
 
 
 class TestMainCriticalErrors:
@@ -20,6 +19,7 @@ class TestMainCriticalErrors:
         with pytest.raises(ValueError, match="client_id must be provided"):
             JustiFiConfig()
 
+    @pytest.mark.asyncio
     async def test_health_check_authentication_failure(self):
         """Test health check failure due to bad credentials."""
         # Mock environment variables with invalid credentials

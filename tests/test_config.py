@@ -10,8 +10,7 @@ from python.config import (
     JustiFiConfig,
 )
 
-# Mark all tests as async
-pytestmark = pytest.mark.asyncio
+# Only async tests are marked individually
 
 
 class TestContextConfig:

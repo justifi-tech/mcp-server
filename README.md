@@ -109,12 +109,32 @@ This MCP server provides complete payment management capabilities across multipl
 
 ## 🚀 Quick Start
 
-### Prerequisites
-- Python 3.11+
-- JustiFi API credentials
-- Docker (for containerized development)
+### Option 1: NPX (Recommended for Easy Installation)
 
-### Setup
+**Prerequisites**: Node.js 16+ and Python 3.11+
+
+```bash
+# Run directly with NPX - automatically handles Python dependencies
+npx @justifi/mcp-server
+
+# Set your JustiFi credentials first
+export JUSTIFI_CLIENT_ID="your_client_id"
+export JUSTIFI_CLIENT_SECRET="your_client_secret"
+
+# Run health check to verify setup
+npx @justifi/mcp-server --health-check
+```
+
+**Key benefits of NPX approach:**
+- ✅ **Automatic setup** - Handles Python dependencies and virtual environments
+- ✅ **Safe by default** - Uses virtual environments to avoid global package conflicts
+- ✅ **Cross-platform** - Works on Windows, macOS, and Linux
+- ✅ **No manual installation** - Everything handled automatically
+
+### Option 2: Local Development Setup
+
+**Prerequisites**: Python 3.11+, Docker (optional)
+
 1. **Clone and configure**:
    ```bash
    git clone <repository>
@@ -190,35 +210,77 @@ docker-compose run --rm dev pytest tests/test_main.py -v
 ## 🔌 MCP Integration
 
 ### Cursor IDE
-1. Add to your `cursor_mcp_config.json`:
-   ```json
-   {
-     "mcpServers": {
-       "justifi": {
-         "command": "python",
-         "args": ["main.py"],
-         "cwd": "/path/to/mcp-servers"
-       }
-     }
-   }
-   ```
+
+#### Method 1: NPX (Recommended)
+Add to your `cursor_mcp_config.json`:
+```json
+{
+  "mcpServers": {
+    "justifi": {
+      "command": "npx",
+      "args": ["@justifi/mcp-server"],
+      "env": {
+        "JUSTIFI_CLIENT_ID": "your_client_id",
+        "JUSTIFI_CLIENT_SECRET": "your_client_secret",
+        "JUSTIFI_ENVIRONMENT": "sandbox"
+      }
+    }
+  }
+}
+```
+
+#### Method 2: Local Development
+Add to your `cursor_mcp_config.json`:
+```json
+{
+  "mcpServers": {
+    "justifi": {
+      "command": "python",
+      "args": ["main.py"],
+      "cwd": "/path/to/mcp-servers",
+      "env": {
+        "JUSTIFI_CLIENT_ID": "your_client_id",
+        "JUSTIFI_CLIENT_SECRET": "your_client_secret"
+      }
+    }
+  }
+}
+```
 
 ### Claude Desktop
 
 Claude Desktop supports MCP servers through its configuration file. Choose one of these methods:
 
-#### Method 1: Direct Python Execution (Stdio)
+#### Method 1: NPX (Recommended)
+Configure Claude Desktop by editing your config file:
+- **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- **Windows**: `%APPDATA%/Claude/claude_desktop_config.json`  
+- **Linux**: `~/.config/Claude/claude_desktop_config.json`
+
+```json
+{
+  "mcpServers": {
+    "justifi": {
+      "command": "npx",
+      "args": ["@justifi/mcp-server"],
+      "env": {
+        "JUSTIFI_CLIENT_ID": "your_client_id",
+        "JUSTIFI_CLIENT_SECRET": "your_client_secret",
+        "JUSTIFI_ENVIRONMENT": "sandbox"
+      }
+    }
+  }
+}
+```
+
+#### Method 2: Direct Python Execution (Local Development)
 1. **Start the server** in stdio mode:
    ```bash
    cd /path/to/mcp-servers
    python main.py
    ```
 
-2. **Configure Claude Desktop** by editing your config file:
-   - **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
-   - **Windows**: `%APPDATA%/Claude/claude_desktop_config.json`
-   - **Linux**: `~/.config/Claude/claude_desktop_config.json`
-
+2. **Configure Claude Desktop** with direct Python execution:
    ```json
    {
      "mcpServers": {
@@ -235,7 +297,7 @@ Claude Desktop supports MCP servers through its configuration file. Choose one o
    }
    ```
 
-#### Method 2: HTTP Mode with mcp-remote
+#### Method 3: HTTP Mode with mcp-remote
 1. **Start the server** in HTTP mode:
    ```bash
    cd /path/to/mcp-servers

@@ -1,52 +1,45 @@
 version: 2
 updates:
-  # Python dependencies
   - package-ecosystem: "pip"
     directory: "/"
     schedule:
       interval: "weekly"
       day: "monday"
-      time: "06:00"
+      time: "09:00"
+      timezone: "UTC"
     open-pull-requests-limit: 10
     reviewers:
       - "justifi-tech/mcp-team"
+    assignees:
+      - "justifi-tech/mcp-team"
+    commit-message:
+      prefix: "deps"
+      include: "scope"
     labels:
       - "dependencies"
-      - "python"
-    commit-message:
-      prefix: "chore"
-      include: "scope"
+      - "automated"
+    allow:
+      - dependency-type: "direct"
+      - dependency-type: "indirect"
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
 
-  # GitHub Actions
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
       day: "monday"
-      time: "06:00"
+      time: "09:00"
+      timezone: "UTC"
     open-pull-requests-limit: 5
     reviewers:
       - "justifi-tech/mcp-team"
-    labels:
-      - "dependencies"
-      - "ci"
+    assignees:
+      - "justifi-tech/mcp-team"
     commit-message:
       prefix: "ci"
       include: "scope"
-
-  # Docker
-  - package-ecosystem: "docker"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "06:00"
-    open-pull-requests-limit: 3
-    reviewers:
-      - "justifi-tech/mcp-team"
     labels:
-      - "dependencies"
-      - "docker"
-    commit-message:
-      prefix: "chore"
-      include: "scope"
+      - "github-actions"
+      - "automated"

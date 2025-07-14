@@ -1,0 +1,26 @@
+{
+  "reporter": [
+    "text",
+    "html",
+    "lcov",
+    "json"
+  ],
+  "report-dir": "./coverage",
+  "include": [
+    "wrapper.js",
+    "install.js"
+  ],
+  "exclude": [
+    "test/**",
+    "coverage/**",
+    "node_modules/**"
+  ],
+  "cache": false,
+  "all": true,
+  "check-coverage": true,
+  "statements": 80,
+  "branches": 75,
+  "functions": 80,
+  "lines": 80,
+  "per-file": true
+}

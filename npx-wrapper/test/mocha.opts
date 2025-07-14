@@ -1,0 +1,25 @@
+# Mocha configuration options
+
+# Test timeout
+--timeout 30000
+
+# Reporter
+--reporter spec
+
+# Require modules
+--require test/setup.js
+
+# Grep pattern (can be overridden)
+# --grep ".*"
+
+# Bail on first failure
+# --bail
+
+# Colors
+--colors
+
+# Recursive
+--recursive
+
+# Exit after tests
+--exit

@@ -1,0 +1,70 @@
+{
+  "name": "@justifi/mcp-server",
+  "version": "1.0.0",
+  "description": "JustiFi MCP Server - NPX wrapper for easy installation and usage with AI assistants",
+  "main": "wrapper.js",
+  "bin": {
+    "justifi-mcp-server": "./wrapper.js"
+  },
+  "scripts": {
+    "postinstall": "node install.js",
+    "test": "node test/test-runner.js",
+    "test:unit": "mocha test/test-wrapper.js test/test-install.js --reporter spec",
+    "test:integration": "mocha test/test-integration.js --reporter spec --timeout 30000",
+    "test:coverage": "nyc npm run test:unit",
+    "test:watch": "mocha test/test-wrapper.js test/test-install.js --watch",
+    "test:performance": "cross-env MONITOR_PERFORMANCE=true npm test",
+    "test:ci": "npm run test:unit && npm run test:integration",
+    "test:debug": "cross-env DEBUG=* npm test",
+    "health-check": "node wrapper.js --health-check",
+    "start": "node wrapper.js",
+    "lint": "echo 'Linting not configured yet'",
+    "format:check": "echo 'Format checking not configured yet'",
+    "security:scan": "echo 'Security scanning not configured yet'",
+    "docs:generate": "echo 'Documentation generation not configured yet'",
+    "docs:check": "echo 'Documentation checking not configured yet'"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "justifi",
+    "payments",
+    "ai",
+    "assistant",
+    "claude",
+    "cursor",
+    "npx",
+    "wrapper"
+  ],
+  "author": "JustiFi MCP Team <support@justifi.ai>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/justifi-tech/mcp-servers.git"
+  },
+  "homepage": "https://github.com/justifi-tech/mcp-servers",
+  "bugs": {
+    "url": "https://github.com/justifi-tech/mcp-servers/issues"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "os": ["darwin", "linux", "win32"],
+  "files": [
+    "wrapper.js",
+    "install.js",
+    "README.md",
+    "requirements.txt"
+  ],
+  "preferGlobal": false,
+  "publishConfig": {
+    "access": "public"
+  },
+  "devDependencies": {
+    "mocha": "^10.2.0",
+    "chai": "^4.3.10",
+    "sinon": "^17.0.1",
+    "nyc": "^15.1.0",
+    "cross-env": "^7.0.3"
+  }
+}

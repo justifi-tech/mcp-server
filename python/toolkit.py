@@ -6,7 +6,7 @@ Provides adapters for AI frameworks (LangChain) with direct usage support for Op
 
 from __future__ import annotations
 
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from .adapters.langchain import LangChainAdapter

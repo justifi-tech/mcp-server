@@ -31,10 +31,9 @@ from dataclasses import dataclass
 from typing import Any
 
 import openai
-from pydantic import BaseModel
-
 from justifi_mcp import JustiFiToolkit
 from justifi_mcp.tools import TOOL_SCHEMAS
+from pydantic import BaseModel
 
 # Configure logging
 logging.basicConfig(

@@ -8,21 +8,8 @@
   },
   "scripts": {
     "postinstall": "node install.js",
-    "test": "node test/test-runner.js",
-    "test:unit": "mocha test/test-wrapper.js test/test-install.js --reporter spec",
-    "test:integration": "mocha test/test-integration.js --reporter spec --timeout 30000",
-    "test:coverage": "nyc npm run test:unit",
-    "test:watch": "mocha test/test-wrapper.js test/test-install.js --watch",
-    "test:performance": "cross-env MONITOR_PERFORMANCE=true npm test",
-    "test:ci": "npm run test:unit && npm run test:integration",
-    "test:debug": "cross-env DEBUG=* npm test",
     "health-check": "node wrapper.js --health-check",
-    "start": "node wrapper.js",
-    "lint": "echo 'Linting not configured yet'",
-    "format:check": "echo 'Format checking not configured yet'",
-    "security:scan": "echo 'Security scanning not configured yet'",
-    "docs:generate": "echo 'Documentation generation not configured yet'",
-    "docs:check": "echo 'Documentation checking not configured yet'"
+    "start": "node wrapper.js"
   },
   "keywords": [
     "mcp",
@@ -59,12 +46,5 @@
   "preferGlobal": false,
   "publishConfig": {
     "access": "public"
-  },
-  "devDependencies": {
-    "mocha": "^10.2.0",
-    "chai": "^4.3.10",
-    "sinon": "^17.0.1",
-    "nyc": "^15.1.0",
-    "cross-env": "^7.0.3"
   }
 }

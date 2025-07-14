@@ -8,8 +8,7 @@ from python.config import JustiFiConfig
 from python.toolkit import JustiFiToolkit
 from python.tools.base import ValidationError
 
-# Mark all tests as async
-pytestmark = pytest.mark.asyncio
+# Only async tests are marked individually
 
 
 @pytest.fixture
@@ -41,7 +40,7 @@ class TestJustiFiToolkitCriticalErrors:
         with pytest.raises(ValueError):
             JustiFiToolkit()
 
-    async def test_execute_tool_disabled(self, restricted_config):
+    def test_execute_tool_disabled(self, restricted_config):
         """Test executing a disabled tool."""
         toolkit = JustiFiToolkit(config=restricted_config)
 
@@ -53,6 +52,7 @@ class TestJustiFiToolkitCriticalErrors:
         assert "retrieve_payout" in enabled_tools
         assert "list_payouts" in enabled_tools
 
+    @pytest.mark.asyncio
     async def test_execute_tool_validation_error(self, basic_config):
         """Test tool execution with validation error."""
         toolkit = JustiFiToolkit(config=basic_config)

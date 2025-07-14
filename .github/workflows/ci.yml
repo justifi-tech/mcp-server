@@ -76,5 +76,7 @@ jobs:
 
       - name: Test Docker container
         run: |
-          # Test that the container can start
+          # Test that the container can start and Python is available
           docker run --rm mcp-server:dev python --version
+          # Test that main.py exists and can be imported
+          docker run --rm mcp-server:dev python -c "import main; print('main.py imports successfully')"

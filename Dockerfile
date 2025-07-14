@@ -43,7 +43,8 @@ RUN groupadd -r mcpuser && useradd -r -g mcpuser mcpuser
 
 # Copy only necessary application files with proper ownership
 COPY --chown=mcpuser:mcpuser main.py .
-COPY --chown=mcpuser:mcpuser justifi_mcp/ ./justifi_mcp/
+COPY --chown=mcpuser:mcpuser python/ ./python/
+COPY --chown=mcpuser:mcpuser modelcontextprotocol/ ./modelcontextprotocol/
 
 # Set environment variables
 ENV PYTHONPATH=/app

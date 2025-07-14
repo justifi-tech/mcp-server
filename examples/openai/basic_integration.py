@@ -22,7 +22,6 @@ import json
 import os
 
 import openai
-
 from justifi_mcp import JustiFiToolkit
 from justifi_mcp.tools import TOOL_SCHEMAS
 

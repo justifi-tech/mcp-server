@@ -56,6 +56,7 @@ dev = [
     "pytest-cov>=4.0.0",
     "respx>=0.20.0",
     "ruff>=0.1.0",
+    "watchdog",  # Only for development auto-restart
     # Note: mypy excluded from standard workflow - focus on runtime correctness
     # "mypy>=1.0.0",
 ]
@@ -108,9 +109,9 @@ ignore = [
 ]
 
 [tool.ruff.lint.isort]
-known-first-party = ["justifi_mcp", "tests"]
+known-first-party = ["python", "modelcontextprotocol", "tests"]
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["justifi_mcp*"]
+include = ["python*", "modelcontextprotocol*"]
 exclude = ["tests*", "archive*", "eval*", "docker*", "examples*", "scripts*"]

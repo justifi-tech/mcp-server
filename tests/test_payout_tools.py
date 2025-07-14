@@ -154,7 +154,7 @@ class TestGetRecentPayouts:
         )
 
         result = await get_recent_payouts(justifi_client, limit=10)
-        assert result[0]["id"] == "po_test123"
+        assert result["payouts"][0]["id"] == "po_test123"
 
     async def test_get_recent_payouts_invalid_limit(self, justifi_client):
         """Test error handling for invalid limit."""

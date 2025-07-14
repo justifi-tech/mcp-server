@@ -6,7 +6,10 @@ Provides adapters for AI frameworks (LangChain) with direct usage support for Op
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from .adapters.langchain import LangChainAdapter
 
 from .config import JustiFiConfig
 
@@ -88,7 +91,7 @@ class JustiFiToolkit:
             )
 
         # Initialize adapters as None for lazy loading
-        self._langchain_adapter = None
+        self._langchain_adapter: LangChainAdapter | None = None
 
     def get_enabled_tools(self) -> dict[str, Any]:
         """Get currently enabled tools based on configuration.
@@ -140,7 +143,7 @@ class JustiFiToolkit:
 
             self._langchain_adapter = LangChainAdapter(self.config)
 
-        return self._langchain_adapter.get_langchain_tools()  # type: ignore[no-any-return]
+        return self._langchain_adapter.get_langchain_tools()
 
     def get_langchain_schemas(self) -> list[dict[str, Any]]:
         """Get tool schemas for LangChain integration.
@@ -153,7 +156,7 @@ class JustiFiToolkit:
 
             self._langchain_adapter = LangChainAdapter(self.config)
 
-        return self._langchain_adapter.get_tool_schemas()  # type: ignore[no-any-return]
+        return self._langchain_adapter.get_tool_schemas()
 
     async def execute_langchain_tool(self, tool_name: str, **kwargs: Any) -> Any:
         """Execute a tool directly with LangChain-style error handling.

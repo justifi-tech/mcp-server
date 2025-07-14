@@ -23,6 +23,7 @@ import asyncio
 import os
 from typing import Any
 
+from justifi_mcp import JustiFiToolkit
 from langchain.agents import (
     AgentExecutor,
     create_openai_tools_agent,
@@ -36,8 +37,6 @@ from langchain_core.prompts import (
 )
 from langchain_core.tools import Tool
 from langchain_openai import ChatOpenAI
-
-from justifi_mcp import JustiFiToolkit
 
 
 class PayoutAnalysisAgent:

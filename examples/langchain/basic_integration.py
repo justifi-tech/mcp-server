@@ -18,11 +18,10 @@ Environment Variables:
 import asyncio
 import os
 
+from justifi_mcp import JustiFiToolkit
 from langchain.agents import AgentExecutor, create_openai_tools_agent
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_openai import ChatOpenAI
-
-from justifi_mcp import JustiFiToolkit
 
 
 async def demonstrate_langchain_basic_integration():

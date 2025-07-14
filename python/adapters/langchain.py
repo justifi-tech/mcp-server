@@ -66,7 +66,7 @@ class LangChainAdapter:
                 "Install with: pip install langchain-core"
             ) from e
 
-        # Define tool schemas directly (simplified from the old TOOL_SCHEMAS)
+        # Define tool schemas for LangChain integration
         tool_configs = {
             "retrieve_payout": {
                 "description": "Retrieve detailed information about a specific payout by ID.",

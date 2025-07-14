@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "justifi": {
+      "command": "npx",
+      "args": ["@justifi/mcp-server"],
+      "env": {
+        "JUSTIFI_CLIENT_ID": "your_client_id_here",
+        "JUSTIFI_CLIENT_SECRET": "your_client_secret_here",
+        "JUSTIFI_ENVIRONMENT": "sandbox"
+      }
+    }
+  }
+}

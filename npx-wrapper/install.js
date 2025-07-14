@@ -141,16 +141,10 @@ function installPip(pythonExecutable) {
 function shouldCreateVirtualEnv() {
     // Don't create virtual environment if:
     // 1. We're already in a virtual environment
-    // 2. User explicitly disabled it
-    // 3. We're in a CI environment
+    // 2. We're in a CI environment
     
     if (process.env.VIRTUAL_ENV) {
         log('Already in virtual environment, skipping creation');
-        return false;
-    }
-    
-    if (process.env.JUSTIFI_MCP_NO_VENV === 'true') {
-        log('Virtual environment creation disabled by user');
         return false;
     }
     
@@ -160,6 +154,13 @@ function shouldCreateVirtualEnv() {
     }
     
     return true;
+}
+
+/**
+ * Check if global installation is explicitly allowed
+ */
+function isGlobalInstallationAllowed() {
+    return process.env.JUSTIFI_MCP_ALLOW_GLOBAL === 'true';
 }
 
 /**
@@ -307,7 +308,10 @@ function handleInstallationError(error) {
     log('1. Ensure Python 3.11+ is installed and in your PATH');
     log('2. Check that pip is available and working');
     log('3. Verify you have write permissions to the installation directory');
-    log('4. Try running with verbose output:');
+    log('4. For virtual environment issues, ensure venv module is available');
+    log('5. To allow global installation (not recommended):');
+    log('   JUSTIFI_MCP_ALLOW_GLOBAL=true npm install');
+    log('6. Try running with verbose output:');
     log('   JUSTIFI_MCP_VERBOSE=true npm install');
     log('');
     log('If the problem persists, please file an issue at:');
@@ -350,11 +354,34 @@ async function main() {
             installPip(pythonExecutable);
         }
         
-        // Handle virtual environment
+        // Handle virtual environment - require by default for user safety
         let venvPath = null;
         if (shouldCreateVirtualEnv()) {
-            venvPath = createVirtualEnvironment(pythonExecutable);
-            pythonExecutable = getVenvPythonExecutable(venvPath);
+            try {
+                venvPath = createVirtualEnvironment(pythonExecutable);
+                pythonExecutable = getVenvPythonExecutable(venvPath);
+            } catch (error) {
+                if (!isGlobalInstallationAllowed()) {
+                    throw new Error(
+                        `Failed to create virtual environment: ${error.message}\n\n` +
+                        `To protect your system, global package installation is disabled by default.\n` +
+                        `Options:\n` +
+                        `1. Fix virtual environment issues (recommended)\n` +
+                        `2. Allow global installation: JUSTIFI_MCP_ALLOW_GLOBAL=true npm install\n\n` +
+                        `Warning: Global installation may conflict with other Python packages.`
+                    );
+                }
+                log('Virtual environment creation failed, proceeding with global installation (user override)', 'WARNING');
+            }
+        } else if (!process.env.VIRTUAL_ENV && !isGlobalInstallationAllowed()) {
+            throw new Error(
+                `Virtual environment required for installation.\n\n` +
+                `To protect your system, global package installation is disabled by default.\n` +
+                `Options:\n` +
+                `1. Create a virtual environment first (recommended)\n` +
+                `2. Allow global installation: JUSTIFI_MCP_ALLOW_GLOBAL=true npm install\n\n` +
+                `Warning: Global installation may conflict with other Python packages.`
+            );
         }
         
         // Install dependencies

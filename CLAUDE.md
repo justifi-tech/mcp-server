@@ -162,10 +162,30 @@ result = await retrieve_payment(client, "py_ABC123")
 
 ## Code Standards
 
+### Makefile-First Development
+
+**ALWAYS try Makefile commands first before using direct commands:**
+
+1. **Check available commands**: `make help` or `make` (shows all targets)
+2. **Use existing commands**: `make test`, `make lint`, `make format`, `make dev`, etc.
+3. **If no Makefile command exists**: Ask if it makes sense to add one to the Makefile
+4. **Only use direct commands**: If it's clearly a one-off operation
+
+**Examples:**
+- ✅ `make test` instead of `docker-compose run --rm dev pytest tests/ -v`
+- ✅ `make lint` instead of `docker-compose run --rm dev ruff check .`
+- ✅ `make format` instead of `docker-compose run --rm dev ruff format .`
+- ✅ `make dev` instead of `docker-compose up mcp-dev -d`
+
+**When to suggest adding Makefile commands:**
+- Commands that will be run repeatedly during development
+- Commands that have complex arguments or flags
+- Commands that developers need to remember the exact syntax for
+- Commands that combine multiple steps
+
 ### Development Guidelines
 
 - **All development must use Docker containers** - no local execution
-- **Use `make` commands instead of direct docker-compose commands**
 - **Always use `uv` for package management** instead of pip
 - **All I/O operations must be async/await**
 - **Add `@traceable` decorators to all external API calls**

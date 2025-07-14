@@ -40,7 +40,6 @@
   "files": [
     "wrapper.js",
     "install.js",
-    "README.md",
     "requirements.txt"
   ],
   "preferGlobal": false,

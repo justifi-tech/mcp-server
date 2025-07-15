@@ -4,7 +4,7 @@
   "description": "JustiFi MCP Server - NPX wrapper for easy installation and usage with AI assistants",
   "main": "wrapper.js",
   "bin": {
-    "justifi-mcp-server": "./wrapper.js"
+    "justifi-mcp-server": "wrapper.js"
   },
   "scripts": {
     "postinstall": "node install.js",
@@ -27,7 +27,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/justifi-tech/mcp-servers.git"
+    "url": "git+https://github.com/justifi-tech/mcp-servers.git"
   },
   "homepage": "https://github.com/justifi-tech/mcp-servers",
   "bugs": {
@@ -36,7 +36,11 @@
   "engines": {
     "node": ">=16.0.0"
   },
-  "os": ["darwin", "linux", "win32"],
+  "os": [
+    "darwin",
+    "linux",
+    "win32"
+  ],
   "files": [
     "wrapper.js",
     "install.js",

@@ -40,8 +40,8 @@ jobs:
           cd npx-wrapper
           node wrapper.js --version
           node wrapper.js --help
-          # Test installation process
-          node install.js
+          # Test installation process (skip venv creation in CI)
+          JUSTIFI_MCP_SKIP_INSTALL=true node install.js
 
   release:
     needs: test

@@ -10,7 +10,15 @@ echo "🔍 Checking version synchronization..."
 
 # Get versions from different sources
 GIT_TAG=$(git describe --tags --exact-match 2>/dev/null || echo "none")
-NPM_VERSION=$(node -p "require('./npx-wrapper/package.json').version" 2>/dev/null || echo "none")
+
+# Get NPM version if we care about NPM (NPM_TOKEN is set)
+if [ -n "$NPM_TOKEN" ] && command -v node &> /dev/null; then
+    NPM_VERSION=$(node -p "require('./npx-wrapper/package.json').version" 2>/dev/null || echo "none")
+elif [ -z "$NPM_TOKEN" ]; then
+    NPM_VERSION="skipped"
+else
+    NPM_VERSION="unavailable"
+fi
 
 # Try to get Python version (may not work if setuptools-scm hasn't run)
 PYTHON_VERSION="unknown"
@@ -35,10 +43,14 @@ if [ "$GIT_TAG" != "none" ]; then
     # We have a git tag, check if NPM version matches
     GIT_VERSION_NO_V=${GIT_TAG#v}  # Remove 'v' prefix
     
-    if [ "$NPM_VERSION" != "$GIT_VERSION_NO_V" ]; then
+    if [ "$NPM_VERSION" != "unavailable" ] && [ "$NPM_VERSION" != "skipped" ] && [ "$NPM_VERSION" != "$GIT_VERSION_NO_V" ]; then
         echo "❌ ERROR: NPM version ($NPM_VERSION) doesn't match Git tag ($GIT_TAG)"
         echo "   Expected NPM version: $GIT_VERSION_NO_V"
         ERRORS=$((ERRORS + 1))
+    elif [ "$NPM_VERSION" = "skipped" ]; then
+        echo "ℹ️  NPM version check skipped (NPM_TOKEN not set)"
+    elif [ "$NPM_VERSION" = "unavailable" ]; then
+        echo "⚠️  WARNING: NPM version check skipped (node.js not available)"
     fi
     
     # Check Python version if available
@@ -49,7 +61,7 @@ if [ "$GIT_TAG" != "none" ]; then
     fi
 else
     # No git tag, check if we're in development
-    if [ "$NPM_VERSION" = "none" ]; then
+    if [ "$NPM_VERSION" = "none" ] && [ "$NPM_VERSION" != "unavailable" ] && [ "$NPM_VERSION" != "skipped" ]; then
         echo "❌ ERROR: Could not determine NPM version"
         ERRORS=$((ERRORS + 1))
     fi

@@ -38,16 +38,23 @@ Git Tag (v1.0.1) → Python Version (1.0.1) → NPM Version (1.0.1)
 ```bash
 # Create a new release - updates everything automatically
 ./scripts/release-automated.sh v1.0.1
+
+# With NPM publishing (requires NPM_TOKEN)
+NPM_TOKEN=your_token ./scripts/release-automated.sh v1.0.1
 ```
 
 **What it does:**
 1. ✅ Validates version format and prerequisites
 2. ✅ Runs tests to ensure quality
-3. ✅ Updates NPM package.json to match version
+3. ✅ Updates NPM package.json to match version (if NPM_TOKEN is set)
 4. ✅ Commits version changes
 5. ✅ Creates Git tag (triggers Python version via setuptools-scm)
 6. ✅ Pushes changes and tag
 7. ✅ Creates GitHub release
+
+**NPM Publishing:**
+- **With NPM_TOKEN**: Updates package.json and enables NPM publishing
+- **Without NPM_TOKEN**: Skips NPM updates, Python-only release
 
 ### Method 2: Manual Process
 
@@ -78,9 +85,12 @@ gh release create v1.0.1 --generate-notes
 make version-check
 # or
 ./scripts/check-version-sync.sh
+
+# With NPM token (checks NPM version)
+NPM_TOKEN=your_token ./scripts/check-version-sync.sh
 ```
 
-**Example output:**
+**Example output (with NPM_TOKEN):**
 ```
 🔍 Checking version synchronization...
 
@@ -89,6 +99,19 @@ make version-check
   NPM:         1.0.1
   Python:      1.0.1
 
+✅ All versions are synchronized!
+```
+
+**Example output (without NPM_TOKEN):**
+```
+🔍 Checking version synchronization...
+
+📊 Version Report:
+  Git Tag:     v1.0.1
+  NPM:         skipped
+  Python:      1.0.1
+
+ℹ️  NPM version check skipped (NPM_TOKEN not set)
 ✅ All versions are synchronized!
 ```
 

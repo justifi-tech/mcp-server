@@ -64,18 +64,33 @@ fi
 
 # Update NPM package.json to match the new version
 echo "📦 Updating NPM package.json to $VERSION_NO_V..."
-cd npx-wrapper
-npm version $VERSION_NO_V --no-git-tag-version
-cd ..
+if [ -n "$NPM_TOKEN" ]; then
+    cd npx-wrapper
+    npm version $VERSION_NO_V --no-git-tag-version
+    cd ..
+    echo "✅ NPM version updated to $VERSION_NO_V"
+else
+    echo "⚠️  NPM_TOKEN not set - skipping NPM version update"
+    echo "   Set NPM_TOKEN environment variable to enable NPM publishing"
+fi
 
 # Commit version changes
 echo "📝 Committing version sync..."
-git add npx-wrapper/package.json
-git commit -m "chore: sync NPM version to $VERSION_NO_V for release
+if [ -n "$NPM_TOKEN" ]; then
+    git add npx-wrapper/package.json
+    git commit -m "chore: sync NPM version to $VERSION_NO_V for release
 
 - Updated package.json version to match Git tag
 - Python version will be auto-derived from Git tag via setuptools-scm
 - Maintains single source of truth versioning"
+else
+    # Create commit without NPM changes
+    git commit --allow-empty -m "chore: create release $VERSION_NO_V
+
+- Python version will be auto-derived from Git tag via setuptools-scm
+- NPM version sync skipped (NPM_TOKEN not set)
+- Maintains single source of truth versioning"
+fi
 
 # Create and push the Git tag (this triggers Python version via setuptools-scm)
 echo "🏷️  Creating Git tag $VERSION..."
@@ -108,11 +123,20 @@ echo ""
 echo "📋 Version Summary:"
 echo "  Git Tag: $VERSION (single source of truth)"
 echo "  Python: $VERSION_NO_V (auto-derived via setuptools-scm)"
-echo "  NPM: $VERSION_NO_V (synced in package.json)"
+if [ -n "$NPM_TOKEN" ]; then
+    echo "  NPM: $VERSION_NO_V (synced in package.json)"
+else
+    echo "  NPM: ⚠️  not updated (NPM_TOKEN not set)"
+fi
 echo ""
 echo "🔗 Next steps:"
 echo "1. Verify release: https://github.com/justifi-tech/mcp-server/releases/tag/$VERSION"
 echo "2. Test Python install: pip install git+https://github.com/justifi-tech/mcp-server.git@$VERSION"
-echo "3. Test NPM install: npx @justifi/mcp-server@$VERSION_NO_V"
+if [ -n "$NPM_TOKEN" ]; then
+    echo "3. Test NPM install: npx @justifi/mcp-server@$VERSION_NO_V"
+    echo "4. NPM package should be published automatically via CI"
+else
+    echo "3. To enable NPM publishing: set NPM_TOKEN and re-run release"
+fi
 echo ""
 echo "✨ All versions are now automatically synchronized!" 

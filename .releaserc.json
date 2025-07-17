@@ -1,5 +1,7 @@
 {
-  "branches": ["main"],
+  "branches": [
+    "main"
+  ],
   "plugins": [
     "@semantic-release/commit-analyzer",
     "@semantic-release/release-notes-generator",
@@ -7,7 +9,7 @@
     [
       "@semantic-release/npm",
       {
-        "npmPublish": true,
+        "npmPublish": false,
         "tarballDir": "dist",
         "pkgRoot": "npx-wrapper"
       }
@@ -15,13 +17,18 @@
     [
       "@semantic-release/github",
       {
-        "assets": ["dist/*.tgz"]
+        "assets": [
+          "dist/*.tgz"
+        ]
       }
     ],
     [
       "@semantic-release/git",
       {
-        "assets": ["npx-wrapper/package.json", "CHANGELOG.md"],
+        "assets": [
+          "npx-wrapper/package.json",
+          "CHANGELOG.md"
+        ],
         "message": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
       }
     ]

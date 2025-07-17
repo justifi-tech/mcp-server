@@ -8,13 +8,13 @@ A comprehensive **Model Context Protocol (MCP) server** for AI-assisted payment 
 
 ```
 ┌─────────────────┐    MCP Protocol     ┌──────────────────┐    JustiFi API
-│   MCP Client    │◄──────────────────►│   MCP Server     │◄─────────────────►
-│ (AI App)        │   (JSON-RPC/stdio) │ (This Project)   │   (Payment API)
-│                 │                     │                 │
-│ • Claude Desktop│                     │ • No AI models  │
-│ • Cursor IDE    │                     │ • Only JustiFi  │
-│ • Custom Apps   │                     │   credentials   │
-│ • LangChain     │                     │ • Tool provider │
+│   MCP Client    │◄───────────────────►│   MCP Server     │◄─────────────────►
+│ (AI App)        │   (JSON-RPC/stdio)  │ (This Project)   │   (Payment API)
+│                 │                     │                  │
+│ • Claude Desktop│                     │ • No AI models   │
+│ • Cursor IDE    │                     │ • Only JustiFi   │
+│ • Custom Apps   │                     │   credentials    │
+│ • LangChain     │                     │ • Tool provider  │
 └─────────────────┘                     └──────────────────┘
 ```
 

@@ -24,8 +24,8 @@ import os
 from typing import Any
 
 import openai
-from justifi_mcp import JustiFiToolkit
-from justifi_mcp.tools import TOOL_SCHEMAS
+
+from justifi_mcp import TOOL_SCHEMAS, JustiFiToolkit
 
 
 class PayoutAnalysisAssistant:

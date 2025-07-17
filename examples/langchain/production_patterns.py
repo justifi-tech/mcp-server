@@ -31,7 +31,6 @@ from dataclasses import dataclass, field
 from typing import Any
 from uuid import uuid4
 
-from justifi_mcp import JustiFiToolkit
 from langchain.agents import AgentExecutor, create_openai_tools_agent
 from langchain.callbacks.base import BaseCallbackHandler
 from langchain.memory import ConversationBufferWindowMemory
@@ -39,6 +38,8 @@ from langchain_core.outputs import LLMResult
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_openai import ChatOpenAI
 from pydantic import BaseModel
+
+from justifi_mcp import JustiFiToolkit
 
 # Configure logging
 logging.basicConfig(

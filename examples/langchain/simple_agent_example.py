@@ -18,10 +18,11 @@ Environment Variables:
 import asyncio
 import os
 
-from justifi_mcp import JustiFiToolkit
 from langchain.agents import AgentExecutor, create_openai_tools_agent
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_openai import ChatOpenAI
+
+from justifi_mcp import JustiFiToolkit
 
 
 async def main():
@@ -39,8 +40,8 @@ async def main():
             "retrieve_payout",
             "get_payout_status",
             "list_payments",
-            "retrieve_payment"
-        ]
+            "retrieve_payment",
+        ],
     )
 
     # Step 2: Get LangChain tools directly from the toolkit
@@ -54,14 +55,15 @@ async def main():
 
     # Step 3: Create your LangChain agent with the tools
     llm = ChatOpenAI(
-        model="gpt-4",
-        temperature=0.1,
-        openai_api_key=os.getenv("OPENAI_API_KEY")
+        model="gpt-4", temperature=0.1, openai_api_key=os.getenv("OPENAI_API_KEY")
     )
 
-    prompt = ChatPromptTemplate.from_messages([
-        ("system", """You are a helpful financial assistant that can analyze payment data.
-        
+    prompt = ChatPromptTemplate.from_messages(
+        [
+            (
+                "system",
+                """You are a helpful financial assistant that can analyze payment data.
+
 Available JustiFi tools:
 - list_payouts: Get recent payouts
 - retrieve_payout: Get detailed payout information
@@ -69,24 +71,23 @@ Available JustiFi tools:
 - list_payments: Get recent payments
 - retrieve_payment: Get detailed payment information
 
-Always provide clear, actionable insights based on the data you retrieve."""),
-        ("user", "{input}"),
-        MessagesPlaceholder(variable_name="agent_scratchpad"),
-    ])
+Always provide clear, actionable insights based on the data you retrieve.""",
+            ),
+            ("user", "{input}"),
+            MessagesPlaceholder(variable_name="agent_scratchpad"),
+        ]
+    )
 
     agent = create_openai_tools_agent(llm, tools, prompt)
     agent_executor = AgentExecutor(
-        agent=agent,
-        tools=tools,
-        verbose=True,
-        max_iterations=5
+        agent=agent, tools=tools, verbose=True, max_iterations=5
     )
 
     # Step 4: Use your agent with JustiFi tools
     queries = [
         "Show me our 3 most recent payouts and their status",
         "What's the total amount of recent payouts?",
-        "Are there any failed or pending payouts I should know about?"
+        "Are there any failed or pending payouts I should know about?",
     ]
 
     for i, query in enumerate(queries, 1):

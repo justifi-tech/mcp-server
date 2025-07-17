@@ -27,7 +27,13 @@ from python.toolkit import JustiFiToolkit
 try:
     from python.adapters.langchain import LangChainAdapter
 
-    __all__ = ["JustiFiToolkit", "JustiFiConfig", "JustiFiClient", "LangChainAdapter", "TOOL_SCHEMAS"]
+    __all__ = [
+        "JustiFiToolkit",
+        "JustiFiConfig",
+        "JustiFiClient",
+        "LangChainAdapter",
+        "TOOL_SCHEMAS",
+    ]
 except ImportError:
     __all__ = ["JustiFiToolkit", "JustiFiConfig", "JustiFiClient", "TOOL_SCHEMAS"]
 
@@ -45,11 +51,7 @@ def _create_tool_schemas():
         schemas[tool_name] = {
             "name": tool_name,
             "description": f"JustiFi tool: {tool_name}",
-            "parameters": {
-                "type": "object",
-                "properties": {},
-                "required": []
-            }
+            "parameters": {"type": "object", "properties": {}, "required": []},
         }
 
     return schemas

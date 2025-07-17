@@ -59,7 +59,7 @@ class LangChainAdapter:
         """Create a LangChain StructuredTool for a specific tool."""
         try:
             from langchain_core.tools import StructuredTool
-            from pydantic import BaseModel, Field
+            from pydantic import Field, create_model
         except ImportError as e:
             raise ImportError(
                 "LangChain is required for LangChainAdapter. "
@@ -70,239 +70,130 @@ class LangChainAdapter:
         tool_configs = {
             "retrieve_payout": {
                 "description": "Retrieve detailed information about a specific payout by ID.",
-                "input_model": type(
+                "input_model": create_model(
                     "RetrievePayoutInput",
-                    (BaseModel,),
-                    {
-                        "payout_id": Field(
-                            ..., description="The ID of the payout to retrieve"
-                        )
-                    },
+                    payout_id=(str, Field(..., description="The ID of the payout to retrieve"))
                 ),
             },
             "list_payouts": {
                 "description": "List payouts with optional pagination using cursor-based pagination.",
-                "input_model": type(
+                "input_model": create_model(
                     "ListPayoutsInput",
-                    (BaseModel,),
-                    {
-                        "limit": Field(
-                            default=25, description="Number of payouts to return"
-                        ),
-                        "after_cursor": Field(
-                            default=None, description="Pagination cursor"
-                        ),
-                        "before_cursor": Field(
-                            default=None, description="Pagination cursor"
-                        ),
-                    },
+                    limit=(int, Field(default=25, description="Number of payouts to return")),
+                    after_cursor=(str | None, Field(default=None, description="Pagination cursor")),
+                    before_cursor=(str | None, Field(default=None, description="Pagination cursor"))
                 ),
             },
             "get_payout_status": {
                 "description": "Get the current status of a payout (quick status check).",
-                "input_model": type(
+                "input_model": create_model(
                     "GetPayoutStatusInput",
-                    (BaseModel,),
-                    {
-                        "payout_id": Field(
-                            ..., description="The ID of the payout to check"
-                        )
-                    },
+                    payout_id=(str, Field(..., description="The ID of the payout to check"))
                 ),
             },
             "get_recent_payouts": {
                 "description": "Get the most recent payouts (optimized for recency).",
-                "input_model": type(
+                "input_model": create_model(
                     "GetRecentPayoutsInput",
-                    (BaseModel,),
-                    {
-                        "limit": Field(
-                            default=10, description="Number of recent payouts"
-                        )
-                    },
+                    limit=(int, Field(default=10, description="Number of recent payouts"))
                 ),
             },
             "retrieve_payment": {
                 "description": "Retrieve detailed information about a specific payment by ID.",
-                "input_model": type(
+                "input_model": create_model(
                     "RetrievePaymentInput",
-                    (BaseModel,),
-                    {
-                        "payment_id": Field(
-                            ..., description="The ID of the payment to retrieve"
-                        )
-                    },
+                    payment_id=(str, Field(..., description="The ID of the payment to retrieve"))
                 ),
             },
             "list_payments": {
                 "description": "List payments with optional pagination using cursor-based pagination.",
-                "input_model": type(
+                "input_model": create_model(
                     "ListPaymentsInput",
-                    (BaseModel,),
-                    {
-                        "limit": Field(
-                            default=25, description="Number of payments to return"
-                        ),
-                        "after_cursor": Field(
-                            default=None, description="Pagination cursor"
-                        ),
-                        "before_cursor": Field(
-                            default=None, description="Pagination cursor"
-                        ),
-                    },
+                    limit=(int, Field(default=25, description="Number of payments to return")),
+                    after_cursor=(str | None, Field(default=None, description="Pagination cursor")),
+                    before_cursor=(str | None, Field(default=None, description="Pagination cursor"))
                 ),
             },
             "retrieve_payment_method": {
                 "description": "Retrieve detailed information about a specific payment method by token.",
-                "input_model": type(
+                "input_model": create_model(
                     "RetrievePaymentMethodInput",
-                    (BaseModel,),
-                    {
-                        "payment_method_token": Field(
-                            ..., description="The payment method token"
-                        )
-                    },
+                    payment_method_token=(str, Field(..., description="The payment method token"))
                 ),
             },
             "list_refunds": {
                 "description": "List all refunds with optional pagination using cursor-based pagination.",
-                "input_model": type(
+                "input_model": create_model(
                     "ListRefundsInput",
-                    (BaseModel,),
-                    {
-                        "limit": Field(
-                            default=25, description="Number of refunds to return"
-                        ),
-                        "after_cursor": Field(
-                            default=None, description="Pagination cursor"
-                        ),
-                        "before_cursor": Field(
-                            default=None, description="Pagination cursor"
-                        ),
-                    },
+                    limit=(int, Field(default=25, description="Number of refunds to return")),
+                    after_cursor=(str | None, Field(default=None, description="Pagination cursor")),
+                    before_cursor=(str | None, Field(default=None, description="Pagination cursor"))
                 ),
             },
             "retrieve_refund": {
                 "description": "Retrieve detailed information about a specific refund by ID.",
-                "input_model": type(
+                "input_model": create_model(
                     "RetrieveRefundInput",
-                    (BaseModel,),
-                    {
-                        "refund_id": Field(
-                            ..., description="The ID of the refund to retrieve"
-                        )
-                    },
+                    refund_id=(str, Field(..., description="The ID of the refund to retrieve"))
                 ),
             },
             "list_payment_refunds": {
                 "description": "List refunds for a specific payment by extracting them from the payment data.",
-                "input_model": type(
+                "input_model": create_model(
                     "ListPaymentRefundsInput",
-                    (BaseModel,),
-                    {"payment_id": Field(..., description="The ID of the payment")},
+                    payment_id=(str, Field(..., description="The ID of the payment"))
                 ),
             },
             "list_balance_transactions": {
                 "description": "List balance transactions with optional pagination and filtering by payout.",
-                "input_model": type(
+                "input_model": create_model(
                     "ListBalanceTransactionsInput",
-                    (BaseModel,),
-                    {
-                        "limit": Field(
-                            default=25,
-                            description="Number of balance transactions to return",
-                        ),
-                        "after_cursor": Field(
-                            default=None, description="Pagination cursor"
-                        ),
-                        "before_cursor": Field(
-                            default=None, description="Pagination cursor"
-                        ),
-                        "payout_id": Field(
-                            default=None, description="Filter by payout ID"
-                        ),
-                    },
+                    limit=(int, Field(default=25, description="Number of balance transactions to return")),
+                    after_cursor=(str | None, Field(default=None, description="Pagination cursor")),
+                    before_cursor=(str | None, Field(default=None, description="Pagination cursor")),
+                    payout_id=(str | None, Field(default=None, description="Filter by payout ID"))
                 ),
             },
             "retrieve_balance_transaction": {
                 "description": "Retrieve detailed information about a specific balance transaction by ID.",
-                "input_model": type(
+                "input_model": create_model(
                     "RetrieveBalanceTransactionInput",
-                    (BaseModel,),
-                    {
-                        "balance_transaction_id": Field(
-                            ..., description="The ID of the balance transaction"
-                        )
-                    },
+                    balance_transaction_id=(str, Field(..., description="The ID of the balance transaction"))
                 ),
             },
             "list_disputes": {
                 "description": "List disputes with optional pagination using cursor-based pagination.",
-                "input_model": type(
+                "input_model": create_model(
                     "ListDisputesInput",
-                    (BaseModel,),
-                    {
-                        "limit": Field(
-                            default=25, description="Number of disputes to return"
-                        ),
-                        "after_cursor": Field(
-                            default=None, description="Pagination cursor"
-                        ),
-                        "before_cursor": Field(
-                            default=None, description="Pagination cursor"
-                        ),
-                    },
+                    limit=(int, Field(default=25, description="Number of disputes to return")),
+                    after_cursor=(str | None, Field(default=None, description="Pagination cursor")),
+                    before_cursor=(str | None, Field(default=None, description="Pagination cursor"))
                 ),
             },
             "retrieve_dispute": {
                 "description": "Retrieve detailed information about a specific dispute by ID.",
-                "input_model": type(
+                "input_model": create_model(
                     "RetrieveDisputeInput",
-                    (BaseModel,),
-                    {
-                        "dispute_id": Field(
-                            ..., description="The ID of the dispute to retrieve"
-                        )
-                    },
+                    dispute_id=(str, Field(..., description="The ID of the dispute to retrieve"))
                 ),
             },
             "list_checkouts": {
                 "description": "List checkouts with optional pagination and filtering by payment mode, status, and payment status.",
-                "input_model": type(
+                "input_model": create_model(
                     "ListCheckoutsInput",
-                    (BaseModel,),
-                    {
-                        "limit": Field(
-                            default=25, description="Number of checkouts to return"
-                        ),
-                        "after_cursor": Field(
-                            default=None, description="Pagination cursor"
-                        ),
-                        "before_cursor": Field(
-                            default=None, description="Pagination cursor"
-                        ),
-                        "payment_mode": Field(
-                            default=None, description="Filter by payment mode"
-                        ),
-                        "status": Field(
-                            default=None, description="Filter by checkout status"
-                        ),
-                        "payment_status": Field(
-                            default=None, description="Filter by payment status"
-                        ),
-                    },
+                    limit=(int, Field(default=25, description="Number of checkouts to return")),
+                    after_cursor=(str | None, Field(default=None, description="Pagination cursor")),
+                    before_cursor=(str | None, Field(default=None, description="Pagination cursor")),
+                    payment_mode=(str | None, Field(default=None, description="Filter by payment mode")),
+                    status=(str | None, Field(default=None, description="Filter by checkout status")),
+                    payment_status=(str | None, Field(default=None, description="Filter by payment status"))
                 ),
             },
             "retrieve_checkout": {
                 "description": "Retrieve detailed information about a specific checkout by ID.",
-                "input_model": type(
+                "input_model": create_model(
                     "RetrieveCheckoutInput",
-                    (BaseModel,),
-                    {
-                        "checkout_id": Field(
-                            ..., description="The ID of the checkout to retrieve"
-                        )
-                    },
+                    checkout_id=(str, Field(..., description="The ID of the checkout to retrieve"))
                 ),
             },
         }

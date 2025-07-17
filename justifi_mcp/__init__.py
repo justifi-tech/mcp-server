@@ -67,6 +67,7 @@ except ImportError:
         import os
 
         import setuptools_scm
+
         # Get the root directory (where pyproject.toml is)
         root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         __version__ = setuptools_scm.get_version(root=root_dir)

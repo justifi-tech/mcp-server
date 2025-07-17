@@ -28,6 +28,9 @@ wheels/
 .installed.cfg
 *.egg
 
+# Auto-generated version files
+justifi_mcp/_version.py
+
 # Testing
 .pytest_cache/
 .coverage

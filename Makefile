@@ -20,6 +20,7 @@ help:
 	@echo "  build       - Build development container"
 	@echo "  clean       - Clean up containers and volumes"
 	@echo "  drift-check - Check for JustiFi API changes"
+	@echo "  version-check - Check version synchronization"
 	@echo ""
 	@echo "Note: Configure Cursor to connect to: python main.py"
 
@@ -79,4 +80,9 @@ clean:
 # Check for JustiFi API drift/changes
 drift-check: env-check
 	@echo "🔍 Checking for JustiFi API changes..."
-	python scripts/ci-drift-check.py 
+	python scripts/ci-drift-check.py
+
+# Check version synchronization
+version-check:
+	@echo "🔍 Checking version synchronization..."
+	./scripts/check-version-sync.sh 

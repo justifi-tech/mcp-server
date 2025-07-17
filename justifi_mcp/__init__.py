@@ -59,6 +59,19 @@ def _create_tool_schemas():
 
 TOOL_SCHEMAS = _create_tool_schemas()
 
-__version__ = "2.0.0-dev"
+try:
+    from ._version import version as __version__
+except ImportError:
+    # Fallback to setuptools_scm if _version.py doesn't exist
+    try:
+        import os
+
+        import setuptools_scm
+
+        # Get the root directory (where pyproject.toml is)
+        root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        __version__ = setuptools_scm.get_version(root=root_dir)
+    except (ImportError, Exception):
+        __version__ = "0.0.0"
 __author__ = "JustiFi"
 __description__ = "Multi-framework payment processing toolkit for AI agents"

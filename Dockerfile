@@ -14,13 +14,17 @@ RUN pip install uv
 # Development stage with auto-restart capability
 FROM base AS development
 
-# Copy pyproject.toml for dependency installation
+# Copy pyproject.toml and source code for dependency installation
 COPY pyproject.toml .
+COPY justifi_mcp/ ./justifi_mcp/
+COPY python/ ./python/
+COPY modelcontextprotocol/ ./modelcontextprotocol/
+COPY main.py .
 
 # Install dev dependencies (includes all dependencies)
 RUN uv pip install --system -e ".[dev]"
 
-# Copy application code (will be overridden by volume mount in development)
+# Copy remaining application code (will be overridden by volume mount in development)
 COPY . .
 
 # Set environment variables
@@ -32,8 +36,12 @@ CMD ["watchmedo", "auto-restart", "--directory", "/app", "--patterns", "*.py", "
 # Production stage (minimal and secure)
 FROM base AS production
 
-# Copy pyproject.toml for dependency installation
+# Copy pyproject.toml and source code for dependency installation
 COPY pyproject.toml .
+COPY justifi_mcp/ ./justifi_mcp/
+COPY python/ ./python/
+COPY modelcontextprotocol/ ./modelcontextprotocol/
+COPY main.py .
 
 # Install production dependencies only
 RUN uv pip install --system .
@@ -41,10 +49,8 @@ RUN uv pip install --system .
 # Create non-root user for security
 RUN groupadd -r mcpuser && useradd -r -g mcpuser mcpuser
 
-# Copy only necessary application files with proper ownership
-COPY --chown=mcpuser:mcpuser main.py .
-COPY --chown=mcpuser:mcpuser python/ ./python/
-COPY --chown=mcpuser:mcpuser modelcontextprotocol/ ./modelcontextprotocol/
+# Change ownership of application files to non-root user
+RUN chown -R mcpuser:mcpuser /app
 
 # Set environment variables
 ENV PYTHONPATH=/app

@@ -23,7 +23,7 @@ import os
 
 import openai
 
-from justifi_mcp import TOOL_SCHEMAS, JustiFiToolkit
+from justifi_mcp import JustiFiToolkit, get_tool_schemas
 
 
 async def demonstrate_openai_basic_integration():
@@ -42,8 +42,9 @@ async def demonstrate_openai_basic_integration():
 
     # Convert our schemas to OpenAI function format
     openai_functions = []
+    tool_schemas = get_tool_schemas(toolkit)  # Get schemas from the toolkit instance
     for tool_name in ["list_payouts", "retrieve_payout", "get_payout_status"]:
-        schema = TOOL_SCHEMAS[tool_name]
+        schema = tool_schemas[tool_name]
         openai_functions.append(
             {
                 "type": "function",

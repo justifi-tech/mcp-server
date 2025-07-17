@@ -33,7 +33,7 @@ from typing import Any
 import openai
 from pydantic import BaseModel
 
-from justifi_mcp import TOOL_SCHEMAS, JustiFiToolkit
+from justifi_mcp import JustiFiToolkit, get_tool_schemas
 
 # Configure logging
 logging.basicConfig(
@@ -150,9 +150,10 @@ class ProductionPayoutAssistant:
         """Convert JustiFi schemas to OpenAI tools format with validation."""
         tools = []
 
+        tool_schemas = get_tool_schemas(self.justifi_toolkit)  # Get schemas from toolkit instance
         for tool_name in self.justifi_toolkit.get_enabled_tools():
-            if tool_name in TOOL_SCHEMAS:
-                schema = TOOL_SCHEMAS[tool_name]
+            if tool_name in tool_schemas:
+                schema = tool_schemas[tool_name]
 
                 # Validate schema has required fields
                 if not schema.get("description"):

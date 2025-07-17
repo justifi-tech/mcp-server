@@ -33,7 +33,31 @@ Git Tag (v1.0.1) → Python Version (1.0.1) → NPM Version (1.0.1)
 
 ## Creating Releases
 
-### Method 1: Automated Release Script (Recommended)
+### Method 1: GitHub Actions (Recommended)
+
+Simply create and push a Git tag - GitHub Actions handles everything else automatically:
+
+```bash
+# Create and push a release tag
+./scripts/create-release-tag.sh v1.0.1
+
+# Or manually
+git tag -a v1.0.1 -m "Release v1.0.1"
+git push origin v1.0.1
+```
+
+**GitHub Actions will automatically:**
+1. ✅ Run tests and validation
+2. ✅ Sync NPM package.json version (if NPM_TOKEN secret is set)
+3. ✅ Create GitHub release with generated notes
+4. ✅ Publish to NPM (if NPM_TOKEN secret is set)
+5. ✅ Handle all version synchronization
+
+**NPM Publishing:**
+- **With NPM_TOKEN secret**: Full automation including NPM publishing
+- **Without NPM_TOKEN secret**: Python-only release, NPM skipped gracefully
+
+### Method 2: Local Automated Script
 
 ```bash
 # Create a new release - updates everything automatically
@@ -56,7 +80,7 @@ NPM_TOKEN=your_token ./scripts/release-automated.sh v1.0.1
 - **With NPM_TOKEN**: Updates package.json and enables NPM publishing
 - **Without NPM_TOKEN**: Skips NPM updates, Python-only release
 
-### Method 2: Manual Process
+### Method 3: Manual Process
 
 ```bash
 # 1. Update NPM version
@@ -218,7 +242,10 @@ Git tag: v1.0.1 (authoritative)
 ## Commands Reference
 
 ```bash
-# Create release
+# Create release (GitHub Actions)
+./scripts/create-release-tag.sh v1.0.1
+
+# Create release (local)
 ./scripts/release-automated.sh v1.0.1
 
 # Check version sync

@@ -59,6 +59,9 @@ def _create_tool_schemas():
 
 TOOL_SCHEMAS = _create_tool_schemas()
 
-__version__ = "2.0.0-dev"
+try:
+    from ._version import version as __version__
+except ImportError:
+    __version__ = "0.0.0"
 __author__ = "JustiFi"
 __description__ = "Multi-framework payment processing toolkit for AI agents"

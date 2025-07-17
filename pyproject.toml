@@ -1,10 +1,10 @@
 [build-system]
-requires = ["setuptools>=45", "wheel"]
+requires = ["setuptools>=64", "setuptools-scm>=8", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "justifi-mcp-server"
-version = "2.0.0-dev"
+dynamic = ["version"]
 description = "JustiFi MCP Server with multi-framework support for payment processing integration"
 authors = [{ name = "JustiFi MCP Team", email = "support@justifi.ai" }]
 license = "MIT"
@@ -56,6 +56,7 @@ dev = [
     "pytest-cov>=4.0.0",
     "respx>=0.20.0",
     "ruff>=0.1.0",
+    "setuptools-scm>=8.0.0",  # For version management
     "watchdog",               # Only for development auto-restart
     # Note: mypy excluded from standard workflow - focus on runtime correctness
     # "mypy>=1.0.0",
@@ -115,3 +116,7 @@ known-first-party = ["python", "modelcontextprotocol", "justifi_mcp", "tests"]
 where = ["."]
 include = ["python*", "modelcontextprotocol*", "justifi_mcp*"]
 exclude = ["tests*", "archive*", "eval*", "docker*", "examples*", "scripts*"]
+
+[tool.setuptools_scm]
+write_to = "justifi_mcp/_version.py"
+fallback_version = "0.0.0"

@@ -50,7 +50,9 @@ class PayoutAnalysisAssistant:
     def _create_openai_tools(self) -> list[dict[str, Any]]:
         """Convert JustiFi schemas to OpenAI tools format."""
         tools = []
-        tool_schemas = get_tool_schemas(self.justifi_toolkit)  # Get schemas from toolkit instance
+        tool_schemas = get_tool_schemas(
+            self.justifi_toolkit
+        )  # Get schemas from toolkit instance
         for tool_name in self.justifi_toolkit.get_enabled_tools():
             if tool_name in tool_schemas:
                 schema = tool_schemas[tool_name]

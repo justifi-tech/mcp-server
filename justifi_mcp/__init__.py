@@ -41,21 +41,21 @@ except ImportError:
 # Lazy-loading function for tool schemas - fixes import-time validation issue
 def get_tool_schemas(toolkit_instance=None):
     """Get tool schemas dictionary for OpenAI integration.
-    
+
     This function creates tool schemas on-demand, avoiding import-time validation
     issues when credentials are not available.
-    
+
     Args:
         toolkit_instance: Optional pre-configured JustiFiToolkit instance.
                          If None, creates a minimal instance with dummy credentials.
-                         
+
     Returns:
         dict: Mapping of tool names to their OpenAI-compatible schemas
-        
+
     Example:
         # Basic usage (uses dummy credentials for schema generation)
         schemas = get_tool_schemas()
-        
+
         # With existing toolkit instance
         toolkit = JustiFiToolkit(client_id="real_id", client_secret="real_secret")
         schemas = get_tool_schemas(toolkit)
@@ -66,7 +66,7 @@ def get_tool_schemas(toolkit_instance=None):
         toolkit_instance = JustiFiToolkit(
             client_id="dummy_for_schema",
             client_secret="dummy_for_schema",
-            enabled_tools="all"
+            enabled_tools="all",
         )
 
     schemas = {}

@@ -150,7 +150,9 @@ class ProductionPayoutAssistant:
         """Convert JustiFi schemas to OpenAI tools format with validation."""
         tools = []
 
-        tool_schemas = get_tool_schemas(self.justifi_toolkit)  # Get schemas from toolkit instance
+        tool_schemas = get_tool_schemas(
+            self.justifi_toolkit
+        )  # Get schemas from toolkit instance
         for tool_name in self.justifi_toolkit.get_enabled_tools():
             if tool_name in tool_schemas:
                 schema = tool_schemas[tool_name]

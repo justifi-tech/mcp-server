@@ -46,7 +46,7 @@ Repository = "https://github.com/justifi-tech/mcp-servers"
 Issues = "https://github.com/justifi-tech/mcp-servers/issues"
 
 [project.scripts]
-justifi-mcp-server = "main:cli_main"
+justifi-mcp-server = "modelcontextprotocol.main:cli_main"
 
 # Development dependencies
 [project.optional-dependencies]
@@ -56,7 +56,7 @@ dev = [
     "pytest-cov>=4.0.0",
     "respx>=0.20.0",
     "ruff>=0.1.0",
-    "watchdog",  # Only for development auto-restart
+    "watchdog",               # Only for development auto-restart
     # Note: mypy excluded from standard workflow - focus on runtime correctness
     # "mypy>=1.0.0",
 ]
@@ -109,9 +109,9 @@ ignore = [
 ]
 
 [tool.ruff.lint.isort]
-known-first-party = ["python", "modelcontextprotocol", "tests"]
+known-first-party = ["python", "modelcontextprotocol", "justifi_mcp", "tests"]
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["python*", "modelcontextprotocol*"]
+include = ["python*", "modelcontextprotocol*", "justifi_mcp*"]
 exclude = ["tests*", "archive*", "eval*", "docker*", "examples*", "scripts*"]

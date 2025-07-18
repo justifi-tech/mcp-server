@@ -67,8 +67,7 @@ python examples/openai/production_patterns.py
 The core pattern for OpenAI integration:
 
 ```python
-from justifi_mcp import JustiFiToolkit
-from justifi_mcp.tools import TOOL_SCHEMAS
+from python import JustiFiToolkit, get_tool_schemas
 import openai
 
 # 1. Initialize toolkit

@@ -72,7 +72,7 @@ python examples/langchain/production_patterns.py
 The core pattern for LangChain integration:
 
 ```python
-from justifi_mcp import JustiFiToolkit
+from python import JustiFiToolkit
 from langchain.agents import AgentExecutor, create_openai_tools_agent
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_openai import ChatOpenAI

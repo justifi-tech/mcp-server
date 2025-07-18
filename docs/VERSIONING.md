@@ -33,15 +33,12 @@ Git Tag (v1.0.1) → Python Version (1.0.1) → NPM Version (1.0.1)
 
 ## Creating Releases
 
-### Method 1: GitHub Actions (Recommended)
+### GitHub Actions (Automated Release)
 
 Simply create and push a Git tag - GitHub Actions handles everything else automatically:
 
 ```bash
-# Create and push a release tag
-./scripts/create-release-tag.sh v1.0.1
-
-# Or manually
+# Create and push a release tag manually
 git tag -a v1.0.1 -m "Release v1.0.1"
 git push origin v1.0.1
 ```
@@ -57,30 +54,7 @@ git push origin v1.0.1
 - **With NPM_TOKEN secret**: Full automation including NPM publishing
 - **Without NPM_TOKEN secret**: Python-only release, NPM skipped gracefully
 
-### Method 2: Local Automated Script
-
-```bash
-# Create a new release - updates everything automatically
-./scripts/release-automated.sh v1.0.1
-
-# With NPM publishing (requires NPM_TOKEN)
-NPM_TOKEN=your_token ./scripts/release-automated.sh v1.0.1
-```
-
-**What it does:**
-1. ✅ Validates version format and prerequisites
-2. ✅ Runs tests to ensure quality
-3. ✅ Updates NPM package.json to match version (if NPM_TOKEN is set)
-4. ✅ Commits version changes
-5. ✅ Creates Git tag (triggers Python version via setuptools-scm)
-6. ✅ Pushes changes and tag
-7. ✅ Creates GitHub release
-
-**NPM Publishing:**
-- **With NPM_TOKEN**: Updates package.json and enables NPM publishing
-- **Without NPM_TOKEN**: Skips NPM updates, Python-only release
-
-### Method 3: Manual Process
+### Manual Process (Emergency Only)
 
 ```bash
 # 1. Update NPM version
@@ -193,8 +167,9 @@ After creating a release tag:
 
 **Solution:**
 ```bash
-# Use the automated release script
-./scripts/release-automated.sh v1.0.1
+# Create a new release tag - GitHub Actions will handle the rest
+git tag -a v1.0.1 -m "Release v1.0.1"
+git push origin v1.0.1
 ```
 
 ### Python Version Not Available
@@ -233,7 +208,7 @@ Git tag: v1.0.1 (authoritative)
 
 ## Best Practices
 
-1. **Always use the automated release script** for releases
+1. **Always use GitHub Actions** for releases by creating Git tags
 2. **Run version-check** before creating releases
 3. **Follow semantic versioning** (v1.0.1, v1.1.0, v2.0.0)
 4. **Test installations** after releases
@@ -243,10 +218,8 @@ Git tag: v1.0.1 (authoritative)
 
 ```bash
 # Create release (GitHub Actions)
-./scripts/create-release-tag.sh v1.0.1
-
-# Create release (local)
-./scripts/release-automated.sh v1.0.1
+git tag -a v1.0.1 -m "Release v1.0.1"
+git push origin v1.0.1
 
 # Check version sync
 make version-check

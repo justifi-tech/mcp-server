@@ -13,8 +13,9 @@ help:
 	@echo "  test        - Run all tests"
 	@echo ""
 	@echo "Code Quality:"
-	@echo "  format      - Auto-format code with black and ruff"
-	@echo "  lint        - Run ruff linter and type checking"
+	@echo "  format      - Auto-format code with ruff"
+	@echo "  lint        - Run ruff linter"
+	@echo "  ci-lint     - Run GitHub Actions CI checks (lint + format check)"
 	@echo ""
 	@echo "Utilities:"
 	@echo "  build       - Build development container"
@@ -67,6 +68,15 @@ lint:
 
 format:
 	docker-compose run --rm dev ruff format .
+
+# GitHub Actions CI checks (format + lint exactly like CI)
+ci-lint: env-check build
+	@echo "🔍 Running GitHub Actions CI checks..."
+	@echo "1️⃣ Running ruff check..."
+	docker-compose run --rm dev ruff check .
+	@echo "2️⃣ Running ruff format --check..."
+	docker-compose run --rm dev ruff format --check .
+	@echo "✅ All CI linting checks passed!"
 
 # Run all quality checks (excluding mypy)
 check-all: lint format test

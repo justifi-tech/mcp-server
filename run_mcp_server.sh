@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # JustiFi MCP Server Wrapper Script
-# This script runs the MCP server in a Docker container for Claude Desktop
+# This script runs the MCP server locally for Claude Desktop
 
 # Change to the script directory
 cd "$(dirname "$0")"
@@ -14,5 +14,17 @@ if [ ! -f .env ]; then
     exit 1
 fi
 
-# Run the MCP server in a container with STDIO transport (override HTTP setting)
-exec docker-compose run --rm -T -e MCP_TRANSPORT=stdio dev python main.py 
+# Ensure dependencies are installed
+if ! command -v uv &> /dev/null; then
+    echo "❌ uv not found. Please install uv first:" >&2
+    echo "   curl -LsSf https://astral.sh/uv/install.sh | sh" >&2
+    exit 1
+fi
+
+# Install dependencies if needed
+echo "🔧 Ensuring dependencies are installed..."
+uv pip install --system -e ".[dev]" --quiet 2>/dev/null || uv pip install -e ".[dev]" --quiet
+
+# Run the MCP server locally with STDIO transport (override HTTP setting)
+export MCP_TRANSPORT=stdio
+exec uv run python main.py 

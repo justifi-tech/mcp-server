@@ -1,13 +1,15 @@
-.PHONY: help dev test shell format lint clean build logs
+.PHONY: help setup dev test shell format lint clean logs drift-check version-check
 
 # Default target
 help:
 	@echo "JustiFi MCP Server - Available Commands:"
 	@echo ""
+	@echo "Setup:"
+	@echo "  setup       - Set up local development environment"
+	@echo ""
 	@echo "Development:"
 	@echo "  dev         - Start MCP server with auto-restart"
 	@echo "  shell       - Open interactive development shell"
-	@echo "  logs        - View logs"
 	@echo ""
 	@echo "Testing:"
 	@echo "  test        - Run all tests"
@@ -18,8 +20,6 @@ help:
 	@echo "  ci-lint     - Run GitHub Actions CI checks (lint + format check)"
 	@echo ""
 	@echo "Utilities:"
-	@echo "  build       - Build development container"
-	@echo "  clean       - Clean up containers and volumes"
 	@echo "  drift-check - Check for JustiFi API changes"
 	@echo "  version-check - Check version synchronization"
 	@echo ""
@@ -35,64 +35,60 @@ env-check:
 	fi
 	@echo "✅ .env file exists"
 
-# Build development container
-build: env-check
-	@echo "🔨 Building development container..."
-	docker-compose build dev
-	@echo "✅ Development container built"
+# Set up local development environment
+setup: env-check
+	@echo "🔧 Setting up local development environment..."
+	@echo "🐍 Creating virtual environment..."
+	uv venv .venv --quiet || true
+	@echo "📦 Installing dependencies with uv..."
+	uv pip install -e ".[dev]"
+	@echo "✅ Local development environment ready"
 
 # Start MCP server with auto-restart
-dev: env-check build
+dev: env-check setup
 	@echo "🚀 Starting MCP server with auto-restart..."
 	@echo "💡 Server will automatically restart when Python files change"
 	@echo "🛑 Press Ctrl+C to stop"
-	docker-compose up mcp-dev -d
-
-logs:
-	@echo "🔍 Viewing logs..."
-	docker-compose logs -f mcp-dev
+	uv run watchmedo auto-restart --directory . --patterns "*.py" --recursive -- python main.py
 
 # Interactive development shell
-shell: env-check build
+shell: env-check setup
 	@echo "🐚 Opening interactive development shell..."
-	docker-compose run --rm dev bash
+	@echo "💡 Virtual environment is activated. Type 'exit' to leave."
+	@bash -c "source $$(uv venv --quiet) && exec bash"
 
 # Run all tests
-test: env-check build
+test: env-check setup
 	@echo "🧪 Running tests..."
-	docker-compose run --rm dev pytest tests/ -v
+	uv run pytest tests/ -v
 
 # Linting and formatting
-lint:
-	docker-compose run --rm dev ruff check .
+lint: setup
+	@echo "🔍 Running ruff linter..."
+	uv run ruff check .
 
-format:
-	docker-compose run --rm dev ruff format .
+format: setup
+	@echo "🎨 Formatting code with ruff..."
+	uv run ruff format .
 
 # GitHub Actions CI checks (format + lint exactly like CI)
-ci-lint: env-check build
+ci-lint: env-check setup
 	@echo "🔍 Running GitHub Actions CI checks..."
 	@echo "1️⃣ Running ruff check..."
-	docker-compose run --rm dev ruff check .
+	uv run ruff check .
 	@echo "2️⃣ Running ruff format --check..."
-	docker-compose run --rm dev ruff format --check .
+	uv run ruff format --check .
 	@echo "✅ All CI linting checks passed!"
 
-# Run all quality checks (excluding mypy)
+# Run all quality checks
 check-all: lint format test
 
-# Clean up containers and volumes
-clean:
-	@echo "🧹 Cleaning up..."
-	docker-compose down -v --remove-orphans
-	@echo "✅ Cleanup complete"
-
 # Check for JustiFi API drift/changes
-drift-check: env-check
+drift-check: env-check setup
 	@echo "🔍 Checking for JustiFi API changes..."
-	python scripts/ci-drift-check.py
+	uv run python scripts/ci-drift-check.py
 
 # Check version synchronization
-version-check:
+version-check: setup
 	@echo "🔍 Checking version synchronization..."
 	./scripts/check-version-sync.sh 

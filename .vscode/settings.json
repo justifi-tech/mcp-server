@@ -26,8 +26,6 @@
   },
   "python.envFile": "${workspaceFolder}/.env",
   "files.associations": {
-    "Dockerfile*": "dockerfile",
-    "docker-compose*.yml": "dockercompose",
     "*.toml": "toml",
     "*.jsonl": "json"
   }

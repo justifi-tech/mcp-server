@@ -133,7 +133,7 @@ npx @justifi/mcp-server --health-check
 
 ### Option 2: Local Development Setup
 
-**Prerequisites**: Python 3.11+, Docker (optional)
+**Prerequisites**: Python 3.11+, uv package manager
 
 1. **Clone and configure**:
    ```bash
@@ -143,9 +143,9 @@ npx @justifi/mcp-server --health-check
    # Edit .env with your JustiFi API credentials
    ```
 
-2. **Install dependencies** (optional for local development):
+2. **Set up development environment**:
    ```bash
-   uv pip install -e ".[dev]"
+   make setup
    ```
 
 3. **Test the setup**:
@@ -155,9 +155,12 @@ npx @justifi/mcp-server --health-check
 
 ## 🔧 Development Commands
 
-All development uses Docker containers for consistency:
+All development uses local Python with uv for fast, reliable package management:
 
 ```bash
+# Set up development environment
+make setup
+
 # Start MCP server with auto-restart
 make dev
 
@@ -166,9 +169,7 @@ make test
 
 # Interactive development shell
 make shell
-
-# View logs
-make logs
+```
 
 ### Code Quality
 
@@ -185,11 +186,7 @@ make format
 make check-all
 ```
 
-**Note**: MyPy type checking has been intentionally excluded from the standard workflow to focus on runtime correctness and maintainability. The core business logic is thoroughly tested with 74/74 tests passing.
-
-# Clean up containers
-make clean
-```
+**Note**: MyPy type checking has been intentionally excluded from the standard workflow to focus on runtime correctness and maintainability. The core business logic is thoroughly tested with comprehensive test coverage.
 
 ## 🧪 Testing
 
@@ -202,9 +199,9 @@ make test
 ### Individual Test Files
 ```bash
 # Run specific test files
-docker-compose run --rm dev pytest tests/test_payout_tools.py -v
-docker-compose run --rm dev pytest tests/test_payment_tools.py -v
-docker-compose run --rm dev pytest tests/test_main.py -v
+uv run pytest tests/test_payout_tools.py -v
+uv run pytest tests/test_payment_tools.py -v
+uv run pytest tests/test_main.py -v
 ```
 
 ## 🔌 MCP Integration

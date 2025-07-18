@@ -23,7 +23,7 @@ import os
 
 import openai
 
-from justifi_mcp import JustiFiToolkit, get_tool_schemas
+from python import JustiFiToolkit, get_tool_schemas
 
 
 async def demonstrate_openai_basic_integration():

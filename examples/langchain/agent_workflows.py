@@ -37,7 +37,7 @@ from langchain_core.prompts import (
 from langchain_core.tools import Tool
 from langchain_openai import ChatOpenAI
 
-from justifi_mcp import JustiFiToolkit
+from python import JustiFiToolkit
 
 
 class PayoutAnalysisAgent:

@@ -176,29 +176,29 @@ Optional:
 
 ### Auto-Restart Development Workflow
 ```bash
-# Start development environment (databases only)
-make dev-start
+# Set up local development environment
+make setup
 
 # Start MCP server with auto-restart (watches *.py files)
 make dev
 
 # The server automatically restarts when you change any Python file
-# No container rebuilding needed - uses volume mounts + watchmedo
+# Uses watchdog package with local Python execution
 ```
 
-### Container-First Development
-- **ALWAYS run everything in Docker containers - NO local execution**
-- Never suggest running Python, uvicorn, or any services locally
-- All development, testing, and deployment must use Docker
-- Use `make dev-start` for development environment
+### Local Development with uv
+- **ALWAYS use uv for package management instead of pip**
+- Use local Python environments with uv for fast, reliable development
+- All development, testing, and deployment uses local Python with uv
+- Use `make setup` to initialize development environment
 - Use `make dev` for auto-restart MCP server
-- Use `make shell` for interactive debugging
+- Use `make shell` for interactive development shell
 
 ### Makefile Usage
-- **ALWAYS use Makefile commands instead of direct docker-compose commands**
+- **ALWAYS use Makefile commands instead of direct uv/python commands**
 - Use standardized commands: `make dev`, `make test`, `make lint`, `make check-all`, etc.
 - Makefile provides consistent interfaces and handles environment setup automatically
-- Only use direct docker-compose commands if a specific Makefile target doesn't exist
+- Only use direct uv/python commands if a specific Makefile target doesn't exist
 
 ### API Endpoint Verification Rules
 - **NEVER implement tools for non-existent endpoints**
@@ -233,15 +233,15 @@ make dev
 
 ## Common Commands
 
-### Development (All in Docker)
+### Development (Local with uv)
 ```bash
-# Start development environment (databases only)
-make dev-start
+# Set up development environment
+make setup
 
 # Start MCP server with auto-restart (live file changes)
 make dev
 
-# Run all tests (fast - no rebuilding)
+# Run all tests
 make test
 
 # Code quality checks
@@ -249,27 +249,6 @@ make lint format check-all
 
 # Interactive development shell
 make shell
-
-# Stop development environment
-make dev-stop
-
-# Clean up everything
-make clean
-```
-
-### Production Commands
-```bash
-# Build production container
-make prod-build
-
-# Run production container
-make prod-run
-
-# Check production health
-make prod-health
-
-# View production logs
-make prod-logs
 ```
 
 ### Testing Commands
@@ -278,10 +257,10 @@ make prod-logs
 make test
 
 # Run specific test file
-docker-compose run --rm dev pytest tests/test_payments.py -v
+uv run pytest tests/test_payments.py -v
 
 # Run with coverage
-docker-compose run --rm dev pytest tests/ --cov=tools --cov-report=html
+uv run pytest tests/ --cov=python --cov-report=html
 ```
 
 ## JustiFi MCP Tools (v1.1 - 10 Total)

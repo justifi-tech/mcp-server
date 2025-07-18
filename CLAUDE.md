@@ -38,9 +38,12 @@ The server uses OAuth2 Client-Credentials flow with automatic token management:
 
 ## Development Commands
 
-**Container-First Development (Docker required):**
+**Local Development with uv:**
 
 ```bash
+# Set up development environment
+make setup
+
 # Start MCP server with auto-restart
 make dev
 
@@ -54,19 +57,13 @@ make check-all
 
 # Interactive development shell
 make shell
-
-# View logs
-make logs
-
-# Clean up containers
-make clean
 ```
 
 **Individual Test Files:**
 ```bash
-docker-compose run --rm dev pytest tests/test_payout_tools.py -v
-docker-compose run --rm dev pytest tests/test_payment_tools.py -v
-docker-compose run --rm dev pytest tests/test_main.py -v
+uv run pytest tests/test_payout_tools.py -v
+uv run pytest tests/test_payment_tools.py -v
+uv run pytest tests/test_main.py -v
 ```
 
 **API Drift Monitoring:**

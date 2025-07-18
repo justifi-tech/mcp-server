@@ -120,7 +120,7 @@ known-first-party = ["python", "modelcontextprotocol", "justifi_mcp", "tests"]
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["python*", "modelcontextprotocol*", "justifi_mcp*"]
-exclude = ["tests*", "archive*", "eval*", "docker*", "examples*", "scripts*"]
+exclude = ["tests*", "archive*", "eval*", "examples*", "scripts*"]
 
 [tool.setuptools_scm]
 write_to = "justifi_mcp/_version.py"

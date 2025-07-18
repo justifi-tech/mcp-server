@@ -33,7 +33,7 @@ from typing import Any
 import openai
 from pydantic import BaseModel
 
-from justifi_mcp import JustiFiToolkit, get_tool_schemas
+from python import JustiFiToolkit, get_tool_schemas
 
 # Configure logging
 logging.basicConfig(

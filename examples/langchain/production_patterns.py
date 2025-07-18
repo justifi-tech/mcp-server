@@ -39,7 +39,7 @@ from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_openai import ChatOpenAI
 from pydantic import BaseModel
 
-from justifi_mcp import JustiFiToolkit
+from python import JustiFiToolkit
 
 # Configure logging
 logging.basicConfig(

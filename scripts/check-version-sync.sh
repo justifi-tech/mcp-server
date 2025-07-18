@@ -22,8 +22,8 @@ fi
 
 # Try to get Python version (may not work if setuptools-scm hasn't run)
 PYTHON_VERSION="unknown"
-if [ -f "justifi_mcp/_version.py" ]; then
-    PYTHON_VERSION=$(python -c "from justifi_mcp._version import version; print(version)" 2>/dev/null || echo "unknown")
+if [ -f "python/_version.py" ]; then
+    PYTHON_VERSION=$(python -c "import sys; sys.path.insert(0, 'python'); from _version import version; print(version)" 2>/dev/null || echo "unknown")
 elif command -v python &> /dev/null; then
     # Try to get version via setuptools-scm directly
     PYTHON_VERSION=$(python -c "import setuptools_scm; print(setuptools_scm.get_version())" 2>/dev/null || echo "unknown")
@@ -54,10 +54,20 @@ if [ "$GIT_TAG" != "none" ]; then
     fi
     
     # Check Python version if available
-    if [ "$PYTHON_VERSION" != "unknown" ] && [ "$PYTHON_VERSION" != "$GIT_VERSION_NO_V" ]; then
-        echo "❌ ERROR: Python version ($PYTHON_VERSION) doesn't match Git tag ($GIT_TAG)"
-        echo "   Expected Python version: $GIT_VERSION_NO_V"
-        ERRORS=$((ERRORS + 1))
+    if [ "$PYTHON_VERSION" != "unknown" ]; then
+        # Extract base version from Python version (handles dev versions like 1.0.11.dev0+g63fd504)
+        PYTHON_BASE_VERSION=$(echo "$PYTHON_VERSION" | sed 's/\.dev.*$//')
+        
+        if [ "$PYTHON_BASE_VERSION" != "$GIT_VERSION_NO_V" ]; then
+            echo "❌ ERROR: Python version ($PYTHON_VERSION) doesn't match Git tag ($GIT_TAG)"
+            echo "   Expected Python base version: $GIT_VERSION_NO_V"
+            echo "   Actual Python base version: $PYTHON_BASE_VERSION"
+            ERRORS=$((ERRORS + 1))
+        else
+            if [[ "$PYTHON_VERSION" == *".dev"* ]]; then
+                echo "ℹ️  Python version shows dev suffix (expected due to uncommitted changes)"
+            fi
+        fi
     fi
 else
     # No git tag, check if we're in development

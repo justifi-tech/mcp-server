@@ -78,8 +78,8 @@ else
     echo "❌ Found $ERRORS version synchronization error(s)"
     echo ""
     echo "🔧 To fix version mismatches:"
-    echo "1. Use the automated release script: ./scripts/release-automated.sh v1.0.1"
-    echo "2. Or manually sync versions and create a proper Git tag"
+    echo "1. Create a new release tag: git tag -a v1.0.1 -m 'Release v1.0.1' && git push origin v1.0.1"
+    echo "2. GitHub Actions will automatically sync all versions"
     echo ""
     exit 1
 fi 

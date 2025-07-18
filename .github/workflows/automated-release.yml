@@ -49,12 +49,6 @@ jobs:
         run: |
           pytest tests/ -v
       
-      - name: Validate version synchronization
-        run: |
-          ./scripts/check-version-sync.sh
-        env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-      
       - name: Update NPM package.json
         if: env.NPM_TOKEN != ''
         run: |
@@ -62,6 +56,12 @@ jobs:
           npm version ${{ steps.version.outputs.version_no_v }} --no-git-tag-version
           cd ..
           echo "✅ NPM version updated to ${{ steps.version.outputs.version_no_v }}"
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+      
+      - name: Validate version synchronization
+        run: |
+          ./scripts/check-version-sync.sh
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
       

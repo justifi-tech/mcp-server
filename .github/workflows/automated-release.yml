@@ -54,29 +54,7 @@ jobs:
         run: |
           cd npx-wrapper
           npm version ${{ steps.version.outputs.version_no_v }} --no-git-tag-version
-          cd ..
           echo "✅ NPM version updated to ${{ steps.version.outputs.version_no_v }}"
-        env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-      
-      - name: Commit version sync
-        if: env.NPM_TOKEN != ''
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add npx-wrapper/package.json
-          git commit -m "chore: sync NPM version to ${{ steps.version.outputs.version_no_v }} for release
-          
-          • Updated package.json version to match Git tag
-          • Python version auto-derived from Git tag via setuptools-scm
-          • Automated by GitHub Actions release workflow"
-          git push origin HEAD:main
-        env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-      
-      - name: Validate version synchronization
-        run: |
-          ./scripts/check-version-sync.sh
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
       
@@ -93,15 +71,15 @@ jobs:
             ### 🎯 Single Source of Truth Versioning
             - **Git Tag**: ${version} (authoritative source)
             - **Python Version**: ${versionNoV} (auto-derived via setuptools-scm)
-            - **NPM Version**: ${process.env.NPM_TOKEN ? versionNoV + ' (synced)' : 'not updated (NPM_TOKEN not set)'}
+            - **NPM Version**: ${process.env.NPM_TOKEN ? versionNoV + ' (published)' : 'not published (NPM_TOKEN not configured)'}
             
             ### 📦 Installation
             \`\`\`bash
             # Python package
             pip install git+https://github.com/justifi-tech/mcp-server.git@${version}
             
-            # NPM package${process.env.NPM_TOKEN ? '' : ' (manual update required)'}
-            npx @justifi/mcp-server@${versionNoV}
+            # NPM package${process.env.NPM_TOKEN ? '' : ' (not available - NPM publishing disabled)'}
+            ${process.env.NPM_TOKEN ? 'npx @justifi/mcp-server@' + versionNoV : '# NPM package not published for this release'}
             \`\`\`
             
             ### 🔄 Automated Release Process
@@ -142,16 +120,19 @@ jobs:
           echo "  Git Tag: ${{ steps.version.outputs.version }} (single source of truth)"
           echo "  Python: ${{ steps.version.outputs.version_no_v }} (auto-derived via setuptools-scm)"
           if [ -n "$NPM_TOKEN" ]; then
-            echo "  NPM: ${{ steps.version.outputs.version_no_v }} (synced and published)"
+            echo "  NPM: ${{ steps.version.outputs.version_no_v }} (published to registry)"
           else
-            echo "  NPM: ⚠️  not updated (NPM_TOKEN not set)"
+            echo "  NPM: ⚠️  not published (NPM_TOKEN not configured)"
           fi
           echo ""
-          echo "🔗 Links:"
-          echo "  Release: https://github.com/justifi-tech/mcp-server/releases/tag/${{ steps.version.outputs.version }}"
+          echo "🔗 Installation:"
           echo "  Python: pip install git+https://github.com/justifi-tech/mcp-server.git@${{ steps.version.outputs.version }}"
           if [ -n "$NPM_TOKEN" ]; then
             echo "  NPM: npx @justifi/mcp-server@${{ steps.version.outputs.version_no_v }}"
+          else
+            echo "  NPM: Not available (publishing disabled)"
           fi
+          echo ""
+          echo "🔗 Release: https://github.com/justifi-tech/mcp-server/releases/tag/${{ steps.version.outputs.version }}"
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }} 

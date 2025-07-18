@@ -72,10 +72,10 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add npx-wrapper/package.json
           git commit -m "chore: sync NPM version to ${{ steps.version.outputs.version_no_v }} for release
-
-          - Updated package.json version to match Git tag
-          - Python version auto-derived from Git tag via setuptools-scm
-          - Automated by GitHub Actions release workflow"
+          
+          • Updated package.json version to match Git tag
+          • Python version auto-derived from Git tag via setuptools-scm
+          • Automated by GitHub Actions release workflow"
           git push origin HEAD:main
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}

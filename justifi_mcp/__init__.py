@@ -32,21 +32,47 @@ try:
         "JustiFiConfig",
         "JustiFiClient",
         "LangChainAdapter",
-        "TOOL_SCHEMAS",
+        "get_tool_schemas",
     ]
 except ImportError:
-    __all__ = ["JustiFiToolkit", "JustiFiConfig", "JustiFiClient", "TOOL_SCHEMAS"]
+    __all__ = ["JustiFiToolkit", "JustiFiConfig", "JustiFiClient", "get_tool_schemas"]
 
 
-# Create TOOL_SCHEMAS for OpenAI integration
-# This provides a dictionary mapping tool names to their schemas
-def _create_tool_schemas():
-    """Create tool schemas dictionary for OpenAI integration."""
-    toolkit = JustiFiToolkit()
+# Lazy-loading function for tool schemas - fixes import-time validation issue
+def get_tool_schemas(toolkit_instance=None):
+    """Get tool schemas dictionary for OpenAI integration.
+
+    This function creates tool schemas on-demand, avoiding import-time validation
+    issues when credentials are not available.
+
+    Args:
+        toolkit_instance: Optional pre-configured JustiFiToolkit instance.
+                         If None, creates a minimal instance with dummy credentials.
+
+    Returns:
+        dict: Mapping of tool names to their OpenAI-compatible schemas
+
+    Example:
+        # Basic usage (uses dummy credentials for schema generation)
+        schemas = get_tool_schemas()
+
+        # With existing toolkit instance
+        toolkit = JustiFiToolkit(client_id="real_id", client_secret="real_secret")
+        schemas = get_tool_schemas(toolkit)
+    """
+    if toolkit_instance is None:
+        # Create minimal toolkit instance with dummy credentials for schema generation
+        # This avoids import-time validation while still generating correct schemas
+        toolkit_instance = JustiFiToolkit(
+            client_id="dummy_for_schema",
+            client_secret="dummy_for_schema",
+            enabled_tools="all",
+        )
+
     schemas = {}
 
     # Get all available tools and their schemas
-    for tool_name in toolkit.get_enabled_tools():
+    for tool_name in toolkit_instance.get_enabled_tools():
         # Create a basic schema structure for each tool
         schemas[tool_name] = {
             "name": tool_name,
@@ -56,8 +82,6 @@ def _create_tool_schemas():
 
     return schemas
 
-
-TOOL_SCHEMAS = _create_tool_schemas()
 
 try:
     from ._version import version as __version__

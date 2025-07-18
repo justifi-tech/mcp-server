@@ -33,12 +33,12 @@ Git Tag (v1.0.1) → Python Version (1.0.1) → NPM Version (1.0.1)
 
 ## Creating Releases
 
-### GitHub Actions (Automated Release)
+### GitHub Actions (Tag-Triggered Release)
 
-Simply create and push a Git tag - GitHub Actions handles everything else automatically:
+**Releases only happen when you create and push a Git tag** - GitHub Actions handles everything else automatically:
 
 ```bash
-# Create and push a release tag manually
+# Create and push a release tag to trigger automated release
 git tag -a v1.0.1 -m "Release v1.0.1"
 git push origin v1.0.1
 ```

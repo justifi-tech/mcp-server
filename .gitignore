@@ -73,6 +73,4 @@ logs/
 *.log
 
 # Redis
-dump.rdb 
-# MCP Server logs
-logs/
+dump.rdb

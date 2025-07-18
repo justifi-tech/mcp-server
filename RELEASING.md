@@ -42,21 +42,24 @@ The automated release process runs on every push to main and handles version bum
 
 If you need to create a release manually:
 
-1. **Run the release script**:
+1. **Create and push a Git tag**:
    ```bash
    # For patch release (1.0.0 → 1.0.1)
-   ./scripts/release.sh patch
+   git tag -a v1.0.1 -m "Release v1.0.1"
    
    # For minor release (1.0.0 → 1.1.0)
-   ./scripts/release.sh minor
+   git tag -a v1.1.0 -m "Release v1.1.0"
    
    # For major release (1.0.0 → 2.0.0)
-   ./scripts/release.sh major
+   git tag -a v2.0.0 -m "Release v2.0.0"
+   
+   # Push the tag to trigger GitHub Actions
+   git push origin <tag-name>
    ```
 
 2. **Verify the release**:
-   - Check the git tag was created
-   - Verify the GitHub release
+   - Check [GitHub Actions](https://github.com/justifi-tech/mcp-server/actions) completed successfully
+   - Verify the GitHub release was created
    - Test NPX installation: `npx @justifi/mcp-server --version`
 
 ### Method 3: Manual NPM Publish
@@ -144,7 +147,9 @@ If a release has critical issues:
 
 2. **Publish a hotfix**:
    ```bash
-   ./scripts/release.sh patch
+   # Create a hotfix tag
+   git tag -a v1.0.2 -m "Hotfix v1.0.2"
+   git push origin v1.0.2
    ```
 
 3. **Update documentation** with the fix

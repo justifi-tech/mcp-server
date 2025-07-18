@@ -2,6 +2,9 @@
 
 # JustiFi MCP Server Wrapper Script
 # This script runs the MCP server locally for Claude Desktop
+# 
+# For development with auto-restart, use: make dev
+# For full development commands, see: make help
 
 # Change to the script directory
 cd "$(dirname "$0")"

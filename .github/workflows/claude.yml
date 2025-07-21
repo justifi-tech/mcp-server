@@ -5,10 +5,18 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
 
 jobs:
   claude:
     runs-on: ubuntu-latest
+    if: |
+      github.event_name != 'issue_comment' || 
+      (contains(github.event.comment.body, '@claude') && 
+       (github.event.issue.pull_request || github.event.issue))
     steps:
       - uses: actions/checkout@v4
       - uses: anthropics/claude-code-action@v1

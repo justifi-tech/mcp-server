@@ -1,35 +1,35 @@
-name: Claude Code
+name: Claude PR Assistant
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
+    types: [opened, synchronize]
   issue_comment:
     types: [created]
   pull_request_review_comment:
     types: [created]
-
-permissions:
-  contents: write
-  issues: write
-  pull-requests: write
+  issues:
+    types: [opened]
 
 jobs:
-  claude:
-    runs-on: ubuntu-latest
+  claude-code-action:
     if: |
       github.event_name == 'pull_request' ||
-      (github.event_name == 'issue_comment' && 
-       contains(github.event.comment.body, '@claude') && 
-       github.event.issue.pull_request) ||
-      (github.event_name == 'pull_request_review_comment' && 
-       contains(github.event.comment.body, '@claude'))
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
+      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
+      (github.event_name == 'issues' && contains(github.event.issue.body, '@claude'))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      id-token: write
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
-      - uses: anthropics/claude-code-action@v1
+
+      - name: Run Claude PR Action
+        uses: anthropics/claude-code-action@beta
         with:
-          anthropic-api-key: ${{ secrets.ANTHROPIC_API_KEY }}
-          create-commits: true
-          model: claude-3-5-sonnet-latest
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}

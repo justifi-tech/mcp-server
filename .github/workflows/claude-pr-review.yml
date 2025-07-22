@@ -1,0 +1,59 @@
+# Claude PR Code Review Workflow
+#
+# PURPOSE: Provides automated code review of pull requests using Claude
+#
+# TRIGGERS:
+#   - Comment "@claude review" on any PR
+#   - Comment "@claude code review" on any PR
+#
+# WHAT IT DOES:
+#   - Analyzes the PR changes for code quality, security, and best practices
+#   - Posts detailed review comments without making any changes
+#   - Focuses on constructive feedback and improvement suggestions
+#
+# PERMISSIONS:
+#   - Read repository contents
+#   - Write PR comments and reviews
+#   - Read/write issue comments
+
+name: Claude PR Review
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  code-review:
+    # Only run on PR comments that mention @claude review
+    if: |
+      github.event.issue.pull_request && 
+      (contains(github.event.comment.body, '@claude review') || 
+       contains(github.event.comment.body, '@claude code review'))
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Claude Code Review
+        uses: anthropics/claude-code-action@beta
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+          # Configure Claude to focus purely on review without making changes
+          custom_instructions: |
+            You are conducting a thorough code review. Focus on:
+
+            - Code quality and maintainability
+            - Security vulnerabilities
+            - Performance issues
+            - Best practices adherence
+            - Testing coverage
+            - Documentation needs
+
+            Provide constructive feedback with specific examples and suggestions.
+            Do not make changes - only review and comment.

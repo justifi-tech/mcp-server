@@ -1,0 +1,78 @@
+# Claude PR Implementation Workflow
+#
+# PURPOSE: Allows Claude to make code changes directly to an existing PR branch
+#
+# TRIGGERS:
+#   - Comment "@claude implement [description]" on any PR
+#   - Comment "@claude fix [issue description]" on any PR
+#   - Comment "@claude update [what to update]" on any PR
+#
+# WHAT IT DOES:
+#   - Checks out the PR branch
+#   - Makes the requested code changes
+#   - Runs tests if available
+#   - Commits and pushes changes back to the PR branch
+#   - Comments on the PR explaining what was implemented
+#
+# EXAMPLES:
+#   - "@claude implement the error handling suggested in the review"
+#   - "@claude fix the TypeScript errors"
+#   - "@claude update the documentation for these new functions"
+#
+# PERMISSIONS:
+#   - Full write access to repository contents
+#   - Write PR comments and reviews
+#   - Push commits to PR branches
+
+name: Claude PR Implementation
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  implement-changes:
+    # Only run on PR comments requesting implementation/fixes/updates
+    if: |
+      github.event.issue.pull_request && 
+      (contains(github.event.comment.body, '@claude implement') || 
+       contains(github.event.comment.body, '@claude fix') ||
+       contains(github.event.comment.body, '@claude update'))
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Claude Implementation
+        uses: anthropics/claude-code-action@beta
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+          # Configure Claude to actively make changes based on requests
+          custom_instructions: |
+            You are implementing code changes based on the request in the PR comment.
+
+            COMMIT MESSAGE CONVENTIONS - FOLLOW THESE:
+            - Use conventional commit format: [type]: brief description
+            - Types: feat, fix, docs, style, refactor, test, chore
+            - Keep first line under 72 characters
+            - Examples:
+              * feat: add user authentication middleware
+              * fix: resolve login validation error
+              * docs: update API documentation
+              * refactor: simplify user service logic
+
+            Implementation Guidelines:
+            - Make the specific changes requested
+            - Follow existing code patterns and style
+            - Add tests if appropriate
+            - Update documentation if needed
+            - Run any available tests after changes
+            - Use clear, descriptive commit messages following conventions above
+
+            Explain what you implemented and why.

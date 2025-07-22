@@ -32,12 +32,13 @@ on:
   issue_comment:
     types: [created]
   issues:
-    types: [opened, assigned]
+    types: [opened, edited]
 
 permissions:
   contents: write
   pull-requests: write
   issues: write
+  id-token: write
 
 jobs:
   create-implementation-pr:
@@ -52,40 +53,57 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Claude Issue Implementation
         uses: anthropics/claude-code-action@beta
+        timeout-minutes: 15
+        continue-on-error: false
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
-
-          # Configure Claude to create complete feature implementations
+          allowed_tools: 'Bash'
+          
+          # Configure Claude for issue implementation
           custom_instructions: |
-            You are implementing a feature or fix based on a GitHub issue.
+            You are implementing a feature for the JustiFi MCP Server project.
+            
+            🔧 IMPORTANT: Read CLAUDE.md for project conventions and standards.
+            
+            Project Context:
+            - This is a JustiFi MCP server with comprehensive payment tools
+            - Uses OAuth2 Client-Credentials flow with token caching
+            - All tests must pass (pytest + pytest-asyncio)
+            - Use `uv` package manager, not pip
+            - Run `make test` and `make lint` before completing
 
-            BRANCH NAMING CONVENTIONS - STRICTLY FOLLOW THESE:
-            - Use lowercase with hyphens (kebab-case)
-            - Format: [type]/[issue-number]-[brief-description]
-            - Types: feature/, bugfix/, hotfix/, docs/, refactor/, test/
-            - Keep descriptions under 50 characters
-            - Examples:
-              * feature/123-user-authentication
-              * bugfix/456-fix-login-error
-              * docs/789-update-api-documentation
-              * refactor/101-simplify-user-service
+            Implementation Process:
+            1. 📖 Read CLAUDE.md for project conventions
+            2. 🔍 Analyze the issue requirements thoroughly
+            3. 💻 Implement the requested feature/fix
+            4. ✅ **VERIFY CHANGES APPLIED** using git diff and file reading
+            5. 🧪 Write appropriate tests
+            6. 📚 Update documentation if needed
+            7. 🔧 Run `make test` and `make lint` to verify changes
+            8. 📝 Commit and push all changes to the branch
+            9. 💬 Provide GitHub comparison link for manual PR creation
 
-            Process:
-            1. Create a new branch from main using proper naming convention
-            2. Analyze the issue requirements thoroughly
-            3. Implement the requested feature/fix
-            4. Write appropriate tests
-            5. Update documentation if needed
-            6. Create a pull request back to main
+            🚨 CRITICAL VERIFICATION PROCESS:
+            After making ANY file changes, you MUST:
+            1. Use `git diff` to verify your changes were actually applied to files
+            2. Use `git status` to see which files were modified  
+            3. Use `Read` tool to verify file contents match your intended changes
+            4. ONLY proceed to testing/committing if changes are confirmed applied
+            5. If changes weren't applied, retry the file modifications
 
             Your PR should:
             - Use format: "[Type] Brief description (fixes #issue-number)"
-            - Reference the original issue with "Closes #123" or "Fixes #123"
-            - Include a clear description of what was implemented
-            - List any testing performed
-            - Note any breaking changes or considerations
+            - Reference the original issue in the description
+            - Include summary of changes made
+            - Link to comparison view: https://github.com/justifi-tech/test-claude-actions/compare/main...BRANCH_NAME
 
-            Focus on clean, maintainable code that follows project conventions.
+            NEVER commit or push without first verifying that your file changes were actually applied!

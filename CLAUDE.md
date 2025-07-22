@@ -28,6 +28,17 @@ This is a **JustiFi MCP (Model Context Protocol) server** designed for AI-assist
 - Never log sensitive data (API keys, payment details, tokens)
 - Use environment variables for all API credentials
 
+## Documentation Standards
+
+### README Synchronization (Single Source of Truth)
+- **Main README.md** is the authoritative source for all documentation
+- **NPM README** (`npx-wrapper/README.md`) must be identical to main README.md
+- **Never edit** npx-wrapper/README.md directly - always edit main README.md
+- **Automatic sync**: CI validates synchronization on all PRs
+- **To update NPM README**: `cp README.md npx-wrapper/README.md`
+
+**Rationale**: Prevents documentation drift between main project and NPM package, ensuring NPM users see complete 18-tool documentation instead of outdated 10-tool subset.
+
 ## Package Management
 - **ALWAYS use `uv` instead of `pip`**
 - Install packages: `uv pip install package_name`

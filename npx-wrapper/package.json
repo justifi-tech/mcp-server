@@ -44,7 +44,8 @@
   "files": [
     "wrapper.js",
     "install.js",
-    "requirements.txt"
+    "requirements.txt",
+    "README.md"
   ],
   "preferGlobal": false,
   "publishConfig": {

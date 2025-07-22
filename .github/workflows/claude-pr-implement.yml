@@ -4,7 +4,7 @@
 #
 # TRIGGERS:
 #   - Comment "@claude implement [description]" on any PR
-#   - Comment "@claude fix [issue description]" on any PR
+#   - Comment "@claude fix [issue description]" on any PR  
 #   - Comment "@claude update [what to update]" on any PR
 #
 # WHAT IT DOES:
@@ -34,6 +34,7 @@ permissions:
   contents: write
   pull-requests: write
   issues: write
+  id-token: write
 
 jobs:
   implement-changes:
@@ -43,36 +44,74 @@ jobs:
       (contains(github.event.comment.body, '@claude implement') || 
        contains(github.event.comment.body, '@claude fix') ||
        contains(github.event.comment.body, '@claude update'))
-
+    
     runs-on: ubuntu-latest
-
+    
     steps:
-      - name: Claude Implementation
-        uses: anthropics/claude-code-action@beta
-        with:
-          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+    - name: Get PR details
+      id: pr-details
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const pr = await github.rest.pulls.get({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            pull_number: context.issue.number
+          });
+          return {
+            ref: pr.data.head.ref,
+            sha: pr.data.head.sha
+          };
+    
+    - name: Checkout PR branch
+      uses: actions/checkout@v4
+      with:
+        ref: ${{ fromJson(steps.pr-details.outputs.result).ref }}
+        fetch-depth: 0
+        token: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Claude Implementation
+      uses: anthropics/claude-code-action@beta
+      timeout-minutes: 10
+      continue-on-error: false
+      with:
+        anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        allowed_tools: 'Bash'
+        
+        # Configure Claude to actively make changes based on requests
+        custom_instructions: |
+          You are implementing code changes for the JustiFi MCP Server project.
+          
+          🔧 IMPORTANT: Read and follow ALL conventions in CLAUDE.md, especially:
+          - Commit message conventions (use format specified)
+          - Package management requirements (use uv, not pip)
+          - Testing requirements (all tests must pass)
+          - Code standards and documentation requirements
+          
+          Project Context:
+          - This is a JustiFi MCP server with comprehensive payment tools
+          - Uses OAuth2 Client-Credentials flow with token caching
+          - All tests must pass (pytest + pytest-asyncio)
+          - Use `uv` package manager, not pip
+          - Run `make test` and `make lint` before completing
 
-          # Configure Claude to actively make changes based on requests
-          custom_instructions: |
-            You are implementing code changes based on the request in the PR comment.
+          🚨 CRITICAL VERIFICATION PROCESS:
+          After making ANY file changes, you MUST:
+          1. Use `git diff` to verify your changes were actually applied to files
+          2. Use `git status` to see which files were modified
+          3. Use `Read` tool to verify file contents match your intended changes
+          4. ONLY proceed to testing/committing if changes are confirmed applied
+          5. If changes weren't applied, retry the file modifications
 
-            COMMIT MESSAGE CONVENTIONS - FOLLOW THESE:
-            - Use conventional commit format: [type]: brief description
-            - Types: feat, fix, docs, style, refactor, test, chore
-            - Keep first line under 72 characters
-            - Examples:
-              * feat: add user authentication middleware
-              * fix: resolve login validation error
-              * docs: update API documentation
-              * refactor: simplify user service logic
+          Implementation Process:
+          1. 📖 Read CLAUDE.md for project conventions
+          2. 🔍 Analyze the PR feedback and requested changes
+          3. 💻 Make the requested changes to files
+          4. ✅ **VERIFY CHANGES APPLIED** using git diff and file reading
+          5. 🧪 Run tests (`make test` or `pytest`)
+          6. 🔧 Run linting (`make lint` or linting tools)
+          7. 📝 Commit with proper message format from CLAUDE.md
+          8. 🚀 Push changes to complete the implementation
 
-            Implementation Guidelines:
-            - Make the specific changes requested
-            - Follow existing code patterns and style
-            - Add tests if appropriate
-            - Update documentation if needed
-            - Run any available tests after changes
-            - Use clear, descriptive commit messages following conventions above
-
-            Explain what you implemented and why.
+          NEVER commit or push without first verifying that your file changes were actually applied!

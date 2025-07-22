@@ -26,6 +26,7 @@ permissions:
   contents: read
   pull-requests: write
   issues: write
+  id-token: write
 
 jobs:
   code-review:
@@ -38,22 +39,43 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Claude Code Review
         uses: anthropics/claude-code-action@beta
+        timeout-minutes: 8
+        continue-on-error: false
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
+          allowed_tools: 'Bash'
+          max_turns: 5
 
           # Configure Claude to focus purely on review without making changes
           custom_instructions: |
-            You are conducting a thorough code review. Focus on:
-
+            You are conducting a thorough code review for the JustiFi MCP Server project.
+            
+            📚 IMPORTANT: Read CLAUDE.md for project conventions and standards to inform your review.
+            
+            Project Context:
+            - This is a JustiFi MCP server with comprehensive payment tools
+            - Uses OAuth2 Client-Credentials flow with token caching
+            - Should maintain all passing tests
+            - Uses `uv` package manager and follows PEP 8 guidelines
+            
+            Focus on:
             - Code quality and maintainability
-            - Security vulnerabilities
+            - Security vulnerabilities (especially API credentials handling)
             - Performance issues
-            - Best practices adherence
+            - Best practices adherence (async/await, error handling)
             - Testing coverage
             - Documentation needs
+            - Proper use of @traceable decorators for API calls
+            - Compliance with conventions specified in CLAUDE.md
 
             Provide constructive feedback with specific examples and suggestions.
             Do not make changes - only review and comment.

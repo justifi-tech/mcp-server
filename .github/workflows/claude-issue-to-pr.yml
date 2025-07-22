@@ -1,0 +1,91 @@
+# Claude Issue to PR Creation Workflow
+#
+# PURPOSE: Creates new feature branches and PRs based on GitHub issues
+#
+# TRIGGERS:
+#   - Comment "@claude implement" on any issue
+#   - Comment "@claude create pr" on any issue
+#   - Comment "@claude build [feature description]" on any issue
+#   - Create a new issue with "@claude implement" in the description
+#
+# WHAT IT DOES:
+#   - Creates a new feature branch from main
+#   - Implements the feature/fix described in the issue
+#   - Writes tests and documentation as needed
+#   - Creates a pull request back to main
+#   - Links the PR to the original issue
+#
+# EXAMPLES:
+#   - Create issue: "Add user authentication" then comment "@claude implement"
+#   - Comment on existing issue: "@claude create pr to add email validation"
+#   - Create issue with: "Build a new dashboard component @claude implement"
+#
+# PERMISSIONS:
+#   - Full write access to repository contents
+#   - Create branches and pull requests
+#   - Write issue and PR comments
+#   - Link issues to PRs
+
+name: Claude Issue to PR
+
+on:
+  issue_comment:
+    types: [created]
+  issues:
+    types: [opened, assigned]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  create-implementation-pr:
+    # Run on issues (not PRs) when requesting implementation
+    if: |
+      !github.event.issue.pull_request && 
+      (contains(github.event.comment.body, '@claude implement') || 
+       contains(github.event.comment.body, '@claude create pr') ||
+       contains(github.event.comment.body, '@claude build') ||
+       (github.event_name == 'issues' && contains(github.event.issue.body, '@claude implement')))
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Claude Issue Implementation
+        uses: anthropics/claude-code-action@beta
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+          # Configure Claude to create complete feature implementations
+          custom_instructions: |
+            You are implementing a feature or fix based on a GitHub issue.
+
+            BRANCH NAMING CONVENTIONS - STRICTLY FOLLOW THESE:
+            - Use lowercase with hyphens (kebab-case)
+            - Format: [type]/[issue-number]-[brief-description]
+            - Types: feature/, bugfix/, hotfix/, docs/, refactor/, test/
+            - Keep descriptions under 50 characters
+            - Examples:
+              * feature/123-user-authentication
+              * bugfix/456-fix-login-error
+              * docs/789-update-api-documentation
+              * refactor/101-simplify-user-service
+
+            Process:
+            1. Create a new branch from main using proper naming convention
+            2. Analyze the issue requirements thoroughly
+            3. Implement the requested feature/fix
+            4. Write appropriate tests
+            5. Update documentation if needed
+            6. Create a pull request back to main
+
+            Your PR should:
+            - Use format: "[Type] Brief description (fixes #issue-number)"
+            - Reference the original issue with "Closes #123" or "Fixes #123"
+            - Include a clear description of what was implemented
+            - List any testing performed
+            - Note any breaking changes or considerations
+
+            Focus on clean, maintainable code that follows project conventions.

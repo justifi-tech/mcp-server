@@ -2,27 +2,6 @@
 
 A comprehensive **Model Context Protocol (MCP) server** for AI-assisted payment management. This server provides JustiFi payment tools across all major payment operations through the JustiFi API.
 
-## 🏗️ MCP Architecture
-
-**This is an MCP SERVER** - it provides JustiFi payment tools to AI applications via the MCP protocol:
-
-```
-┌─────────────────┐    MCP Protocol     ┌──────────────────┐    JustiFi API
-│   MCP Client    │◄───────────────────►│   MCP Server     │◄─────────────────►
-│ (AI App)        │   (JSON-RPC/stdio)  │ (This Project)   │   (Payment API)
-│                 │                     │                  │
-│ • Claude Desktop│                     │ • No AI models   │
-│ • Cursor IDE    │                     │ • Only JustiFi   │
-│ • Custom Apps   │                     │   credentials    │
-│ • LangChain     │                     │ • Tool provider  │
-└─────────────────┘                     └──────────────────┘
-```
-
-**Key Points:**
-- ✅ **Server Role**: Provides payment tools, doesn't need AI model credentials
-- ✅ **Client Integration**: Works with any MCP client (Claude, Cursor, custom apps)
-- ✅ **Clean Separation**: Payment logic (server) vs AI reasoning (clients)
-- ✅ **Examples Available**: See [`examples/`](./examples/) for client-side integration patterns
 
 ## 🚀 FastMCP Architecture
 

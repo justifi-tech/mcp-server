@@ -58,6 +58,15 @@ jobs:
         env:
           JUSTIFI_SUPPORT_NPM_TOKEN: ${{ secrets.JUSTIFI_SUPPORT_NPM_TOKEN }}
       
+      - name: Build NPM package
+        if: env.JUSTIFI_SUPPORT_NPM_TOKEN != ''
+        run: |
+          cd npx-wrapper
+          node build.js
+          echo "✅ NPM package built successfully"
+        env:
+          JUSTIFI_SUPPORT_NPM_TOKEN: ${{ secrets.JUSTIFI_SUPPORT_NPM_TOKEN }}
+      
       - name: Create GitHub Release
         uses: actions/github-script@v7
         with:

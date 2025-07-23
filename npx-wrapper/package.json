@@ -1,6 +1,6 @@
 {
   "name": "@justifi/mcp-server",
-  "version": "1.0.20",
+  "version": "1.0.0",
   "description": "JustiFi MCP Server - Simple NPX wrapper for easy payment management with AI assistants",
   "main": "index.js",
   "bin": {

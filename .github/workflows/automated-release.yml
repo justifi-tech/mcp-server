@@ -53,8 +53,14 @@ jobs:
         if: env.JUSTIFI_SUPPORT_NPM_TOKEN != ''
         run: |
           cd npx-wrapper
-          npm version ${{ steps.version.outputs.version_no_v }} --no-git-tag-version
-          echo "✅ NPM version updated to ${{ steps.version.outputs.version_no_v }}"
+          CURRENT_VERSION=$(node -p "require('./package.json').version")
+          TARGET_VERSION="${{ steps.version.outputs.version_no_v }}"
+          if [ "$CURRENT_VERSION" != "$TARGET_VERSION" ]; then
+            npm version $TARGET_VERSION --no-git-tag-version
+            echo "✅ NPM version updated from $CURRENT_VERSION to $TARGET_VERSION"
+          else
+            echo "✅ NPM version already correct: $TARGET_VERSION"
+          fi
         env:
           JUSTIFI_SUPPORT_NPM_TOKEN: ${{ secrets.JUSTIFI_SUPPORT_NPM_TOKEN }}
       

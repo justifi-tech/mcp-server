@@ -29,7 +29,7 @@ wheels/
 *.egg
 
 # Auto-generated version files
-justifi_mcp/_version.py
+python/_version.py
 
 # Testing
 .pytest_cache/
@@ -74,3 +74,30 @@ logs/
 
 # Redis
 dump.rdb
+
+# NPX Package Build Artifacts
+# These files are copied during build process and shouldn't be committed
+npx-wrapper/main.py
+npx-wrapper/pyproject.toml
+npx-wrapper/python/
+npx-wrapper/modelcontextprotocol/
+npx-wrapper/*.tgz
+npx-wrapper/.venv/
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Temporary files that should not be committed
+PR_DESCRIPTION.md
+ISSUE_DESCRIPTION.md
+*_TEMP.md
+*_temp.md
+*.tmp
+*.temp
+
+# Empty or placeholder package.json files in root
+package.json
+package-lock.json

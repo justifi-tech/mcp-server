@@ -1,21 +1,11 @@
 # JustiFi MCP Server Python Dependencies
-# This file lists the Python packages required for the JustiFi MCP server.
-# These are automatically installed by the NPX wrapper.
+# Install with: pip install -r requirements.txt
 
-# Core MCP dependencies
-mcp>=1.0.0
-fastmcp>=0.1.0
-
-# HTTP client and server dependencies
-httpx>=0.25.0
-uvicorn>=0.24.0
-starlette>=0.27.0
-
-# Data validation and serialization
+mcp
+fastmcp
+httpx
 pydantic>=2.0.0
-
-# Environment and configuration
-python-dotenv>=1.0.0
-
-# Observability and monitoring
-langsmith>=0.0.40
+python-dotenv
+langsmith
+starlette
+uvicorn

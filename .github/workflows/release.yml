@@ -40,8 +40,12 @@ jobs:
           cd npx-wrapper
           # Test package.json validity
           node -e "console.log('Package version:', require('./package.json').version)"
-          # Test wrapper script syntax
-          node -c wrapper.js
-          node -c install.js
-          # Test installation process (skip venv creation in CI)
-          JUSTIFI_MCP_SKIP_INSTALL=true node install.js
+          # Test new wrapper script syntax
+          node -c index.js
+          node -c build.js
+          # Test build process
+          node build.js
+          # Test wrapper help command
+          node index.js --help
+          # Test wrapper version command
+          node index.js --version

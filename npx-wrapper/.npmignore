@@ -1,0 +1,28 @@
+# Virtual environment (created automatically by wrapper)
+.venv/
+
+# Python cache files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+*.tgz
+
+# Old wrapper files (being replaced)
+wrapper.js
+install.js
+
+# Development files
+.DS_Store
+.vscode/
+.idea/
+*.log
+
+# Node modules (if any)
+node_modules/ 

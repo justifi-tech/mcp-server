@@ -1,15 +1,15 @@
 {
   "name": "@justifi/mcp-server",
-  "version": "1.0.0",
-  "description": "JustiFi MCP Server - NPX wrapper for easy installation and usage with AI assistants",
-  "main": "wrapper.js",
+  "version": "1.0.20",
+  "description": "JustiFi MCP Server - Simple NPX wrapper for easy payment management with AI assistants",
+  "main": "index.js",
   "bin": {
-    "justifi-mcp-server": "wrapper.js"
+    "justifi-mcp-server": "index.js"
   },
   "scripts": {
-    "postinstall": "node install.js",
-    "health-check": "node wrapper.js --health-check",
-    "start": "node wrapper.js"
+    "start": "node index.js",
+    "test": "node index.js --version",
+    "clean": "node index.js --clean"
   },
   "keywords": [
     "mcp",
@@ -21,17 +21,17 @@
     "claude",
     "cursor",
     "npx",
-    "wrapper"
+    "virtual-environment"
   ],
   "author": "JustiFi MCP Team <support@justifi.ai>",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/justifi-tech/mcp-servers.git"
+    "url": "git+https://github.com/justifi-tech/mcp-server.git"
   },
-  "homepage": "https://github.com/justifi-tech/mcp-servers",
+  "homepage": "https://github.com/justifi-tech/mcp-server",
   "bugs": {
-    "url": "https://github.com/justifi-tech/mcp-servers/issues"
+    "url": "https://github.com/justifi-tech/mcp-server/issues"
   },
   "engines": {
     "node": ">=16.0.0"
@@ -42,8 +42,11 @@
     "win32"
   ],
   "files": [
-    "wrapper.js",
-    "install.js",
+    "index.js",
+    "main.py",
+    "pyproject.toml",
+    "python/",
+    "modelcontextprotocol/",
     "requirements.txt",
     "README.md"
   ],

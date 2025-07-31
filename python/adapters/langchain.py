@@ -3,6 +3,9 @@ LangChain Adapter for JustiFi Tools
 
 This adapter wraps framework-agnostic JustiFi tools with LangChain-specific
 handling, converting raw tool results to LangChain StructuredTool format.
+
+All tools are async-only and designed for modern LangChain patterns.
+Use with `await tool.arun(args)` or LangChain agents that support async execution.
 """
 
 from __future__ import annotations
@@ -299,34 +302,9 @@ class LangChainAdapter:
 
         config = tool_configs[tool_name]
 
-        # Create wrapper function
-        def wrapper(**kwargs: Any) -> str:
-            """LangChain tool wrapper."""
-            import asyncio
-
-            try:
-                # Try to get the current event loop
-                try:
-                    # If we have a running loop, use it directly
-                    import concurrent.futures
-
-                    def run_async():
-                        return asyncio.run(self.execute_tool(tool_name, **kwargs))
-
-                    with concurrent.futures.ThreadPoolExecutor() as executor:
-                        future = executor.submit(run_async)
-                        result = future.result()
-                except RuntimeError:
-                    # No running loop, safe to use asyncio.run
-                    result = asyncio.run(self.execute_tool(tool_name, **kwargs))
-
-                return json.dumps(result, indent=2, default=str)
-            except Exception as e:
-                return f"Error: {e}"
-
-        # Create async wrapper function for arun support
-        async def async_wrapper(**kwargs: Any) -> str:
-            """Async LangChain tool wrapper."""
+        # Create async tool execution function
+        async def execute_tool_async(**kwargs: Any) -> str:
+            """Async LangChain tool execution."""
             try:
                 result = await self.execute_tool(tool_name, **kwargs)
                 return json.dumps(result, indent=2, default=str)
@@ -337,8 +315,7 @@ class LangChainAdapter:
             name=tool_name,
             description=config["description"],
             args_schema=config["input_model"],
-            func=wrapper,
-            coroutine=async_wrapper,
+            coroutine=execute_tool_async,
         )
 
     def get_tool_schemas(self) -> list[dict[str, Any]]:

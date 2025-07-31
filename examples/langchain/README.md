@@ -6,7 +6,7 @@ This directory contains comprehensive examples demonstrating how to integrate Ju
 
 LangChain requires specific tool wrapping and schema formats. Our dedicated adapter provides:
 - **StructuredTool integration** with Pydantic validation
-- **Async/sync compatibility** for different LangChain patterns
+- **Async-only execution** for optimal performance
 - **Error handling** with LangChain-specific error types
 - **Memory integration** for stateful conversations
 
@@ -16,7 +16,7 @@ LangChain requires specific tool wrapping and schema formats. Our dedicated adap
 - **Purpose**: Fundamental LangChain agent integration with JustiFi tools
 - **Features**:
   - OpenAI Tools Agent with JustiFi capabilities
-  - Direct tool usage (sync and async)
+  - Direct async tool usage
   - Error handling demonstrations
   - Agent executor configuration
 - **Best for**: Getting started, understanding LangChain basics

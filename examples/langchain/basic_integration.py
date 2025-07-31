@@ -139,11 +139,7 @@ async def demonstrate_direct_tool_usage():
         print("🔧 Calling list_payouts tool directly...")
 
         try:
-            # Call tool directly (sync version)
-            result = list_payouts_tool.func(limit=5)
-            print(f"📊 Direct tool result:\n{result}\n")
-
-            # Call tool async version
+            # Call tool asynchronously (async-only in JustiFi adapter)
             print("🔧 Calling list_payouts tool asynchronously...")
             async_result = await list_payouts_tool.arun({"limit": 3})
             print(f"📊 Async tool result:\n{async_result}\n")
@@ -206,7 +202,7 @@ if __name__ == "__main__":
 
         print("\n🎯 Key LangChain Integration Features:")
         print("   • Seamless integration with LangChain agents")
-        print("   • Both sync and async tool execution")
+        print("   • Async-only tool execution for optimal performance")
         print("   • Structured tool schemas with Pydantic validation")
         print("   • Comprehensive error handling and recovery")
         print("   • Direct tool access for custom workflows")

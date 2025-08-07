@@ -1,38 +1,35 @@
 """
 Response Wrapper for JustiFi MCP Tools
 
-Provides a wrapper that can optionally standardize responses from existing tools
+Provides a wrapper that standardizes responses from existing tools
 without modifying the original tool implementations.
 """
 
 from __future__ import annotations
 
 import functools
-import os
 from typing import Any, Awaitable, Callable
 
 from .response_formatter import standardize_response
 
-# Configuration flag - can be set via environment variable
-_STANDARDIZE_RESPONSES = os.getenv(
-    "JUSTIFI_STANDARDIZE_RESPONSES", "false"
-).lower() in ("true", "1", "yes", "on")
+# Standardization is always enabled
+_STANDARDIZE_RESPONSES = True
 
 
 def set_standardization_enabled(enabled: bool) -> None:
-    """Enable or disable response standardization globally."""
-    global _STANDARDIZE_RESPONSES
-    _STANDARDIZE_RESPONSES = enabled
+    """Legacy function - standardization is always enabled."""
+    # Standardization is always enabled - this function is kept for backward compatibility
+    pass
 
 
 def is_standardization_enabled() -> bool:
     """Check if response standardization is enabled."""
-    return _STANDARDIZE_RESPONSES
+    return True  # Always enabled
 
 
 def standardize_tool_response(tool_name: str) -> Callable:
     """
-    Decorator to conditionally standardize tool responses.
+    Decorator to standardize tool responses.
 
     Args:
         tool_name: The name of the tool for metadata
@@ -48,12 +45,8 @@ def standardize_tool_response(tool_name: str) -> Callable:
         async def wrapper(*args: Any, **kwargs: Any) -> dict[str, Any]:
             result = await func(*args, **kwargs)
 
-            # If standardization is enabled, standardize the response
-            if _STANDARDIZE_RESPONSES:
-                return standardize_response(result, tool_name)
-
-            # Otherwise return the original response
-            return result
+            # Always standardize the response
+            return standardize_response(result, tool_name)
 
         return wrapper
 
@@ -64,18 +57,16 @@ async def maybe_standardize_response(
     response: dict[str, Any], tool_name: str
 ) -> dict[str, Any]:
     """
-    Conditionally standardize a response based on global configuration.
+    Standardize a response (always applied).
 
     Args:
         response: The original tool response
         tool_name: The name of the tool that generated the response
 
     Returns:
-        Either the original response or a standardized version
+        Standardized response
     """
-    if _STANDARDIZE_RESPONSES:
-        return standardize_response(response, tool_name)
-    return response
+    return standardize_response(response, tool_name)
 
 
 # Tool-specific wrapper functions that can be used in the MCP server
@@ -109,10 +100,8 @@ async def wrap_get_payout_status(
     """Wrap get_payout_status with optional standardization."""
     result = await original_func(*args, **kwargs)
     # get_payout_status returns a string, so we need to wrap it in a dict for standardization
-    if _STANDARDIZE_RESPONSES:
-        wrapped_result = {"data": result, "status": result}
-        return standardize_response(wrapped_result, "get_payout_status")
-    return result
+    wrapped_result = {"data": result, "status": result}
+    return standardize_response(wrapped_result, "get_payout_status")
 
 
 async def wrap_retrieve_payment(

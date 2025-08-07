@@ -44,7 +44,7 @@ async def retrieve_payment(client: JustiFiClient, payment_id: str) -> dict[str, 
     try:
         # Call JustiFi API to retrieve payment
         result = await client.request("GET", f"/v1/payments/{payment_id}")
-        return result
+        return standardize_response(result, "retrieve_payment")
 
     except Exception as e:
         raise ToolError(
@@ -114,7 +114,7 @@ async def list_payments(
 
         # Call JustiFi API to list payments
         result = await client.request("GET", "/v1/payments", params=params)
-        return result
+        return standardize_response(result, "list_payments")
 
     except Exception as e:
         raise ToolError(
@@ -122,45 +122,3 @@ async def list_payments(
         ) from e
 
 
-# Standardized response versions
-async def retrieve_payment_standardized(client: JustiFiClient, payment_id: str) -> dict[str, Any]:
-    """Retrieve detailed information about a specific payment by ID with standardized response.
-
-    Args:
-        client: JustiFi API client
-        payment_id: The unique identifier for the payment (e.g., 'py_ABC123XYZ')
-
-    Returns:
-        Standardized response: {"data": [...], "metadata": {...}}
-
-    Raises:
-        ValidationError: If payment_id is invalid
-        ToolError: If payment retrieval fails
-    """
-    response = await retrieve_payment(client, payment_id)
-    return standardize_response(response, "retrieve_payment")
-
-
-async def list_payments_standardized(
-    client: JustiFiClient,
-    limit: int = 25,
-    after_cursor: str | None = None,
-    before_cursor: str | None = None,
-) -> dict[str, Any]:
-    """List payments with pagination and standardized response format.
-
-    Args:
-        client: JustiFi API client
-        limit: Number of payments to return (1-100, default: 25)
-        after_cursor: Cursor for pagination - returns results after this cursor
-        before_cursor: Cursor for pagination - returns results before this cursor
-
-    Returns:
-        Standardized response: {"data": [...], "metadata": {...}, "page_info": {...}}
-
-    Raises:
-        ValidationError: If parameters are invalid
-        ToolError: If payment listing fails
-    """
-    response = await list_payments(client, limit, after_cursor, before_cursor)
-    return standardize_response(response, "list_payments")

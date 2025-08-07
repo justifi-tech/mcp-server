@@ -4,11 +4,11 @@ This document describes the standardized response format implementation for Just
 
 ## Overview
 
-The JustiFi MCP server now supports an optional standardized response format across all tools. This addresses the issue where different tools returned inconsistent field structures, making it difficult for consuming applications to handle responses uniformly.
+The JustiFi MCP server now uses a standardized response format across all tools by default. This addresses the issue where different tools returned inconsistent field structures, making it difficult for consuming applications to handle responses uniformly.
 
 ## Response Format
 
-When enabled, all tools return responses in this standardized format:
+All tools now return responses in this standardized format:
 
 ```json
 {
@@ -26,25 +26,17 @@ When enabled, all tools return responses in this standardized format:
 
 ## Configuration
 
-### Environment Variable
-Set the `JUSTIFI_STANDARDIZE_RESPONSES` environment variable to enable standardization:
+Standardized responses are now enabled by default across all tools. No configuration is needed.
 
-```bash
-export JUSTIFI_STANDARDIZE_RESPONSES=true
-```
+### Legacy Functions (Backward Compatibility)
+The following functions are maintained for backward compatibility but have no effect:
 
-Accepted values: `true`, `1`, `yes`, `on` (case-insensitive)
-
-### Programmatic Configuration
 ```python
-from python.tools.response_wrapper import set_standardization_enabled
+from python.tools.response_wrapper import set_standardization_enabled, is_standardization_enabled
 
-# Enable standardization
-set_standardization_enabled(True)
-
-# Check if enabled
-from python.tools.response_wrapper import is_standardization_enabled
-print(is_standardization_enabled())  # True
+# These functions exist for backward compatibility
+set_standardization_enabled(True)  # No effect - always enabled
+print(is_standardization_enabled())  # Always returns True
 ```
 
 ## Benefits

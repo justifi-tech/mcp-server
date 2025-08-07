@@ -31,6 +31,10 @@ _TOOL_NAMES = [
     "list_payment_refunds",
     "list_refunds",
     "retrieve_refund",
+    "get_sub_account",
+    "get_sub_account_payout_account",
+    "get_sub_account_settings",
+    "list_sub_accounts",
 ]
 
 

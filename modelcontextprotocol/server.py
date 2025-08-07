@@ -324,3 +324,74 @@ def register_tools(mcp: FastMCP, client: JustiFiClient) -> None:
         from python.tools.checkouts import retrieve_checkout as _retrieve_checkout
 
         return await _retrieve_checkout(client, checkout_id)
+
+    # Sub Account tools
+    @mcp.tool
+    async def list_sub_accounts(
+        status: str = None,
+        limit: int = 25,
+        after_cursor: str = None,
+        before_cursor: str = None,
+    ) -> dict[str, Any]:
+        """List sub accounts with optional status filtering and pagination.
+
+        Args:
+            status: Optional status filter - one of: created, submitted, information_needed, rejected, approved, enabled, disabled, archived
+            limit: Number of sub accounts to return (1-100, default: 25)
+            after_cursor: Cursor for pagination - returns results after this cursor
+            before_cursor: Cursor for pagination - returns results before this cursor
+
+        Returns:
+            Paginated list of sub accounts with page_info for navigation
+        """
+        from python.tools.sub_accounts import list_sub_accounts as _list_sub_accounts
+
+        return await _list_sub_accounts(
+            client, status, limit, after_cursor, before_cursor
+        )
+
+    @mcp.tool
+    async def get_sub_account(sub_account_id: str) -> dict[str, Any]:
+        """Get detailed information about a specific sub account by ID.
+
+        Args:
+            sub_account_id: The unique identifier for the sub account (e.g., 'acc_ABC123XYZ')
+
+        Returns:
+            Sub account object with ID, name, status, and other details
+        """
+        from python.tools.sub_accounts import get_sub_account as _get_sub_account
+
+        return await _get_sub_account(client, sub_account_id)
+
+    @mcp.tool
+    async def get_sub_account_payout_account(sub_account_id: str) -> dict[str, Any]:
+        """Get information about the currently active payout bank account of a sub account.
+
+        Args:
+            sub_account_id: The unique identifier for the sub account (e.g., 'acc_ABC123XYZ')
+
+        Returns:
+            Payout bank account object with account details
+        """
+        from python.tools.sub_accounts import (
+            get_sub_account_payout_account as _get_sub_account_payout_account,
+        )
+
+        return await _get_sub_account_payout_account(client, sub_account_id)
+
+    @mcp.tool
+    async def get_sub_account_settings(sub_account_id: str) -> dict[str, Any]:
+        """Get information about sub account settings.
+
+        Args:
+            sub_account_id: The unique identifier for the sub account (e.g., 'acc_ABC123XYZ')
+
+        Returns:
+            Sub account settings object
+        """
+        from python.tools.sub_accounts import (
+            get_sub_account_settings as _get_sub_account_settings,
+        )
+
+        return await _get_sub_account_settings(client, sub_account_id)

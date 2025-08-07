@@ -456,7 +456,7 @@ This standardization applies to all tools including payments, payouts, refunds, 
 
 - [API Endpoint Inventory](docs/endpoint-inventory.md) - Verified JustiFi API endpoints
 - [API Drift Monitoring](docs/API-DRIFT-MONITORING.md) - Automated API change detection
-- [Standardized Response Format](STANDARDIZED_RESPONSES.md) - Detailed response format documentation
+- [Standardized Response Format](docs/STANDARDIZED_RESPONSES.md) - Detailed response format documentation
 
 ## 🔌 Framework Integration
 

@@ -36,7 +36,7 @@ def mock_sub_account():
         "platform_account_id": "pla_test456",
         "payout_account_id": "pba_test789",
         "business_id": "biz_test101",
-        "application_fee_rates": []
+        "application_fee_rates": [],
     }
 
 
@@ -48,7 +48,7 @@ def mock_payout_account():
         "account_type": "bank",
         "routing_number": "123456789",
         "account_number_last4": "1234",
-        "status": "active"
+        "status": "active",
     }
 
 
@@ -60,8 +60,8 @@ def mock_sub_account_settings():
         "settings": {
             "payment_notifications": True,
             "dispute_notifications": True,
-            "payout_notifications": False
-        }
+            "payout_notifications": False,
+        },
     }
 
 
@@ -77,8 +77,8 @@ class TestListSubAccounts:
                 "has_next": False,
                 "has_previous": False,
                 "start_cursor": "start123",
-                "end_cursor": "end123"
-            }
+                "end_cursor": "end123",
+            },
         }
 
         with respx.mock:
@@ -97,8 +97,8 @@ class TestListSubAccounts:
                 "has_next": False,
                 "has_previous": False,
                 "start_cursor": "start123",
-                "end_cursor": "end123"
-            }
+                "end_cursor": "end123",
+            },
         }
 
         with respx.mock:
@@ -117,8 +117,8 @@ class TestListSubAccounts:
                 "has_next": True,
                 "has_previous": False,
                 "start_cursor": "start123",
-                "end_cursor": "end123"
-            }
+                "end_cursor": "end123",
+            },
         }
 
         with respx.mock:
@@ -153,9 +153,13 @@ class TestListSubAccounts:
     async def test_list_sub_accounts_both_cursors(self, client):
         """Test list_sub_accounts with both cursors specified."""
         with pytest.raises(ValidationError) as exc_info:
-            await list_sub_accounts(client, after_cursor="after", before_cursor="before")
+            await list_sub_accounts(
+                client, after_cursor="after", before_cursor="before"
+            )
 
-        assert "Cannot specify both after_cursor and before_cursor" in str(exc_info.value)
+        assert "Cannot specify both after_cursor and before_cursor" in str(
+            exc_info.value
+        )
 
     async def test_list_sub_accounts_api_error(self, client):
         """Test list_sub_accounts with API error."""
@@ -186,26 +190,20 @@ class TestGetSubAccount:
             result = await get_sub_account(client, sub_account_id)
             assert result == mock_sub_account
 
-    async def test_get_sub_account_empty_id(self, client):
-        """Test get_sub_account with empty ID."""
+    @pytest.mark.parametrize(
+        "sub_account_id,expected_error",
+        [
+            ("", "sub_account_id cannot be empty or whitespace"),
+            ("   ", "sub_account_id cannot be empty or whitespace"),
+            (None, "sub_account_id is required and must be a non-empty string"),
+        ],
+    )
+    async def test_get_sub_account_invalid_id(self, client, sub_account_id, expected_error):
+        """Test get_sub_account with invalid IDs."""
         with pytest.raises(ValidationError) as exc_info:
-            await get_sub_account(client, "")
+            await get_sub_account(client, sub_account_id)
 
-        assert "sub_account_id cannot be empty or whitespace" in str(exc_info.value)
-
-    async def test_get_sub_account_none_id(self, client):
-        """Test get_sub_account with None ID."""
-        with pytest.raises(ValidationError) as exc_info:
-            await get_sub_account(client, None)
-
-        assert "sub_account_id is required and must be a non-empty string" in str(exc_info.value)
-
-    async def test_get_sub_account_whitespace_id(self, client):
-        """Test get_sub_account with whitespace ID."""
-        with pytest.raises(ValidationError) as exc_info:
-            await get_sub_account(client, "   ")
-
-        assert "sub_account_id cannot be empty or whitespace" in str(exc_info.value)
+        assert expected_error in str(exc_info.value)
 
     async def test_get_sub_account_not_found(self, client):
         """Test get_sub_account with non-existent ID."""
@@ -219,94 +217,108 @@ class TestGetSubAccount:
             with pytest.raises(ToolError) as exc_info:
                 await get_sub_account(client, sub_account_id)
 
-            assert f"Failed to retrieve sub account {sub_account_id}" in str(exc_info.value)
+            assert f"Failed to retrieve sub account {sub_account_id}" in str(
+                exc_info.value
+            )
 
 
 @pytest.mark.asyncio
 class TestGetSubAccountPayoutAccount:
     """Test get_sub_account_payout_account function."""
 
-    async def test_get_sub_account_payout_account_success(self, client, mock_payout_account):
+    async def test_get_sub_account_payout_account_success(
+        self, client, mock_payout_account
+    ):
         """Test successful sub account payout account retrieval."""
         sub_account_id = "acc_test123"
 
         with respx.mock:
-            respx.get(f"https://api.justifi.ai/v1/sub_accounts/{sub_account_id}/payout_account").mock(
-                return_value=Response(200, json=mock_payout_account)
-            )
+            respx.get(
+                f"https://api.justifi.ai/v1/sub_accounts/{sub_account_id}/payout_account"
+            ).mock(return_value=Response(200, json=mock_payout_account))
 
             result = await get_sub_account_payout_account(client, sub_account_id)
             assert result == mock_payout_account
 
-    async def test_get_sub_account_payout_account_empty_id(self, client):
-        """Test get_sub_account_payout_account with empty ID."""
+    @pytest.mark.parametrize(
+        "sub_account_id,expected_error",
+        [
+            ("", "sub_account_id cannot be empty or whitespace"),
+            (None, "sub_account_id is required and must be a non-empty string"),
+        ],
+    )
+    async def test_get_sub_account_payout_account_invalid_id(self, client, sub_account_id, expected_error):
+        """Test get_sub_account_payout_account with invalid IDs."""
         with pytest.raises(ValidationError) as exc_info:
-            await get_sub_account_payout_account(client, "")
+            await get_sub_account_payout_account(client, sub_account_id)
 
-        assert "sub_account_id cannot be empty or whitespace" in str(exc_info.value)
-
-    async def test_get_sub_account_payout_account_none_id(self, client):
-        """Test get_sub_account_payout_account with None ID."""
-        with pytest.raises(ValidationError) as exc_info:
-            await get_sub_account_payout_account(client, None)
-
-        assert "sub_account_id is required and must be a non-empty string" in str(exc_info.value)
+        assert expected_error in str(exc_info.value)
 
     async def test_get_sub_account_payout_account_not_found(self, client):
         """Test get_sub_account_payout_account with non-existent ID."""
         sub_account_id = "acc_nonexistent"
 
         with respx.mock:
-            respx.get(f"https://api.justifi.ai/v1/sub_accounts/{sub_account_id}/payout_account").mock(
+            respx.get(
+                f"https://api.justifi.ai/v1/sub_accounts/{sub_account_id}/payout_account"
+            ).mock(
                 return_value=Response(404, json={"error": "Payout account not found"})
             )
 
             with pytest.raises(ToolError) as exc_info:
                 await get_sub_account_payout_account(client, sub_account_id)
 
-            assert f"Failed to retrieve payout account for sub account {sub_account_id}" in str(exc_info.value)
+            assert (
+                f"Failed to retrieve payout account for sub account {sub_account_id}"
+                in str(exc_info.value)
+            )
 
 
 @pytest.mark.asyncio
 class TestGetSubAccountSettings:
     """Test get_sub_account_settings function."""
 
-    async def test_get_sub_account_settings_success(self, client, mock_sub_account_settings):
+    async def test_get_sub_account_settings_success(
+        self, client, mock_sub_account_settings
+    ):
         """Test successful sub account settings retrieval."""
         sub_account_id = "acc_test123"
 
         with respx.mock:
-            respx.get(f"https://api.justifi.ai/v1/sub_accounts/{sub_account_id}/settings").mock(
-                return_value=Response(200, json=mock_sub_account_settings)
-            )
+            respx.get(
+                f"https://api.justifi.ai/v1/sub_accounts/{sub_account_id}/settings"
+            ).mock(return_value=Response(200, json=mock_sub_account_settings))
 
             result = await get_sub_account_settings(client, sub_account_id)
             assert result == mock_sub_account_settings
 
-    async def test_get_sub_account_settings_empty_id(self, client):
-        """Test get_sub_account_settings with empty ID."""
+    @pytest.mark.parametrize(
+        "sub_account_id,expected_error",
+        [
+            ("", "sub_account_id cannot be empty or whitespace"),
+            (None, "sub_account_id is required and must be a non-empty string"),
+        ],
+    )
+    async def test_get_sub_account_settings_invalid_id(self, client, sub_account_id, expected_error):
+        """Test get_sub_account_settings with invalid IDs."""
         with pytest.raises(ValidationError) as exc_info:
-            await get_sub_account_settings(client, "")
+            await get_sub_account_settings(client, sub_account_id)
 
-        assert "sub_account_id cannot be empty or whitespace" in str(exc_info.value)
-
-    async def test_get_sub_account_settings_none_id(self, client):
-        """Test get_sub_account_settings with None ID."""
-        with pytest.raises(ValidationError) as exc_info:
-            await get_sub_account_settings(client, None)
-
-        assert "sub_account_id is required and must be a non-empty string" in str(exc_info.value)
+        assert expected_error in str(exc_info.value)
 
     async def test_get_sub_account_settings_not_found(self, client):
         """Test get_sub_account_settings with non-existent ID."""
         sub_account_id = "acc_nonexistent"
 
         with respx.mock:
-            respx.get(f"https://api.justifi.ai/v1/sub_accounts/{sub_account_id}/settings").mock(
-                return_value=Response(404, json={"error": "Settings not found"})
-            )
+            respx.get(
+                f"https://api.justifi.ai/v1/sub_accounts/{sub_account_id}/settings"
+            ).mock(return_value=Response(404, json={"error": "Settings not found"}))
 
             with pytest.raises(ToolError) as exc_info:
                 await get_sub_account_settings(client, sub_account_id)
 
-            assert f"Failed to retrieve settings for sub account {sub_account_id}" in str(exc_info.value)
+            assert (
+                f"Failed to retrieve settings for sub account {sub_account_id}"
+                in str(exc_info.value)
+            )

@@ -346,7 +346,9 @@ def register_tools(mcp: FastMCP, client: JustiFiClient) -> None:
         """
         from python.tools.sub_accounts import list_sub_accounts as _list_sub_accounts
 
-        return await _list_sub_accounts(client, status, limit, after_cursor, before_cursor)
+        return await _list_sub_accounts(
+            client, status, limit, after_cursor, before_cursor
+        )
 
     @mcp.tool
     async def get_sub_account(sub_account_id: str) -> dict[str, Any]:

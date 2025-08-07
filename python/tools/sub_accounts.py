@@ -45,8 +45,14 @@ async def list_sub_accounts(
 
     # Validate status if provided
     valid_statuses = {
-        "created", "submitted", "information_needed", "rejected",
-        "approved", "enabled", "disabled", "archived"
+        "created",
+        "submitted",
+        "information_needed",
+        "rejected",
+        "approved",
+        "enabled",
+        "disabled",
+        "archived",
     }
     if status is not None:
         if not isinstance(status, str):

@@ -7,7 +7,6 @@ from httpx import Response
 from python.core import JustiFiClient
 from python.tools.base import ToolError, ValidationError
 from python.tools.payouts import (
-    get_payout_status,
     get_recent_payouts,
     list_payouts,
     retrieve_payout,
@@ -34,7 +33,6 @@ def mock_token_response():
 
 class TestRetrievePayout:
     """Test retrieve_payout function."""
-
 
     async def test_retrieve_payout_empty_id(self, justifi_client):
         """Test error handling for empty payout ID."""
@@ -92,11 +90,8 @@ class TestGetPayoutStatus:
     """Test get_payout_status function."""
 
 
-
-
 class TestGetRecentPayouts:
     """Test get_recent_payouts function."""
-
 
     async def test_get_recent_payouts_invalid_limit(self, justifi_client):
         """Test error handling for invalid limit."""

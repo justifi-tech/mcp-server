@@ -6,7 +6,8 @@ Provides a wrapper that standardizes responses from all tools.
 
 from __future__ import annotations
 
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 from .response_formatter import standardize_response
 
@@ -31,7 +32,7 @@ async def wrap_tool_call(
         # get_payout_status returns a string, wrap it in proper format
         wrapped_result = {"data": [{"status": result}]}
         return standardize_response(wrapped_result, tool_name)
-    
+
     # All other tools follow the same pattern
     result = await original_func(*args, **kwargs)
     return standardize_response(result, tool_name)

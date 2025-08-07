@@ -140,4 +140,3 @@ async def get_recent_payouts(client: JustiFiClient, limit: int = 10) -> dict[str
         return standardize_response(result, "get_recent_payouts")
     except KeyError as e:
         raise KeyError(f"Payouts response missing expected field: {e}") from e
-

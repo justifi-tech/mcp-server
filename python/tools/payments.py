@@ -120,5 +120,3 @@ async def list_payments(
         raise ToolError(
             f"Failed to list payments: {str(e)}", error_type="PaymentListError"
         ) from e
-
-

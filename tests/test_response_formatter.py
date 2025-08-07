@@ -1,10 +1,11 @@
 """Tests for the response formatter utility."""
 
-import pytest
-
-from python.tools.response_formatter import (get_raw_data, get_single_item,
-                                             is_single_item_response,
-                                             standardize_response)
+from python.tools.response_formatter import (
+    get_raw_data,
+    get_single_item,
+    is_single_item_response,
+    standardize_response,
+)
 
 
 class TestStandardizeResponse:

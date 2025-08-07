@@ -84,6 +84,12 @@ This MCP server provides complete payment management capabilities across multipl
 ### Payment Method Tools
 - `retrieve_payment_method` - Get payment method by token
 
+### Sub Account Tools
+- `list_sub_accounts` - List sub accounts with status filtering
+- `get_sub_account` - Get sub account details by ID
+- `get_sub_account_payout_account` - Get sub account payout account
+- `get_sub_account_settings` - Get sub account settings
+
 
 
 ## 🚀 Quick Start

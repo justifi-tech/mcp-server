@@ -1,8 +1,8 @@
 # JustiFi API Endpoint Inventory
 Generated from OpenAPI spec: 2025-01-25
 
-## Current Implementation Status (v1.3)
-✅ **16 tools implemented and tested** - All core functionality plus refunds, balance transactions, disputes, and checkouts
+## Current Implementation Status (v1.4)
+✅ **20 tools implemented and tested** - All core functionality plus refunds, balance transactions, disputes, checkouts, and sub accounts
 
 | Endpoint | Method | Description | Tool Name | Status |
 |----------|--------|-------------|-----------|--------|
@@ -22,6 +22,10 @@ Generated from OpenAPI spec: 2025-01-25
 | `/disputes/{id}` | GET | Retrieve dispute details | `retrieve_dispute` | ✅ IMPLEMENTED |
 | `/checkouts` | GET | List checkouts with pagination | `list_checkouts` | ✅ IMPLEMENTED |
 | `/checkouts/{id}` | GET | Retrieve checkout details | `retrieve_checkout` | ✅ IMPLEMENTED |
+| `/sub_accounts` | GET | List sub accounts with filtering | `list_sub_accounts` | ✅ IMPLEMENTED |
+| `/sub_accounts/{id}` | GET | Retrieve sub account details | `get_sub_account` | ✅ IMPLEMENTED |
+| `/sub_accounts/{id}/payout_account` | GET | Get sub account payout account | `get_sub_account_payout_account` | ✅ IMPLEMENTED |
+| `/sub_accounts/{id}/settings` | GET | Get sub account settings | `get_sub_account_settings` | ✅ IMPLEMENTED |
 
 
 

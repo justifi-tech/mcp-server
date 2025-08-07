@@ -37,7 +37,7 @@ This is a **JustiFi MCP (Model Context Protocol) server** designed for AI-assist
 - **Automatic sync**: CI validates synchronization on all PRs
 - **To update NPM README**: `cp README.md npx-wrapper/README.md`
 
-**Rationale**: Prevents documentation drift between main project and NPM package, ensuring NPM users see complete 18-tool documentation instead of outdated 10-tool subset.
+**Rationale**: Prevents documentation drift between main project and NPM package, ensuring NPM users see complete 20-tool documentation instead of outdated subset.
 
 ## Package Management
 - **ALWAYS use `uv` instead of `pip`**

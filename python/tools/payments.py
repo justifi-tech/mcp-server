@@ -10,6 +10,7 @@ from typing import Any
 
 from ..core import JustiFiClient
 from .base import ToolError, ValidationError
+from .response_formatter import standardize_response
 
 
 async def retrieve_payment(client: JustiFiClient, payment_id: str) -> dict[str, Any]:
@@ -43,7 +44,7 @@ async def retrieve_payment(client: JustiFiClient, payment_id: str) -> dict[str, 
     try:
         # Call JustiFi API to retrieve payment
         result = await client.request("GET", f"/v1/payments/{payment_id}")
-        return result
+        return standardize_response(result, "retrieve_payment")
 
     except Exception as e:
         raise ToolError(
@@ -113,7 +114,7 @@ async def list_payments(
 
         # Call JustiFi API to list payments
         result = await client.request("GET", "/v1/payments", params=params)
-        return result
+        return standardize_response(result, "list_payments")
 
     except Exception as e:
         raise ToolError(

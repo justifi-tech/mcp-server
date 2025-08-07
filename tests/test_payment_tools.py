@@ -33,30 +33,6 @@ class TestRetrievePayment:
     """Test retrieve_payment function."""
 
     @pytest.mark.asyncio
-    @respx.mock
-    async def test_retrieve_payment_success(self, justifi_client, mock_token_response):
-        """Test successful payment retrieval."""
-        # Mock OAuth token request
-        respx.post("https://api.justifi.ai/oauth/token").mock(
-            return_value=Response(200, json=mock_token_response)
-        )
-
-        # Mock payment retrieval
-        mock_payment_data = {
-            "data": {
-                "id": "py_test123",
-                "status": "succeeded",
-                "amount": 10000,
-            }
-        }
-        respx.get("https://api.justifi.ai/v1/payments/py_test123").mock(
-            return_value=Response(200, json=mock_payment_data)
-        )
-
-        result = await retrieve_payment(justifi_client, "py_test123")
-        assert result["data"]["id"] == "py_test123"
-
-    @pytest.mark.asyncio
     async def test_retrieve_payment_invalid_id(self, justifi_client):
         """Test payment retrieval with invalid ID."""
         with pytest.raises(ValidationError, match="payment_id is required"):

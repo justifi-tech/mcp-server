@@ -8,6 +8,7 @@ from python.config import JustiFiConfig
 
 # Import JustiFi tools from python directory
 from python.core import JustiFiClient
+from python.tools.response_wrapper import wrap_tool_call
 
 
 def create_mcp_server() -> FastMCP:
@@ -51,7 +52,9 @@ def register_tools(mcp: FastMCP, client: JustiFiClient) -> None:
         """
         from python.tools.payouts import retrieve_payout as _retrieve_payout
 
-        return await _retrieve_payout(client, payout_id)
+        return await wrap_tool_call(
+            "retrieve_payout", _retrieve_payout, client, payout_id
+        )
 
     @mcp.tool
     async def list_payouts(
@@ -71,7 +74,9 @@ def register_tools(mcp: FastMCP, client: JustiFiClient) -> None:
         """
         from python.tools.payouts import list_payouts as _list_payouts
 
-        return await _list_payouts(client, limit, after_cursor, before_cursor)
+        return await wrap_tool_call(
+            "list_payouts", _list_payouts, client, limit, after_cursor, before_cursor
+        )
 
     @mcp.tool
     async def get_payout_status(payout_id: str) -> str:
@@ -99,7 +104,9 @@ def register_tools(mcp: FastMCP, client: JustiFiClient) -> None:
         """
         from python.tools.payouts import get_recent_payouts as _get_recent_payouts
 
-        return await _get_recent_payouts(client, limit)
+        return await wrap_tool_call(
+            "get_recent_payouts", _get_recent_payouts, client, limit
+        )
 
     # Payment tools
     @mcp.tool
@@ -114,7 +121,9 @@ def register_tools(mcp: FastMCP, client: JustiFiClient) -> None:
         """
         from python.tools.payments import retrieve_payment as _retrieve_payment
 
-        return await _retrieve_payment(client, payment_id)
+        return await wrap_tool_call(
+            "retrieve_payment", _retrieve_payment, client, payment_id
+        )
 
     @mcp.tool
     async def list_payments(
@@ -132,7 +141,9 @@ def register_tools(mcp: FastMCP, client: JustiFiClient) -> None:
         """
         from python.tools.payments import list_payments as _list_payments
 
-        return await _list_payments(client, limit, after_cursor, before_cursor)
+        return await wrap_tool_call(
+            "list_payments", _list_payments, client, limit, after_cursor, before_cursor
+        )
 
     # Payment method tools
     @mcp.tool

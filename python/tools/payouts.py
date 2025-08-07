@@ -14,6 +14,7 @@ from langsmith import traceable
 
 from ..core import JustiFiClient
 from .base import ValidationError, handle_tool_errors
+from .response_formatter import standardize_response
 
 
 @traceable
@@ -37,7 +38,8 @@ async def retrieve_payout(client: JustiFiClient, payout_id: str) -> dict[str, An
             "payout_id cannot be empty", field="payout_id", value=payout_id
         )
 
-    return await client.request("GET", f"/v1/payouts/{payout_id}")
+    result = await client.request("GET", f"/v1/payouts/{payout_id}")
+    return standardize_response(result, "retrieve_payout")
 
 
 @traceable
@@ -78,7 +80,8 @@ async def list_payouts(
     if before_cursor:
         params["before_cursor"] = before_cursor
 
-    return await client.request("GET", "/v1/payouts", params=params)
+    result = await client.request("GET", "/v1/payouts", params=params)
+    return standardize_response(result, "list_payouts")
 
 
 @traceable
@@ -133,6 +136,7 @@ async def get_recent_payouts(client: JustiFiClient, limit: int = 10) -> dict[str
 
     try:
         payouts_data: list[dict[str, Any]] = response["data"]
-        return {"payouts": payouts_data, "count": len(payouts_data), "limit": limit}
+        result = {"payouts": payouts_data, "count": len(payouts_data), "limit": limit}
+        return standardize_response(result, "get_recent_payouts")
     except KeyError as e:
         raise KeyError(f"Payouts response missing expected field: {e}") from e

@@ -10,6 +10,7 @@ from typing import Any
 
 from ..core import JustiFiClient
 from .base import ToolError, ValidationError
+from .response_formatter import standardize_response
 
 
 async def retrieve_payment(client: JustiFiClient, payment_id: str) -> dict[str, Any]:
@@ -119,3 +120,47 @@ async def list_payments(
         raise ToolError(
             f"Failed to list payments: {str(e)}", error_type="PaymentListError"
         ) from e
+
+
+# Standardized response versions
+async def retrieve_payment_standardized(client: JustiFiClient, payment_id: str) -> dict[str, Any]:
+    """Retrieve detailed information about a specific payment by ID with standardized response.
+
+    Args:
+        client: JustiFi API client
+        payment_id: The unique identifier for the payment (e.g., 'py_ABC123XYZ')
+
+    Returns:
+        Standardized response: {"data": [...], "metadata": {...}}
+
+    Raises:
+        ValidationError: If payment_id is invalid
+        ToolError: If payment retrieval fails
+    """
+    response = await retrieve_payment(client, payment_id)
+    return standardize_response(response, "retrieve_payment")
+
+
+async def list_payments_standardized(
+    client: JustiFiClient,
+    limit: int = 25,
+    after_cursor: str | None = None,
+    before_cursor: str | None = None,
+) -> dict[str, Any]:
+    """List payments with pagination and standardized response format.
+
+    Args:
+        client: JustiFi API client
+        limit: Number of payments to return (1-100, default: 25)
+        after_cursor: Cursor for pagination - returns results after this cursor
+        before_cursor: Cursor for pagination - returns results before this cursor
+
+    Returns:
+        Standardized response: {"data": [...], "metadata": {...}, "page_info": {...}}
+
+    Raises:
+        ValidationError: If parameters are invalid
+        ToolError: If payment listing fails
+    """
+    response = await list_payments(client, limit, after_cursor, before_cursor)
+    return standardize_response(response, "list_payments")

@@ -14,6 +14,7 @@ from langsmith import traceable
 
 from ..core import JustiFiClient
 from .base import ValidationError, handle_tool_errors
+from .response_formatter import standardize_response
 
 
 @traceable
@@ -136,3 +137,72 @@ async def get_recent_payouts(client: JustiFiClient, limit: int = 10) -> dict[str
         return {"payouts": payouts_data, "count": len(payouts_data), "limit": limit}
     except KeyError as e:
         raise KeyError(f"Payouts response missing expected field: {e}") from e
+
+
+# Standardized response versions
+@traceable
+@handle_tool_errors
+async def retrieve_payout_standardized(client: JustiFiClient, payout_id: str) -> dict[str, Any]:
+    """Retrieve a payout by its ID with standardized response format.
+
+    Args:
+        client: JustiFi client instance.
+        payout_id: The ID of the payout to retrieve (e.g., 'po_ABC123XYZ').
+
+    Returns:
+        Standardized response: {"data": [...], "metadata": {...}}
+
+    Raises:
+        ValidationError: If payout_id is empty or invalid.
+        ToolError: For API errors (wrapped from httpx.HTTPStatusError).
+    """
+    response = await retrieve_payout(client, payout_id)
+    return standardize_response(response, "retrieve_payout")
+
+
+@traceable
+@handle_tool_errors
+async def list_payouts_standardized(
+    client: JustiFiClient,
+    limit: int = 25,
+    after_cursor: str | None = None,
+    before_cursor: str | None = None,
+) -> dict[str, Any]:
+    """List payouts with cursor-based pagination and standardized response format.
+
+    Args:
+        client: JustiFi client instance.
+        limit: Number of payouts to return (default: 25, max: 100).
+        after_cursor: Cursor for pagination (get payouts after this cursor).
+        before_cursor: Cursor for pagination (get payouts before this cursor).
+
+    Returns:
+        Standardized response: {"data": [...], "metadata": {...}, "page_info": {...}}
+
+    Raises:
+        ValidationError: If limit is invalid or cursors are both provided.
+        ToolError: For API errors (wrapped from httpx.HTTPStatusError).
+    """
+    response = await list_payouts(client, limit, after_cursor, before_cursor)
+    return standardize_response(response, "list_payouts")
+
+
+@traceable
+@handle_tool_errors
+async def get_recent_payouts_standardized(client: JustiFiClient, limit: int = 10) -> dict[str, Any]:
+    """Get the most recent payouts with standardized response format.
+
+    Args:
+        client: JustiFi client instance.
+        limit: Number of recent payouts to return (default: 10, max: 25).
+
+    Returns:
+        Standardized response: {"data": [...], "metadata": {...}}
+
+    Raises:
+        ValidationError: If limit is invalid.
+        ToolError: For API errors or missing response fields.
+    """
+    # Get the original custom format response
+    custom_response = await get_recent_payouts(client, limit)
+    return standardize_response(custom_response, "get_recent_payouts")

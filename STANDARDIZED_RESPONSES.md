@@ -4,7 +4,9 @@ This document describes the standardized response format implementation for Just
 
 ## Overview
 
-The JustiFi MCP server now uses a standardized response format across all tools by default. This addresses the issue where different tools returned inconsistent field structures, making it difficult for consuming applications to handle responses uniformly.
+The JustiFi MCP server uses a standardized response format across all 21 tools by default. This addresses the issue where different tools returned inconsistent field structures, making it difficult for consuming applications to handle responses uniformly.
+
+**Current Status**: Standardized responses are always enabled for all tools. Legacy backward compatibility code has been removed.
 
 ## Response Format
 
@@ -26,18 +28,9 @@ All tools now return responses in this standardized format:
 
 ## Configuration
 
-Standardized responses are now enabled by default across all tools. No configuration is needed.
+Standardized responses are always enabled across all 21 tools. No configuration is needed or available - the format is mandatory for consistency.
 
-### Legacy Functions (Backward Compatibility)
-The following functions are maintained for backward compatibility but have no effect:
-
-```python
-from python.tools.response_wrapper import set_standardization_enabled, is_standardization_enabled
-
-# These functions exist for backward compatibility
-set_standardization_enabled(True)  # No effect - always enabled
-print(is_standardization_enabled())  # Always returns True
-```
+All tools use the `wrap_tool_call()` function from `python.tools.response_wrapper` to ensure standardized responses.
 
 ## Benefits
 
@@ -45,7 +38,7 @@ print(is_standardization_enabled())  # Always returns True
 2. **Simplified Agent Logic**: No need for tool-specific response parsing
 3. **Better Maintainability**: Changes to individual tools don't break consuming code
 4. **Scalability**: New tools automatically follow the same pattern
-5. **Backward Compatibility**: Existing consumers continue to work when disabled
+5. **Universal Coverage**: All 21 tools follow the same response structure
 
 ## Implementation Details
 
@@ -58,20 +51,35 @@ The system detects and handles different response patterns:
 4. **Unknown formats**: Intelligent extraction with warnings
 
 ### Tool Integration
-The MCP server uses a wrapper system that conditionally applies standardization:
+The MCP server uses a universal wrapper system that applies standardization to all tools:
 
 ```python
 # In the MCP server
 return await wrap_tool_call("list_payouts", _list_payouts, client, limit)
 ```
 
-When standardization is disabled, tools return their original response format.
+All tools are automatically wrapped with this system - there is no way to disable standardization.
 
 ### Data Type Detection
-The system automatically maps tool names to data types:
+The system automatically maps tool names to data types for all 21 tools:
 - `list_payouts` → `"payouts"`
-- `retrieve_payment` → `"payment"`
+- `retrieve_payment` → `"payment"`  
 - `get_recent_payouts` → `"payouts"`
+- `list_disputes` → `"disputes"`
+- `retrieve_dispute` → `"dispute"`
+- `list_checkouts` → `"checkouts"`
+- `retrieve_checkout` → `"checkout"`
+- `list_balance_transactions` → `"balance_transactions"`
+- `retrieve_balance_transaction` → `"balance_transaction"`
+- `list_refunds` → `"refunds"`
+- `retrieve_refund` → `"refund"`
+- `list_payment_refunds` → `"refunds"`
+- `retrieve_payment_method` → `"payment_method"`
+- `list_sub_accounts` → `"sub_accounts"`
+- `get_sub_account` → `"sub_account"`
+- `get_sub_account_payout_account` → `"sub_account_payout_account"`
+- `get_sub_account_settings` → `"sub_account_settings"`
+- `get_payout_status` → `"payout_status"`
 
 ### Utility Functions
 Helper functions are available for working with standardized responses:
@@ -158,44 +166,50 @@ if is_single_item_response(standardized_response):
 }
 ```
 
-## Migration Guide
+## Usage Guide
 
-### For New Applications
-Simply enable standardization and use the `data` field for all responses:
+### Working with Standardized Responses
+All applications should use the `data` field for accessing records:
 
 ```python
-set_standardization_enabled(True)
+# All tools return standardized responses
 result = await some_tool(...)
 records = result["data"]  # Always a list
+metadata = result["metadata"]  # Tool info and type detection
+page_info = result.get("page_info")  # Pagination if applicable
 ```
 
-### For Existing Applications
-The feature is backward compatible. Existing code continues to work when standardization is disabled (default).
+### Single Item vs List Responses
+Use the `is_single_item` metadata field to determine response type:
 
-To migrate gradually:
-1. Test with standardization enabled in development
-2. Update code to use `response["data"]` instead of tool-specific fields
-3. Enable in production once migration is complete
+```python
+if result["metadata"]["is_single_item"]:
+    # Retrieve operations - single item wrapped in array
+    item = result["data"][0]
+else:
+    # List operations - multiple items
+    items = result["data"]
+```
 
 ## File Structure
 
 ### Core Implementation
 - `python/tools/response_formatter.py` - Core standardization logic
-- `python/tools/response_wrapper.py` - Optional wrapper system
-- `modelcontextprotocol/server.py` - MCP server integration
+- `python/tools/response_wrapper.py` - Universal wrapper system with `wrap_tool_call()`
+- `modelcontextprotocol/server.py` - MCP server integration for all 21 tools
 
 ### Tests
 - `tests/test_response_formatter.py` - Response formatter tests
 - `tests/test_response_wrapper.py` - Wrapper system tests
 
-### Tool Updates
-- `python/tools/payouts.py` - Added standardized versions
-- `python/tools/payments.py` - Added standardized versions
-- `python/tools/__init__.py` - Export new functions
+### Tool Integration
+- All tools in `python/tools/` directory use the wrapper system
+- `python/tools/__init__.py` - Exports wrapper functions
+- Individual tool files (payouts.py, payments.py, etc.) - Core implementations wrapped by MCP server
 
 ## Future Enhancements
 
-1. **Configuration per tool**: Enable standardization for specific tools only
-2. **Response versioning**: Support multiple response format versions
-3. **Schema validation**: Validate standardized responses against schemas
-4. **Performance optimization**: Cache standardization decisions
+1. **Response versioning**: Support multiple response format versions
+2. **Schema validation**: Validate standardized responses against schemas  
+3. **Performance optimization**: Cache standardization decisions
+4. **Extended metadata**: Add more context about data transformations

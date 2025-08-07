@@ -371,10 +371,92 @@ make drift-check
 - Error handling and validation
 - LangSmith tracing support
 
+## 📋 Standardized Response Format
+
+All 21 JustiFi MCP tools return responses in a consistent, standardized format to ensure uniform handling across different AI agents and applications:
+
+```json
+{
+  "data": [...],           // Always an array of records
+  "metadata": {
+    "type": "payouts",     // Data type (e.g., "payouts", "payments", "disputes")
+    "count": 5,            // Number of records returned
+    "tool": "list_payouts", // Tool name that generated the response
+    "original_format": "api", // Format detection ("api", "custom", "unknown")
+    "is_single_item": false   // True for retrieve operations
+  },
+  "page_info": {...}       // Pagination information (if applicable)
+}
+```
+
+### Benefits
+- **Consistent Integration**: Always access records via `response.data`
+- **Simplified Logic**: No need for tool-specific response parsing
+- **Better Maintainability**: Changes to individual tools don't break consuming code
+- **Universal Pattern**: All tools follow the same response structure
+
+### Examples
+
+**List Operations:**
+```json
+// list_payouts response
+{
+  "data": [
+    {"id": "po_123", "status": "completed", "amount": 1000}
+  ],
+  "metadata": {
+    "type": "payouts",
+    "count": 1,
+    "tool": "list_payouts",
+    "original_format": "api",
+    "is_single_item": false
+  },
+  "page_info": {"has_next": false, "limit": 25}
+}
+```
+
+**Retrieve Operations:**
+```json
+// retrieve_payment response  
+{
+  "data": [
+    {"id": "py_456", "status": "succeeded", "amount": 2500}
+  ],
+  "metadata": {
+    "type": "payment",
+    "count": 1,
+    "tool": "retrieve_payment",
+    "original_format": "api",
+    "is_single_item": true
+  }
+}
+```
+
+**Custom Format Tools:**
+```json
+// get_recent_payouts response
+{
+  "data": [
+    {"id": "po_789", "status": "pending", "amount": 750}
+  ],
+  "metadata": {
+    "type": "payouts",
+    "count": 1,
+    "tool": "get_recent_payouts",
+    "original_format": "custom",
+    "is_single_item": false,
+    "limit": 10
+  }
+}
+```
+
+This standardization applies to all tools including payments, payouts, refunds, disputes, checkouts, balance transactions, payment methods, and sub-accounts.
+
 ## 📚 Documentation
 
 - [API Endpoint Inventory](docs/endpoint-inventory.md) - Verified JustiFi API endpoints
 - [API Drift Monitoring](docs/API-DRIFT-MONITORING.md) - Automated API change detection
+- [Standardized Response Format](STANDARDIZED_RESPONSES.md) - Detailed response format documentation
 
 ## 🔌 Framework Integration
 

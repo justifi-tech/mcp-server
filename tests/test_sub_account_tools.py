@@ -198,7 +198,9 @@ class TestGetSubAccount:
             (None, "sub_account_id is required and must be a non-empty string"),
         ],
     )
-    async def test_get_sub_account_invalid_id(self, client, sub_account_id, expected_error):
+    async def test_get_sub_account_invalid_id(
+        self, client, sub_account_id, expected_error
+    ):
         """Test get_sub_account with invalid IDs."""
         with pytest.raises(ValidationError) as exc_info:
             await get_sub_account(client, sub_account_id)
@@ -247,7 +249,9 @@ class TestGetSubAccountPayoutAccount:
             (None, "sub_account_id is required and must be a non-empty string"),
         ],
     )
-    async def test_get_sub_account_payout_account_invalid_id(self, client, sub_account_id, expected_error):
+    async def test_get_sub_account_payout_account_invalid_id(
+        self, client, sub_account_id, expected_error
+    ):
         """Test get_sub_account_payout_account with invalid IDs."""
         with pytest.raises(ValidationError) as exc_info:
             await get_sub_account_payout_account(client, sub_account_id)
@@ -299,7 +303,9 @@ class TestGetSubAccountSettings:
             (None, "sub_account_id is required and must be a non-empty string"),
         ],
     )
-    async def test_get_sub_account_settings_invalid_id(self, client, sub_account_id, expected_error):
+    async def test_get_sub_account_settings_invalid_id(
+        self, client, sub_account_id, expected_error
+    ):
         """Test get_sub_account_settings with invalid IDs."""
         with pytest.raises(ValidationError) as exc_info:
             await get_sub_account_settings(client, sub_account_id)

@@ -475,6 +475,16 @@ This standardization applies to all tools including payments, payouts, refunds, 
 - Our tool schemas are already OpenAI-compatible
 - Examples: [`examples/openai/`](./examples/openai/)
 
+### Standardized Response Format Examples (v1.0.23)
+- **JustiFi MCP Agent**: Demonstrates proper handling of standardized responses
+  - File: [`examples/justifi_mcp.py`](./examples/justifi_mcp.py)
+  - Shows template-based formatting for payouts, payments, transactions
+  - Eliminates hardcoded "data" field assumptions
+- **Web Chat Interface**: Complete web application with consistent formatting
+  - File: [`examples/web_chat.py`](./examples/web_chat.py)
+  - Real-time chat interface with structured data display
+  - Demonstrates web integration patterns
+
 ## 🤝 Contributing
 
 1. Focus on comprehensive payment management

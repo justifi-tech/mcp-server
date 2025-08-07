@@ -77,6 +77,10 @@ def _extract_data_type(tool_name: str, hint: str | None = None) -> str:
         "list_checkouts": "checkouts",
         "retrieve_checkout": "checkout",
         "retrieve_payment_method": "payment_method",
+        "list_sub_accounts": "sub_accounts",
+        "get_sub_account": "sub_account",
+        "get_sub_account_payout_account": "sub_account_payout_account",
+        "get_sub_account_settings": "sub_account_settings",
     }
 
     return type_mapping.get(tool_name, "unknown")

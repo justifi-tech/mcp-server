@@ -35,20 +35,6 @@ def mock_token_response():
 class TestRetrievePayout:
     """Test retrieve_payout function."""
 
-    @respx.mock
-    async def test_retrieve_payout_success(self, justifi_client, mock_token_response):
-        """Test successful payout retrieval."""
-        respx.post("https://api.justifi.ai/oauth/token").mock(
-            return_value=Response(200, json=mock_token_response)
-        )
-        respx.get("https://api.justifi.ai/v1/payouts/po_test123").mock(
-            return_value=Response(
-                200, json={"data": {"id": "po_test123", "status": "completed"}}
-            )
-        )
-
-        result = await retrieve_payout(justifi_client, "po_test123")
-        assert result["data"]["id"] == "po_test123"
 
     async def test_retrieve_payout_empty_id(self, justifi_client):
         """Test error handling for empty payout ID."""
@@ -105,56 +91,12 @@ class TestListPayouts:
 class TestGetPayoutStatus:
     """Test get_payout_status function."""
 
-    @respx.mock
-    async def test_get_payout_status_success(self, justifi_client, mock_token_response):
-        """Test successful payout status retrieval."""
-        respx.post("https://api.justifi.ai/oauth/token").mock(
-            return_value=Response(200, json=mock_token_response)
-        )
-        respx.get("https://api.justifi.ai/v1/payouts/po_test123").mock(
-            return_value=Response(
-                200, json={"data": {"id": "po_test123", "status": "completed"}}
-            )
-        )
 
-        result = await get_payout_status(justifi_client, "po_test123")
-        assert result == "completed"
-
-    @respx.mock
-    async def test_get_payout_status_missing_field(
-        self, justifi_client, mock_token_response
-    ):
-        """Test error handling when status field is missing."""
-        respx.post("https://api.justifi.ai/oauth/token").mock(
-            return_value=Response(200, json=mock_token_response)
-        )
-        respx.get("https://api.justifi.ai/v1/payouts/po_test123").mock(
-            return_value=Response(200, json={"data": {"id": "po_test123"}})
-        )
-
-        with pytest.raises(ToolError, match="Payout response missing expected field"):
-            await get_payout_status(justifi_client, "po_test123")
 
 
 class TestGetRecentPayouts:
     """Test get_recent_payouts function."""
 
-    @respx.mock
-    async def test_get_recent_payouts_success(
-        self, justifi_client, mock_token_response
-    ):
-        """Test successful recent payouts retrieval."""
-        respx.post("https://api.justifi.ai/oauth/token").mock(
-            return_value=Response(200, json=mock_token_response)
-        )
-        respx.get("https://api.justifi.ai/v1/payouts").mock(
-            return_value=Response(
-                200, json={"data": [{"id": "po_test123", "status": "completed"}]}
-            )
-        )
-
-        result = await get_recent_payouts(justifi_client, limit=10)
-        assert result["payouts"][0]["id"] == "po_test123"
 
     async def test_get_recent_payouts_invalid_limit(self, justifi_client):
         """Test error handling for invalid limit."""

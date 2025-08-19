@@ -12,6 +12,7 @@ from .payouts import (
     list_payouts,
     retrieve_payout,
 )
+from .proceeds import list_proceeds, retrieve_proceed
 from .refunds import list_payment_refunds, list_refunds, retrieve_refund
 from .response_formatter import standardize_response
 from .response_wrapper import wrap_tool_call
@@ -37,7 +38,9 @@ __all__ = [
     "list_payouts",
     "retrieve_payout",
     "list_payment_refunds",
+    "list_proceeds",
     "list_refunds",
+    "retrieve_proceed",
     "retrieve_refund",
     "get_sub_account",
     "get_sub_account_payout_account",

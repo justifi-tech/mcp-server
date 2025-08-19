@@ -339,10 +339,10 @@ def register_tools(mcp: FastMCP, client: JustiFiClient) -> None:
     # Sub Account tools
     @mcp.tool
     async def list_sub_accounts(
-        status: str = None,
+        status: str | None = None,
         limit: int = 25,
-        after_cursor: str = None,
-        before_cursor: str = None,
+        after_cursor: str | None = None,
+        before_cursor: str | None = None,
     ) -> dict[str, Any]:
         """List sub accounts with optional status filtering and pagination.
 
@@ -406,3 +406,42 @@ def register_tools(mcp: FastMCP, client: JustiFiClient) -> None:
         )
 
         return await _get_sub_account_settings(client, sub_account_id)
+
+    # Proceed tools
+    @mcp.tool
+    async def list_proceeds(
+        limit: int = 25,
+        after_cursor: str | None = None,
+        before_cursor: str | None = None,
+    ) -> dict[str, Any]:
+        """List proceeds with optional pagination using cursor-based pagination.
+
+        Args:
+            limit: Number of proceeds to return (1-100, default: 25)
+            after_cursor: Cursor for pagination - returns results after this cursor
+            before_cursor: Cursor for pagination - returns results before this cursor
+
+        Returns:
+            Paginated list of proceeds with page_info for navigation
+        """
+        from python.tools.proceeds import list_proceeds as _list_proceeds
+
+        return await wrap_tool_call(
+            "list_proceeds", _list_proceeds, client, limit, after_cursor, before_cursor
+        )
+
+    @mcp.tool
+    async def retrieve_proceed(proceed_id: str) -> dict[str, Any]:
+        """Retrieve detailed information about a specific proceed by ID.
+
+        Args:
+            proceed_id: The unique identifier for the proceed (e.g., 'pr_ABC123XYZ')
+
+        Returns:
+            Proceed object with ID, status, amount, and details
+        """
+        from python.tools.proceeds import retrieve_proceed as _retrieve_proceed
+
+        return await wrap_tool_call(
+            "retrieve_proceed", _retrieve_proceed, client, proceed_id
+        )

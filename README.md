@@ -64,6 +64,10 @@ This MCP server provides complete payment management capabilities across multipl
 - `get_payout_status` - Quick status check for payouts
 - `get_recent_payouts` - Get the most recent payouts
 
+### Proceed Tools
+- `retrieve_proceed` - Get proceed details by ID
+- `list_proceeds` - List proceeds with pagination
+
 ### Refund Tools
 - `retrieve_refund` - Get refund details by ID
 - `list_refunds` - List all refunds with pagination
@@ -373,7 +377,7 @@ make drift-check
 
 ## 📋 Standardized Response Format
 
-All 21 JustiFi MCP tools return responses in a consistent, standardized format to ensure uniform handling across different AI agents and applications:
+All 22 JustiFi MCP tools return responses in a consistent, standardized format to ensure uniform handling across different AI agents and applications:
 
 ```json
 {
@@ -450,7 +454,7 @@ All 21 JustiFi MCP tools return responses in a consistent, standardized format t
 }
 ```
 
-This standardization applies to all tools including payments, payouts, refunds, disputes, checkouts, balance transactions, payment methods, and sub-accounts.
+This standardization applies to all tools including payments, payouts, refunds, disputes, checkouts, balance transactions, payment methods, sub-accounts, and proceeds.
 
 ## 📚 Documentation
 

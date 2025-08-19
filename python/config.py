@@ -6,6 +6,7 @@ Enables secure, explicit tool selection with forward compatibility.
 
 from __future__ import annotations
 
+import inspect
 import os
 
 from pydantic import BaseModel, Field, field_validator
@@ -99,6 +100,26 @@ class JustiFiConfig(BaseModel):
             )
         return v
 
+    def _discover_available_tools(self) -> set[str]:
+        """Auto-discover available tools from python.tools module.
+
+        Returns:
+            Set of available tool names found in the tools module
+        """
+        from . import tools
+
+        discovered_tools = set()
+        for name in dir(tools):
+            if not name.startswith("_") and name not in [
+                "standardize_response",
+                "wrap_tool_call",
+            ]:
+                obj = getattr(tools, name)
+                if inspect.iscoroutinefunction(obj):
+                    discovered_tools.add(name)
+
+        return discovered_tools
+
     @field_validator("enabled_tools")
     @classmethod
     def validate_enabled_tools(cls, v):
@@ -109,46 +130,17 @@ class JustiFiConfig(BaseModel):
             return v
 
         if isinstance(v, list):
-            # Validate that all tool names are valid
-            valid_tools = {
-                # Payout tools
-                "retrieve_payout",
-                "list_payouts",
-                "get_payout_status",
-                "get_recent_payouts",
-                # Payment tools
-                "retrieve_payment",
-                "list_payments",
-                # Payment method tools
-                "retrieve_payment_method",
-                # Payment method group tools
-                "create_payment_method_group",
-                "list_payment_method_groups",
-                "retrieve_payment_method_group",
-                "update_payment_method_group",
-                "remove_payment_method_from_group",
-                # Refund tools
-                "list_refunds",
-                "retrieve_refund",
-                "list_payment_refunds",
-                # Balance transaction tools
-                "list_balance_transactions",
-                "retrieve_balance_transaction",
-                # Dispute tools
-                "list_disputes",
-                "retrieve_dispute",
-                # Checkout tools
-                "list_checkouts",
-                "retrieve_checkout",
-                # Sub account tools
-                "list_sub_accounts",
-                "get_sub_account",
-                "get_sub_account_payout_account",
-                "get_sub_account_settings",
-                # Proceeds tools
-                "list_proceeds",
-                "retrieve_proceed",
-            }
+            # Create a temporary instance to access the discovery method
+            temp_instance = cls.__new__(cls)
+            temp_instance.__dict__.update(
+                {
+                    "client_id": "temp",
+                    "client_secret": "temp",
+                    "enabled_tools": [],
+                    "context": None,
+                }
+            )
+            valid_tools = temp_instance._discover_available_tools()
 
             for tool in v:
                 if tool not in valid_tools:
@@ -161,45 +153,7 @@ class JustiFiConfig(BaseModel):
 
     def get_available_tools(self) -> set[str]:
         """Get set of all available tool names."""
-        return {
-            # Payout tools
-            "retrieve_payout",
-            "list_payouts",
-            "get_payout_status",
-            "get_recent_payouts",
-            # Payment tools
-            "retrieve_payment",
-            "list_payments",
-            # Payment method tools
-            "retrieve_payment_method",
-            # Payment method group tools
-            "create_payment_method_group",
-            "list_payment_method_groups",
-            "retrieve_payment_method_group",
-            "update_payment_method_group",
-            "remove_payment_method_from_group",
-            # Refund tools
-            "list_refunds",
-            "retrieve_refund",
-            "list_payment_refunds",
-            # Balance transaction tools
-            "list_balance_transactions",
-            "retrieve_balance_transaction",
-            # Dispute tools
-            "list_disputes",
-            "retrieve_dispute",
-            # Checkout tools
-            "list_checkouts",
-            "retrieve_checkout",
-            # Sub account tools
-            "list_sub_accounts",
-            "get_sub_account",
-            "get_sub_account_payout_account",
-            "get_sub_account_settings",
-            # Proceeds tools
-            "list_proceeds",
-            "retrieve_proceed",
-        }
+        return self._discover_available_tools()
 
     def get_enabled_tools(self) -> set[str]:
         """Get set of enabled tool names based on configuration."""

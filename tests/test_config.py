@@ -113,3 +113,64 @@ class TestJustiFiConfig:
             # Should list all valid tools
             assert "retrieve_payout" in str(e)
             assert "list_payouts" in str(e)
+
+    def test_auto_discovery_finds_all_tools(self):
+        """Test that auto-discovery finds expected number of tools."""
+        config = JustiFiConfig(client_id="test", client_secret="test")
+        discovered = config._discover_available_tools()
+
+        # Should find at least 27 tools (current count)
+        assert len(discovered) >= 27
+
+        # Should find known tools
+        expected_tools = {
+            "retrieve_payout",
+            "list_payouts",
+            "get_payout_status",
+            "retrieve_payment",
+            "list_payments",
+            "retrieve_payment_method",
+            "create_payment_method_group",
+            "list_payment_method_groups",
+        }
+        assert expected_tools.issubset(discovered)
+
+    def test_validation_with_auto_discovery(self):
+        """Test that validation works with auto-discovered tools."""
+        # Should accept all auto-discovered tools
+        config = JustiFiConfig(client_id="test", client_secret="test")
+        discovered = config._discover_available_tools()
+        config_with_all_tools = JustiFiConfig(
+            client_id="test", client_secret="test", enabled_tools=list(discovered)
+        )
+        assert len(config_with_all_tools.get_enabled_tools()) == len(discovered)
+
+    def test_validation_rejects_invalid_tools(self):
+        """Test that validation still rejects non-existent tools."""
+        with pytest.raises(ValueError, match="Unknown tool 'nonexistent_tool'"):
+            JustiFiConfig(
+                client_id="test",
+                client_secret="test",
+                enabled_tools=["nonexistent_tool"],
+            )
+
+    def test_get_available_tools_uses_auto_discovery(self):
+        """Test that get_available_tools returns auto-discovered tools."""
+        config = JustiFiConfig(client_id="test", client_secret="test")
+        available = config.get_available_tools()
+        discovered = config._discover_available_tools()
+
+        assert available == discovered
+        assert len(available) >= 27
+
+    def test_all_tools_enabled_with_auto_discovery(self):
+        """Test that 'all' enables all auto-discovered tools."""
+        config = JustiFiConfig(
+            client_id="test", client_secret="test", enabled_tools="all"
+        )
+
+        enabled = config.get_enabled_tools()
+        available = config.get_available_tools()
+
+        assert enabled == available
+        assert len(enabled) >= 27

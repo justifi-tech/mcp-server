@@ -121,6 +121,12 @@ class JustiFiConfig(BaseModel):
                 "list_payments",
                 # Payment method tools
                 "retrieve_payment_method",
+                # Payment method group tools
+                "create_payment_method_group",
+                "list_payment_method_groups",
+                "retrieve_payment_method_group",
+                "update_payment_method_group",
+                "remove_payment_method_from_group",
                 # Refund tools
                 "list_refunds",
                 "retrieve_refund",
@@ -134,6 +140,14 @@ class JustiFiConfig(BaseModel):
                 # Checkout tools
                 "list_checkouts",
                 "retrieve_checkout",
+                # Sub account tools
+                "list_sub_accounts",
+                "get_sub_account",
+                "get_sub_account_payout_account",
+                "get_sub_account_settings",
+                # Proceeds tools
+                "list_proceeds",
+                "retrieve_proceed",
             }
 
             for tool in v:
@@ -158,6 +172,12 @@ class JustiFiConfig(BaseModel):
             "list_payments",
             # Payment method tools
             "retrieve_payment_method",
+            # Payment method group tools
+            "create_payment_method_group",
+            "list_payment_method_groups",
+            "retrieve_payment_method_group",
+            "update_payment_method_group",
+            "remove_payment_method_from_group",
             # Refund tools
             "list_refunds",
             "retrieve_refund",
@@ -171,6 +191,14 @@ class JustiFiConfig(BaseModel):
             # Checkout tools
             "list_checkouts",
             "retrieve_checkout",
+            # Sub account tools
+            "list_sub_accounts",
+            "get_sub_account",
+            "get_sub_account_payout_account",
+            "get_sub_account_settings",
+            # Proceeds tools
+            "list_proceeds",
+            "retrieve_proceed",
         }
 
     def get_enabled_tools(self) -> set[str]:

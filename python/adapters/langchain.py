@@ -329,11 +329,17 @@ class LangChainAdapter:
                     "ListSubAccountsInput",
                     status=(
                         str | None,
-                        Field(default=None, description="Filter by status (created, submitted, information_needed, rejected, approved, enabled, disabled, archived)"),
+                        Field(
+                            default=None,
+                            description="Filter by status (created, submitted, information_needed, rejected, approved, enabled, disabled, archived)",
+                        ),
                     ),
                     limit=(
                         int,
-                        Field(default=25, description="Number of sub accounts to return (1-100)"),
+                        Field(
+                            default=25,
+                            description="Number of sub accounts to return (1-100)",
+                        ),
                     ),
                     after_cursor=(
                         str | None,

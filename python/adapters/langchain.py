@@ -295,6 +295,86 @@ class LangChainAdapter:
                     ),
                 ),
             },
+            "list_proceeds": {
+                "description": "List proceeds with optional pagination using cursor-based pagination.",
+                "input_model": create_model(
+                    "ListProceedsInput",
+                    limit=(
+                        int,
+                        Field(default=25, description="Number of proceeds to return"),
+                    ),
+                    after_cursor=(
+                        str | None,
+                        Field(default=None, description="Pagination cursor"),
+                    ),
+                    before_cursor=(
+                        str | None,
+                        Field(default=None, description="Pagination cursor"),
+                    ),
+                ),
+            },
+            "retrieve_proceed": {
+                "description": "Retrieve detailed information about a specific proceed by ID.",
+                "input_model": create_model(
+                    "RetrieveProceedInput",
+                    proceed_id=(
+                        str,
+                        Field(..., description="The ID of the proceed to retrieve"),
+                    ),
+                ),
+            },
+            "list_sub_accounts": {
+                "description": "List sub accounts with optional status filtering and pagination.",
+                "input_model": create_model(
+                    "ListSubAccountsInput",
+                    status=(
+                        str | None,
+                        Field(default=None, description="Filter by status (created, submitted, information_needed, rejected, approved, enabled, disabled, archived)"),
+                    ),
+                    limit=(
+                        int,
+                        Field(default=25, description="Number of sub accounts to return (1-100)"),
+                    ),
+                    after_cursor=(
+                        str | None,
+                        Field(default=None, description="Pagination cursor"),
+                    ),
+                    before_cursor=(
+                        str | None,
+                        Field(default=None, description="Pagination cursor"),
+                    ),
+                ),
+            },
+            "get_sub_account": {
+                "description": "Get detailed information about a specific sub account by ID.",
+                "input_model": create_model(
+                    "GetSubAccountInput",
+                    sub_account_id=(
+                        str,
+                        Field(..., description="The ID of the sub account to retrieve"),
+                    ),
+                ),
+            },
+            "get_sub_account_payout_account": {
+                "description": "Get information about the currently active payout bank account of a sub account.",
+                "input_model": create_model(
+                    "GetSubAccountPayoutAccountInput",
+                    sub_account_id=(
+                        str,
+                        Field(..., description="The ID of the sub account"),
+                    ),
+                ),
+            },
+            "get_sub_account_settings": {
+                "description": "Get information about sub account settings.",
+                "input_model": create_model(
+                    "GetSubAccountSettingsInput",
+                    sub_account_id=(
+                        str,
+                        Field(..., description="The ID of the sub account"),
+                    ),
+                ),
+            },
         }
 
         if tool_name not in tool_configs:

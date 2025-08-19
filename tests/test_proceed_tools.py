@@ -258,7 +258,9 @@ class TestListProceeds:
 
     @respx.mock
     @pytest.mark.asyncio
-    async def test_list_proceeds_unauthorized(self, justifi_client, mock_token_response):
+    async def test_list_proceeds_unauthorized(
+        self, justifi_client, mock_token_response
+    ):
         """Test proceeds listing with unauthorized access."""
         respx.post("https://api.justifi.ai/oauth/token").mock(
             return_value=Response(200, json=mock_token_response)
@@ -272,7 +274,9 @@ class TestListProceeds:
 
     @respx.mock
     @pytest.mark.asyncio
-    async def test_list_proceeds_server_error(self, justifi_client, mock_token_response):
+    async def test_list_proceeds_server_error(
+        self, justifi_client, mock_token_response
+    ):
         """Test proceeds listing with server error."""
         respx.post("https://api.justifi.ai/oauth/token").mock(
             return_value=Response(200, json=mock_token_response)

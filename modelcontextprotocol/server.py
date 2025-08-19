@@ -162,6 +162,143 @@ def register_tools(mcp: FastMCP, client: JustiFiClient) -> None:
 
         return await _retrieve_payment_method(client, payment_method_token)
 
+    # Payment method group tools
+    @mcp.tool
+    async def create_payment_method_group(
+        name: str,
+        description: str | None = None,
+        payment_method_ids: list[str] | None = None,
+    ) -> dict[str, Any]:
+        """Create a new payment method group to organize tokenized payment methods.
+
+        Args:
+            name: Name of the payment method group (required)
+            description: Optional description of the group
+            payment_method_ids: Optional list of payment method IDs to add to the group
+
+        Returns:
+            Created payment method group object with ID, name, and metadata
+        """
+        from python.tools.payment_method_groups import (
+            create_payment_method_group as _create_payment_method_group,
+        )
+
+        return await wrap_tool_call(
+            "create_payment_method_group",
+            _create_payment_method_group,
+            client,
+            name,
+            description,
+            payment_method_ids,
+        )
+
+    @mcp.tool
+    async def list_payment_method_groups(
+        limit: int = 25,
+        after_cursor: str | None = None,
+        before_cursor: str | None = None,
+    ) -> dict[str, Any]:
+        """List payment method groups with optional pagination.
+
+        Args:
+            limit: Number of groups to return (1-100, default: 25)
+            after_cursor: Cursor for pagination - returns results after this cursor
+            before_cursor: Cursor for pagination - returns results before this cursor
+
+        Returns:
+            Paginated list of payment method groups with page_info for navigation
+        """
+        from python.tools.payment_method_groups import (
+            list_payment_method_groups as _list_payment_method_groups,
+        )
+
+        return await wrap_tool_call(
+            "list_payment_method_groups",
+            _list_payment_method_groups,
+            client,
+            limit,
+            after_cursor,
+            before_cursor,
+        )
+
+    @mcp.tool
+    async def retrieve_payment_method_group(group_id: str) -> dict[str, Any]:
+        """Retrieve detailed information about a specific payment method group.
+
+        Args:
+            group_id: The unique identifier for the payment method group
+
+        Returns:
+            Payment method group object with ID, name, payment methods, and metadata
+        """
+        from python.tools.payment_method_groups import (
+            retrieve_payment_method_group as _retrieve_payment_method_group,
+        )
+
+        return await wrap_tool_call(
+            "retrieve_payment_method_group",
+            _retrieve_payment_method_group,
+            client,
+            group_id,
+        )
+
+    @mcp.tool
+    async def update_payment_method_group(
+        group_id: str,
+        name: str | None = None,
+        description: str | None = None,
+        payment_method_ids: list[str] | None = None,
+    ) -> dict[str, Any]:
+        """Update an existing payment method group.
+
+        Args:
+            group_id: The unique identifier for the payment method group
+            name: New name for the group (optional)
+            description: New description for the group (optional)
+            payment_method_ids: New list of payment method IDs to set in the group (optional)
+
+        Returns:
+            Updated payment method group object with ID, name, and metadata
+        """
+        from python.tools.payment_method_groups import (
+            update_payment_method_group as _update_payment_method_group,
+        )
+
+        return await wrap_tool_call(
+            "update_payment_method_group",
+            _update_payment_method_group,
+            client,
+            group_id,
+            name,
+            description,
+            payment_method_ids,
+        )
+
+    @mcp.tool
+    async def remove_payment_method_from_group(
+        group_id: str, payment_method_id: str
+    ) -> dict[str, Any]:
+        """Remove a payment method from a payment method group.
+
+        Args:
+            group_id: The unique identifier for the payment method group
+            payment_method_id: The payment method ID to remove from the group
+
+        Returns:
+            Updated payment method group object after removal
+        """
+        from python.tools.payment_method_groups import (
+            remove_payment_method_from_group as _remove_payment_method_from_group,
+        )
+
+        return await wrap_tool_call(
+            "remove_payment_method_from_group",
+            _remove_payment_method_from_group,
+            client,
+            group_id,
+            payment_method_id,
+        )
+
     # Refund tools
     @mcp.tool
     async def list_refunds(

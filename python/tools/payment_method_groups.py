@@ -79,7 +79,9 @@ async def create_payment_method_group(
             payload["description"] = description.strip()
 
         if payment_method_ids:
-            payload["payment_method_ids"] = [pm_id.strip() for pm_id in payment_method_ids]
+            payload["payment_method_ids"] = [
+                pm_id.strip() for pm_id in payment_method_ids
+            ]
 
         # Call JustiFi API to create payment method group
         result = await client.request("POST", "/v1/payment_method_groups", data=payload)
@@ -296,10 +298,14 @@ async def update_payment_method_group(
             payload["description"] = description.strip()
 
         if payment_method_ids is not None:
-            payload["payment_method_ids"] = [pm_id.strip() for pm_id in payment_method_ids]
+            payload["payment_method_ids"] = [
+                pm_id.strip() for pm_id in payment_method_ids
+            ]
 
         # Call JustiFi API to update payment method group
-        result = await client.request("PATCH", f"/v1/payment_method_groups/{group_id}", data=payload)
+        result = await client.request(
+            "PATCH", f"/v1/payment_method_groups/{group_id}", data=payload
+        )
         return standardize_response(result, "update_payment_method_group")
 
     except Exception as e:
@@ -357,7 +363,8 @@ async def remove_payment_method_from_group(
     try:
         # Call JustiFi API to remove payment method from group
         result = await client.request(
-            "DELETE", f"/v1/payment_method_groups/{group_id}/payment_methods/{payment_method_id}"
+            "DELETE",
+            f"/v1/payment_method_groups/{group_id}/payment_methods/{payment_method_id}",
         )
         return standardize_response(result, "remove_payment_method_from_group")
 

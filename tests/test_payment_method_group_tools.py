@@ -71,9 +71,10 @@ class TestCreatePaymentMethodGroup:
             assert result["metadata"]["tool"] == "create_payment_method_group"
 
     @pytest.mark.asyncio
-    async def test_create_group_with_description_and_payment_methods(self, mock_client, mock_oauth_token):
+    async def test_create_group_with_description_and_payment_methods(
+        self, mock_client, mock_oauth_token
+    ):
         """Test group creation with description and payment methods."""
-
 
         mock_response = {
             "data": {
@@ -88,7 +89,6 @@ class TestCreatePaymentMethodGroup:
         }
 
         with respx.mock:
-
             # Mock OAuth token endpoint
             respx.post("https://api.justifi.ai/oauth/token").mock(
                 return_value=Response(200, json=mock_oauth_token)
@@ -101,7 +101,7 @@ class TestCreatePaymentMethodGroup:
                 mock_client,
                 "Test Group",
                 description="Test Description",
-                payment_method_ids=["pm_123", "pm_456"]
+                payment_method_ids=["pm_123", "pm_456"],
             )
 
             assert result["data"][0]["description"] == "Test Description"
@@ -110,7 +110,6 @@ class TestCreatePaymentMethodGroup:
     @pytest.mark.asyncio
     async def test_create_group_empty_name_error(self):
         """Test validation error for empty name."""
-
 
         with pytest.raises(ValidationError) as exc_info:
             await create_payment_method_group(mock_client, "")
@@ -121,7 +120,6 @@ class TestCreatePaymentMethodGroup:
     async def test_create_group_none_name_error(self):
         """Test validation error for None name."""
 
-
         with pytest.raises(ValidationError) as exc_info:
             await create_payment_method_group(mock_client, None)
 
@@ -130,7 +128,6 @@ class TestCreatePaymentMethodGroup:
     @pytest.mark.asyncio
     async def test_create_group_invalid_description_type_error(self):
         """Test validation error for invalid description type."""
-
 
         with pytest.raises(ValidationError) as exc_info:
             await create_payment_method_group(mock_client, "Test", description=123)
@@ -141,9 +138,10 @@ class TestCreatePaymentMethodGroup:
     async def test_create_group_invalid_payment_method_ids_type_error(self):
         """Test validation error for invalid payment_method_ids type."""
 
-
         with pytest.raises(ValidationError) as exc_info:
-            await create_payment_method_group(mock_client, "Test", payment_method_ids="not_a_list")
+            await create_payment_method_group(
+                mock_client, "Test", payment_method_ids="not_a_list"
+            )
 
         assert "payment_method_ids must be a list if provided" in str(exc_info.value)
 
@@ -151,16 +149,16 @@ class TestCreatePaymentMethodGroup:
     async def test_create_group_empty_payment_method_id_error(self):
         """Test validation error for empty payment method ID in list."""
 
-
         with pytest.raises(ValidationError) as exc_info:
-            await create_payment_method_group(mock_client, "Test", payment_method_ids=["pm_123", ""])
+            await create_payment_method_group(
+                mock_client, "Test", payment_method_ids=["pm_123", ""]
+            )
 
         assert "payment_method_ids[1] must be a non-empty string" in str(exc_info.value)
 
     @pytest.mark.asyncio
     async def test_create_group_http_400_error(self):
         """Test HTTP 400 error handling."""
-
 
         with respx.mock:
             respx.post("https://api.justifi.ai/v1/payment_method_groups").mock(
@@ -181,7 +179,6 @@ class TestListPaymentMethodGroups:
     async def test_list_groups_success(self, mock_client, mock_oauth_token):
         """Test successful groups listing."""
 
-
         mock_response = {
             "data": [
                 {
@@ -193,16 +190,15 @@ class TestListPaymentMethodGroups:
                     "id": "pmg_456def",
                     "name": "Group 2",
                     "payment_method_count": 0,
-                }
+                },
             ],
             "page_info": {
                 "has_next_page": False,
                 "has_previous_page": False,
-            }
+            },
         }
 
         with respx.mock:
-
             # Mock OAuth token endpoint
             respx.post("https://api.justifi.ai/oauth/token").mock(
                 return_value=Response(200, json=mock_oauth_token)
@@ -221,14 +217,12 @@ class TestListPaymentMethodGroups:
     async def test_list_groups_with_pagination(self, mock_client, mock_oauth_token):
         """Test groups listing with pagination parameters."""
 
-
         mock_response = {
             "data": [{"id": "pmg_123abc", "name": "Group 1"}],
-            "page_info": {"has_next_page": True, "has_previous_page": False}
+            "page_info": {"has_next_page": True, "has_previous_page": False},
         }
 
         with respx.mock:
-
             # Mock OAuth token endpoint
             respx.post("https://api.justifi.ai/oauth/token").mock(
                 return_value=Response(200, json=mock_oauth_token)
@@ -253,7 +247,6 @@ class TestListPaymentMethodGroups:
     async def test_list_groups_invalid_limit_error(self):
         """Test validation error for invalid limit."""
 
-
         with pytest.raises(ValidationError) as exc_info:
             await list_payment_method_groups(mock_client, limit=0)
 
@@ -262,7 +255,6 @@ class TestListPaymentMethodGroups:
     @pytest.mark.asyncio
     async def test_list_groups_limit_too_high_error(self):
         """Test validation error for limit too high."""
-
 
         with pytest.raises(ValidationError) as exc_info:
             await list_payment_method_groups(mock_client, limit=101)
@@ -278,7 +270,9 @@ class TestListPaymentMethodGroups:
                 mock_client, after_cursor="cursor1", before_cursor="cursor2"
             )
 
-        assert "Cannot specify both after_cursor and before_cursor" in str(exc_info.value)
+        assert "Cannot specify both after_cursor and before_cursor" in str(
+            exc_info.value
+        )
 
 
 class TestRetrievePaymentMethodGroup:
@@ -288,7 +282,6 @@ class TestRetrievePaymentMethodGroup:
     async def test_retrieve_group_success(self, mock_client, mock_oauth_token):
         """Test successful group retrieval."""
 
-
         mock_response = {
             "data": {
                 "id": "pmg_123abc",
@@ -297,7 +290,7 @@ class TestRetrievePaymentMethodGroup:
                 "payment_method_count": 2,
                 "payment_methods": [
                     {"id": "pm_123", "type": "card"},
-                    {"id": "pm_456", "type": "bank_account"}
+                    {"id": "pm_456", "type": "bank_account"},
                 ],
                 "created_at": "2023-01-01T00:00:00Z",
                 "updated_at": "2023-01-01T00:00:00Z",
@@ -305,14 +298,13 @@ class TestRetrievePaymentMethodGroup:
         }
 
         with respx.mock:
-
             # Mock OAuth token endpoint
             respx.post("https://api.justifi.ai/oauth/token").mock(
                 return_value=Response(200, json=mock_oauth_token)
             )
-            respx.get("https://api.justifi.ai/v1/payment_method_groups/pmg_123abc").mock(
-                return_value=Response(200, json=mock_response)
-            )
+            respx.get(
+                "https://api.justifi.ai/v1/payment_method_groups/pmg_123abc"
+            ).mock(return_value=Response(200, json=mock_response))
 
             result = await retrieve_payment_method_group(mock_client, "pmg_123abc")
 
@@ -324,36 +316,39 @@ class TestRetrievePaymentMethodGroup:
     async def test_retrieve_group_empty_id_error(self):
         """Test validation error for empty group_id."""
 
-
         with pytest.raises(ValidationError) as exc_info:
             await retrieve_payment_method_group(mock_client, "")
 
-        assert "group_id is required and must be a non-empty string" in str(exc_info.value)
+        assert "group_id is required and must be a non-empty string" in str(
+            exc_info.value
+        )
 
     @pytest.mark.asyncio
     async def test_retrieve_group_none_id_error(self):
         """Test validation error for None group_id."""
 
-
         with pytest.raises(ValidationError) as exc_info:
             await retrieve_payment_method_group(mock_client, None)
 
-        assert "group_id is required and must be a non-empty string" in str(exc_info.value)
+        assert "group_id is required and must be a non-empty string" in str(
+            exc_info.value
+        )
 
     @pytest.mark.asyncio
     async def test_retrieve_group_http_404_error(self):
         """Test HTTP 404 error handling."""
 
-
         with respx.mock:
-            respx.get("https://api.justifi.ai/v1/payment_method_groups/pmg_notfound").mock(
-                return_value=Response(404, json={"error": "Not Found"})
-            )
+            respx.get(
+                "https://api.justifi.ai/v1/payment_method_groups/pmg_notfound"
+            ).mock(return_value=Response(404, json={"error": "Not Found"}))
 
             with pytest.raises(ToolError) as exc_info:
                 await retrieve_payment_method_group(mock_client, "pmg_notfound")
 
-            assert "Failed to retrieve payment method group pmg_notfound" in str(exc_info.value)
+            assert "Failed to retrieve payment method group pmg_notfound" in str(
+                exc_info.value
+            )
             assert exc_info.value.error_type == "PaymentMethodGroupRetrievalError"
 
 
@@ -363,7 +358,6 @@ class TestUpdatePaymentMethodGroup:
     @pytest.mark.asyncio
     async def test_update_group_name_only(self, mock_client, mock_oauth_token):
         """Test updating group name only."""
-
 
         mock_response = {
             "data": {
@@ -376,16 +370,17 @@ class TestUpdatePaymentMethodGroup:
         }
 
         with respx.mock:
-
             # Mock OAuth token endpoint
             respx.post("https://api.justifi.ai/oauth/token").mock(
                 return_value=Response(200, json=mock_oauth_token)
             )
-            respx.patch("https://api.justifi.ai/v1/payment_method_groups/pmg_123abc").mock(
-                return_value=Response(200, json=mock_response)
-            )
+            respx.patch(
+                "https://api.justifi.ai/v1/payment_method_groups/pmg_123abc"
+            ).mock(return_value=Response(200, json=mock_response))
 
-            result = await update_payment_method_group(mock_client, "pmg_123abc", name="Updated Name")
+            result = await update_payment_method_group(
+                mock_client, "pmg_123abc", name="Updated Name"
+            )
 
             assert result["data"][0]["name"] == "Updated Name"
             assert result["metadata"]["tool"] == "update_payment_method_group"
@@ -393,7 +388,6 @@ class TestUpdatePaymentMethodGroup:
     @pytest.mark.asyncio
     async def test_update_group_all_fields(self, mock_client, mock_oauth_token):
         """Test updating all fields."""
-
 
         mock_response = {
             "data": {
@@ -407,21 +401,20 @@ class TestUpdatePaymentMethodGroup:
         }
 
         with respx.mock:
-
             # Mock OAuth token endpoint
             respx.post("https://api.justifi.ai/oauth/token").mock(
                 return_value=Response(200, json=mock_oauth_token)
             )
-            respx.patch("https://api.justifi.ai/v1/payment_method_groups/pmg_123abc").mock(
-                return_value=Response(200, json=mock_response)
-            )
+            respx.patch(
+                "https://api.justifi.ai/v1/payment_method_groups/pmg_123abc"
+            ).mock(return_value=Response(200, json=mock_response))
 
             result = await update_payment_method_group(
                 mock_client,
                 "pmg_123abc",
                 name="Updated Name",
                 description="Updated Description",
-                payment_method_ids=["pm_789"]
+                payment_method_ids=["pm_789"],
             )
 
             assert result["data"][0]["name"] == "Updated Name"
@@ -432,26 +425,28 @@ class TestUpdatePaymentMethodGroup:
     async def test_update_group_empty_id_error(self):
         """Test validation error for empty group_id."""
 
-
         with pytest.raises(ValidationError) as exc_info:
             await update_payment_method_group(mock_client, "", name="Test")
 
-        assert "group_id is required and must be a non-empty string" in str(exc_info.value)
+        assert "group_id is required and must be a non-empty string" in str(
+            exc_info.value
+        )
 
     @pytest.mark.asyncio
     async def test_update_group_no_fields_error(self):
         """Test validation error for no update fields provided."""
 
-
         with pytest.raises(ValidationError) as exc_info:
             await update_payment_method_group(mock_client, "pmg_123abc")
 
-        assert "At least one of name, description, or payment_method_ids must be provided" in str(exc_info.value)
+        assert (
+            "At least one of name, description, or payment_method_ids must be provided"
+            in str(exc_info.value)
+        )
 
     @pytest.mark.asyncio
     async def test_update_group_empty_name_error(self):
         """Test validation error for empty name."""
-
 
         with pytest.raises(ValidationError) as exc_info:
             await update_payment_method_group(mock_client, "pmg_123abc", name="")
@@ -462,9 +457,10 @@ class TestUpdatePaymentMethodGroup:
     async def test_update_group_invalid_payment_method_ids_error(self):
         """Test validation error for invalid payment_method_ids."""
 
-
         with pytest.raises(ValidationError) as exc_info:
-            await update_payment_method_group(mock_client, "pmg_123abc", payment_method_ids=["valid", ""])
+            await update_payment_method_group(
+                mock_client, "pmg_123abc", payment_method_ids=["valid", ""]
+            )
 
         assert "payment_method_ids[1] must be a non-empty string" in str(exc_info.value)
 
@@ -475,7 +471,6 @@ class TestRemovePaymentMethodFromGroup:
     @pytest.mark.asyncio
     async def test_remove_payment_method_success(self, mock_client, mock_oauth_token):
         """Test successful payment method removal."""
-
 
         mock_response = {
             "data": {
@@ -488,16 +483,17 @@ class TestRemovePaymentMethodFromGroup:
         }
 
         with respx.mock:
-
             # Mock OAuth token endpoint
             respx.post("https://api.justifi.ai/oauth/token").mock(
                 return_value=Response(200, json=mock_oauth_token)
             )
-            respx.delete("https://api.justifi.ai/v1/payment_method_groups/pmg_123abc/payment_methods/pm_123").mock(
-                return_value=Response(200, json=mock_response)
-            )
+            respx.delete(
+                "https://api.justifi.ai/v1/payment_method_groups/pmg_123abc/payment_methods/pm_123"
+            ).mock(return_value=Response(200, json=mock_response))
 
-            result = await remove_payment_method_from_group(mock_client, "pmg_123abc", "pm_123")
+            result = await remove_payment_method_from_group(
+                mock_client, "pmg_123abc", "pm_123"
+            )
 
             assert result["data"][0]["payment_method_count"] == 1
             assert result["metadata"]["tool"] == "remove_payment_method_from_group"
@@ -506,46 +502,53 @@ class TestRemovePaymentMethodFromGroup:
     async def test_remove_payment_method_empty_group_id_error(self):
         """Test validation error for empty group_id."""
 
-
         with pytest.raises(ValidationError) as exc_info:
             await remove_payment_method_from_group(mock_client, "", "pm_123")
 
-        assert "group_id is required and must be a non-empty string" in str(exc_info.value)
+        assert "group_id is required and must be a non-empty string" in str(
+            exc_info.value
+        )
 
     @pytest.mark.asyncio
     async def test_remove_payment_method_empty_payment_method_id_error(self):
         """Test validation error for empty payment_method_id."""
 
-
         with pytest.raises(ValidationError) as exc_info:
             await remove_payment_method_from_group(mock_client, "pmg_123abc", "")
 
-        assert "payment_method_id is required and must be a non-empty string" in str(exc_info.value)
+        assert "payment_method_id is required and must be a non-empty string" in str(
+            exc_info.value
+        )
 
     @pytest.mark.asyncio
     async def test_remove_payment_method_none_payment_method_id_error(self):
         """Test validation error for None payment_method_id."""
 
-
         with pytest.raises(ValidationError) as exc_info:
             await remove_payment_method_from_group(mock_client, "pmg_123abc", None)
 
-        assert "payment_method_id is required and must be a non-empty string" in str(exc_info.value)
+        assert "payment_method_id is required and must be a non-empty string" in str(
+            exc_info.value
+        )
 
     @pytest.mark.asyncio
     async def test_remove_payment_method_http_404_error(self):
         """Test HTTP 404 error handling."""
 
-
         with respx.mock:
-            respx.delete("https://api.justifi.ai/v1/payment_method_groups/pmg_123abc/payment_methods/pm_notfound").mock(
-                return_value=Response(404, json={"error": "Not Found"})
-            )
+            respx.delete(
+                "https://api.justifi.ai/v1/payment_method_groups/pmg_123abc/payment_methods/pm_notfound"
+            ).mock(return_value=Response(404, json={"error": "Not Found"}))
 
             with pytest.raises(ToolError) as exc_info:
-                await remove_payment_method_from_group(mock_client, "pmg_123abc", "pm_notfound")
+                await remove_payment_method_from_group(
+                    mock_client, "pmg_123abc", "pm_notfound"
+                )
 
-            assert "Failed to remove payment method pm_notfound from group pmg_123abc" in str(exc_info.value)
+            assert (
+                "Failed to remove payment method pm_notfound from group pmg_123abc"
+                in str(exc_info.value)
+            )
             assert exc_info.value.error_type == "PaymentMethodGroupRemovalError"
 
 
@@ -570,7 +573,6 @@ class TestGeneralErrorScenarios:
     @pytest.mark.asyncio
     async def test_http_500_server_error(self, mock_client):
         """Test HTTP 500 error handling."""
-
 
         with respx.mock:
             respx.post("https://api.justifi.ai/v1/payment_method_groups").mock(

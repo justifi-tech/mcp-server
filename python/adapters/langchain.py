@@ -167,11 +167,17 @@ class LangChainAdapter:
                     ),
                     description=(
                         str | None,
-                        Field(default=None, description="Optional description of the group"),
+                        Field(
+                            default=None,
+                            description="Optional description of the group",
+                        ),
                     ),
                     payment_method_ids=(
                         list[str] | None,
-                        Field(default=None, description="Optional list of payment method IDs to add to the group"),
+                        Field(
+                            default=None,
+                            description="Optional list of payment method IDs to add to the group",
+                        ),
                     ),
                 ),
             },
@@ -181,15 +187,23 @@ class LangChainAdapter:
                     "ListPaymentMethodGroupsInput",
                     limit=(
                         int,
-                        Field(default=25, description="Number of groups to return (1-100)"),
+                        Field(
+                            default=25, description="Number of groups to return (1-100)"
+                        ),
                     ),
                     after_cursor=(
                         str | None,
-                        Field(default=None, description="Pagination cursor for results after this cursor"),
+                        Field(
+                            default=None,
+                            description="Pagination cursor for results after this cursor",
+                        ),
                     ),
                     before_cursor=(
                         str | None,
-                        Field(default=None, description="Pagination cursor for results before this cursor"),
+                        Field(
+                            default=None,
+                            description="Pagination cursor for results before this cursor",
+                        ),
                     ),
                 ),
             },
@@ -199,7 +213,10 @@ class LangChainAdapter:
                     "RetrievePaymentMethodGroupInput",
                     group_id=(
                         str,
-                        Field(..., description="The unique identifier for the payment method group"),
+                        Field(
+                            ...,
+                            description="The unique identifier for the payment method group",
+                        ),
                     ),
                 ),
             },
@@ -209,7 +226,10 @@ class LangChainAdapter:
                     "UpdatePaymentMethodGroupInput",
                     group_id=(
                         str,
-                        Field(..., description="The unique identifier for the payment method group"),
+                        Field(
+                            ...,
+                            description="The unique identifier for the payment method group",
+                        ),
                     ),
                     name=(
                         str | None,
@@ -217,11 +237,16 @@ class LangChainAdapter:
                     ),
                     description=(
                         str | None,
-                        Field(default=None, description="New description for the group"),
+                        Field(
+                            default=None, description="New description for the group"
+                        ),
                     ),
                     payment_method_ids=(
                         list[str] | None,
-                        Field(default=None, description="New list of payment method IDs to set in the group"),
+                        Field(
+                            default=None,
+                            description="New list of payment method IDs to set in the group",
+                        ),
                     ),
                 ),
             },
@@ -231,11 +256,17 @@ class LangChainAdapter:
                     "RemovePaymentMethodFromGroupInput",
                     group_id=(
                         str,
-                        Field(..., description="The unique identifier for the payment method group"),
+                        Field(
+                            ...,
+                            description="The unique identifier for the payment method group",
+                        ),
                     ),
                     payment_method_id=(
                         str,
-                        Field(..., description="The payment method ID to remove from the group"),
+                        Field(
+                            ...,
+                            description="The payment method ID to remove from the group",
+                        ),
                     ),
                 ),
             },

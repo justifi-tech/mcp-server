@@ -29,6 +29,8 @@ _TOOL_NAMES = [
     "list_payouts",
     "retrieve_payout",
     "list_payment_refunds",
+    "list_proceeds",
+    "retrieve_proceed",
     "list_refunds",
     "retrieve_refund",
     "get_sub_account",

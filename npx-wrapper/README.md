@@ -88,6 +88,13 @@ This MCP server provides complete payment management capabilities across multipl
 ### Payment Method Tools
 - `retrieve_payment_method` - Get payment method by token
 
+### Payment Method Groups Tools
+- `create_payment_method_group` - Create groups to organize payment methods
+- `list_payment_method_groups` - List all groups with pagination  
+- `retrieve_payment_method_group` - Get specific group details
+- `update_payment_method_group` - Add/update payment methods in group
+- `remove_payment_method_from_group` - Remove payment method from group
+
 ### Sub Account Tools
 - `list_sub_accounts` - List sub accounts with status filtering
 - `get_sub_account` - Get sub account details by ID

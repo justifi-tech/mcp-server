@@ -4,6 +4,13 @@
 from .balances import list_balance_transactions, retrieve_balance_transaction
 from .checkouts import list_checkouts, retrieve_checkout
 from .disputes import list_disputes, retrieve_dispute
+from .payment_method_groups import (
+    create_payment_method_group,
+    list_payment_method_groups,
+    remove_payment_method_from_group,
+    retrieve_payment_method_group,
+    update_payment_method_group,
+)
 from .payment_methods import retrieve_payment_method
 from .payments import list_payments, retrieve_payment
 from .payouts import (
@@ -24,8 +31,13 @@ from .sub_accounts import (
 )
 
 __all__ = [
+    "create_payment_method_group",
     "list_balance_transactions",
+    "list_payment_method_groups",
+    "remove_payment_method_from_group",
     "retrieve_balance_transaction",
+    "retrieve_payment_method_group",
+    "update_payment_method_group",
     "list_checkouts",
     "retrieve_checkout",
     "list_disputes",

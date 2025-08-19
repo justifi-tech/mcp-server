@@ -157,6 +157,119 @@ class LangChainAdapter:
                     ),
                 ),
             },
+            "create_payment_method_group": {
+                "description": "Create a new payment method group to organize tokenized payment methods.",
+                "input_model": create_model(
+                    "CreatePaymentMethodGroupInput",
+                    name=(
+                        str,
+                        Field(..., description="Name of the payment method group"),
+                    ),
+                    description=(
+                        str | None,
+                        Field(
+                            default=None,
+                            description="Optional description of the group",
+                        ),
+                    ),
+                    payment_method_ids=(
+                        list[str] | None,
+                        Field(
+                            default=None,
+                            description="Optional list of payment method IDs to add to the group",
+                        ),
+                    ),
+                ),
+            },
+            "list_payment_method_groups": {
+                "description": "List payment method groups with optional pagination.",
+                "input_model": create_model(
+                    "ListPaymentMethodGroupsInput",
+                    limit=(
+                        int,
+                        Field(
+                            default=25, description="Number of groups to return (1-100)"
+                        ),
+                    ),
+                    after_cursor=(
+                        str | None,
+                        Field(
+                            default=None,
+                            description="Pagination cursor for results after this cursor",
+                        ),
+                    ),
+                    before_cursor=(
+                        str | None,
+                        Field(
+                            default=None,
+                            description="Pagination cursor for results before this cursor",
+                        ),
+                    ),
+                ),
+            },
+            "retrieve_payment_method_group": {
+                "description": "Retrieve detailed information about a specific payment method group.",
+                "input_model": create_model(
+                    "RetrievePaymentMethodGroupInput",
+                    group_id=(
+                        str,
+                        Field(
+                            ...,
+                            description="The unique identifier for the payment method group",
+                        ),
+                    ),
+                ),
+            },
+            "update_payment_method_group": {
+                "description": "Update an existing payment method group.",
+                "input_model": create_model(
+                    "UpdatePaymentMethodGroupInput",
+                    group_id=(
+                        str,
+                        Field(
+                            ...,
+                            description="The unique identifier for the payment method group",
+                        ),
+                    ),
+                    name=(
+                        str | None,
+                        Field(default=None, description="New name for the group"),
+                    ),
+                    description=(
+                        str | None,
+                        Field(
+                            default=None, description="New description for the group"
+                        ),
+                    ),
+                    payment_method_ids=(
+                        list[str] | None,
+                        Field(
+                            default=None,
+                            description="New list of payment method IDs to set in the group",
+                        ),
+                    ),
+                ),
+            },
+            "remove_payment_method_from_group": {
+                "description": "Remove a payment method from a payment method group.",
+                "input_model": create_model(
+                    "RemovePaymentMethodFromGroupInput",
+                    group_id=(
+                        str,
+                        Field(
+                            ...,
+                            description="The unique identifier for the payment method group",
+                        ),
+                    ),
+                    payment_method_id=(
+                        str,
+                        Field(
+                            ...,
+                            description="The payment method ID to remove from the group",
+                        ),
+                    ),
+                ),
+            },
             "list_refunds": {
                 "description": "List all refunds with optional pagination using cursor-based pagination.",
                 "input_model": create_model(

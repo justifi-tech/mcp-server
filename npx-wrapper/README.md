@@ -64,6 +64,10 @@ This MCP server provides complete payment management capabilities across multipl
 - `get_payout_status` - Quick status check for payouts
 - `get_recent_payouts` - Get the most recent payouts
 
+### Proceed Tools
+- `retrieve_proceed` - Get proceed details by ID
+- `list_proceeds` - List proceeds with pagination
+
 ### Refund Tools
 - `retrieve_refund` - Get refund details by ID
 - `list_refunds` - List all refunds with pagination
@@ -89,10 +93,6 @@ This MCP server provides complete payment management capabilities across multipl
 - `get_sub_account` - Get sub account details by ID
 - `get_sub_account_payout_account` - Get sub account payout account
 - `get_sub_account_settings` - Get sub account settings
-
-### Proceed Tools
-- `retrieve_proceed` - Get proceed details by ID
-- `list_proceeds` - List proceeds with pagination
 
 
 

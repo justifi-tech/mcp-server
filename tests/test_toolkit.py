@@ -71,7 +71,7 @@ class TestJustiFiToolkitAutoDiscovery:
         toolkit = JustiFiToolkit(
             client_id="test_client",
             client_secret="test_secret",
-            enabled_tools=["retrieve_payout", "list_payments"]
+            enabled_tools=["retrieve_payout", "list_payments"],
         )
 
         enabled = toolkit.get_enabled_tools()
@@ -88,9 +88,7 @@ class TestJustiFiToolkitAutoDiscovery:
     def test_get_enabled_tools_with_all(self):
         """Test that 'all' enables all auto-discovered tools."""
         toolkit = JustiFiToolkit(
-            client_id="test_client",
-            client_secret="test_secret",
-            enabled_tools="all"
+            client_id="test_client", client_secret="test_secret", enabled_tools="all"
         )
 
         enabled = toolkit.get_enabled_tools()
@@ -105,7 +103,7 @@ class TestJustiFiToolkitAutoDiscovery:
         toolkit = JustiFiToolkit(
             client_id="test_client",
             client_secret="test_secret",
-            enabled_tools=["retrieve_payout"]
+            enabled_tools=["retrieve_payout"],
         )
 
         summary = toolkit.get_configuration_summary()
@@ -122,7 +120,7 @@ class TestJustiFiToolkitAutoDiscovery:
             JustiFiToolkit(
                 client_id="test_client",
                 client_secret="test_secret",
-                enabled_tools=["nonexistent_tool"]
+                enabled_tools=["nonexistent_tool"],
             )
 
     def test_no_hardcoded_tool_names_remain(self):
@@ -130,14 +128,16 @@ class TestJustiFiToolkitAutoDiscovery:
         import python.toolkit as toolkit_module
 
         # Should not have _TOOL_NAMES attribute after refactor
-        assert not hasattr(toolkit_module, '_TOOL_NAMES')
+        assert not hasattr(toolkit_module, "_TOOL_NAMES")
 
     def test_toolkit_tool_count_matches_config(self):
         """Test that toolkit available tools matches config auto-discovery."""
         from python.config import JustiFiConfig
 
         config = JustiFiConfig(client_id="test", client_secret="test")
-        toolkit = JustiFiToolkit(client_id="test", client_secret="test", enabled_tools="all")
+        toolkit = JustiFiToolkit(
+            client_id="test", client_secret="test", enabled_tools="all"
+        )
 
         config_tools = config.get_available_tools()
         toolkit_summary = toolkit.get_configuration_summary()

@@ -54,17 +54,20 @@ def discover_tools() -> list[str]:
     tool_functions = []
 
     # Get all exported functions from __all__ if available
-    if hasattr(tools, '__all__'):
+    if hasattr(tools, "__all__"):
         # Filter out non-functions and utility functions
         for name in tools.__all__:
-            if name not in ['standardize_response', 'wrap_tool_call']:
+            if name not in ["standardize_response", "wrap_tool_call"]:
                 obj = getattr(tools, name, None)
                 if obj and inspect.iscoroutinefunction(obj):
                     tool_functions.append(name)
     else:
         # Fallback: inspect all public functions
         for name in dir(tools):
-            if not name.startswith('_') and name not in ['standardize_response', 'wrap_tool_call']:
+            if not name.startswith("_") and name not in [
+                "standardize_response",
+                "wrap_tool_call",
+            ]:
                 obj = getattr(tools, name)
                 if inspect.iscoroutinefunction(obj):
                     tool_functions.append(name)
@@ -73,7 +76,9 @@ def discover_tools() -> list[str]:
     return sorted(tool_functions)
 
 
-def register_single_tool(mcp: FastMCP, client: JustiFiClient, tool_name: str, tool_func: Callable) -> None:
+def register_single_tool(
+    mcp: FastMCP, client: JustiFiClient, tool_name: str, tool_func: Callable
+) -> None:
     """Register a single tool with the MCP server.
 
     Args:
@@ -103,7 +108,7 @@ def extract_tool_metadata(tool_func: Callable) -> dict[str, Any]:
     """
     # Get original function if wrapped (handles @traceable and @handle_tool_errors)
     original_func = tool_func
-    while hasattr(original_func, '__wrapped__'):
+    while hasattr(original_func, "__wrapped__"):
         original_func = original_func.__wrapped__
 
     try:
@@ -113,7 +118,7 @@ def extract_tool_metadata(tool_func: Callable) -> dict[str, Any]:
         # Remove 'client' parameter for MCP interface
         filtered_params = []
         for name, param in sig.parameters.items():
-            if name != 'client':
+            if name != "client":
                 filtered_params.append(param)
 
         # Create new signature without client parameter
@@ -122,7 +127,9 @@ def extract_tool_metadata(tool_func: Callable) -> dict[str, Any]:
         # Extract type annotations (excluding client)
         try:
             type_hints = get_type_hints(original_func)
-            annotations = {name: hint for name, hint in type_hints.items() if name != 'client'}
+            annotations = {
+                name: hint for name, hint in type_hints.items() if name != "client"
+            }
         except Exception:
             # Fallback to basic annotations from signature
             annotations = {}
@@ -141,19 +148,18 @@ def extract_tool_metadata(tool_func: Callable) -> dict[str, Any]:
     docstring = inspect.getdoc(tool_func) or f"Execute {tool_func.__name__} operation"
 
     return {
-        'signature': new_sig,
-        'annotations': annotations,
-        'parameters': filtered_params,
-        'docstring': docstring,
-        'return_annotation': sig.return_annotation if 'sig' in locals() else dict[str, Any]
+        "signature": new_sig,
+        "annotations": annotations,
+        "parameters": filtered_params,
+        "docstring": docstring,
+        "return_annotation": sig.return_annotation
+        if "sig" in locals()
+        else dict[str, Any],
     }
 
 
 def create_mcp_function(
-    tool_name: str,
-    tool_func: Callable,
-    client: JustiFiClient,
-    metadata: dict[str, Any]
+    tool_name: str, tool_func: Callable, client: JustiFiClient, metadata: dict[str, Any]
 ) -> Callable:
     """Create MCP function with correct signature and proper error handling.
 
@@ -166,9 +172,9 @@ def create_mcp_function(
     Returns:
         MCP-compatible async function
     """
-    signature = metadata.get('signature')
-    docstring = metadata['docstring']
-    return_annotation = metadata.get('return_annotation', dict[str, Any])
+    signature = metadata.get("signature")
+    docstring = metadata["docstring"]
+    return_annotation = metadata.get("return_annotation", dict[str, Any])
 
     if signature is not None:
         # Create function with preserved signature
@@ -188,8 +194,8 @@ def create_mcp_function(
     mcp_tool_wrapper.__name__ = tool_name
     mcp_tool_wrapper.__doc__ = docstring
     mcp_tool_wrapper.__annotations__ = {
-        'return': return_annotation,
-        **metadata.get('annotations', {})
+        "return": return_annotation,
+        **metadata.get("annotations", {}),
     }
     mcp_tool_wrapper.__qualname__ = tool_name
 

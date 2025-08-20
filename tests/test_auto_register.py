@@ -38,17 +38,33 @@ class TestDiscoverTools:
 
         # Should find known tools from different modules
         expected_tools = {
-            'retrieve_payout', 'list_payouts', 'get_payout_status', 'get_recent_payouts',
-            'retrieve_payment', 'list_payments',
-            'create_payment_method_group', 'list_payment_method_groups',
-            'retrieve_payment_method', 'retrieve_payment_method_group',
-            'update_payment_method_group', 'remove_payment_method_from_group',
-            'list_refunds', 'retrieve_refund', 'list_payment_refunds',
-            'list_balance_transactions', 'retrieve_balance_transaction',
-            'list_disputes', 'retrieve_dispute',
-            'list_checkouts', 'retrieve_checkout',
-            'list_sub_accounts', 'get_sub_account', 'get_sub_account_payout_account',
-            'get_sub_account_settings', 'list_proceeds', 'retrieve_proceed'
+            "retrieve_payout",
+            "list_payouts",
+            "get_payout_status",
+            "get_recent_payouts",
+            "retrieve_payment",
+            "list_payments",
+            "create_payment_method_group",
+            "list_payment_method_groups",
+            "retrieve_payment_method",
+            "retrieve_payment_method_group",
+            "update_payment_method_group",
+            "remove_payment_method_from_group",
+            "list_refunds",
+            "retrieve_refund",
+            "list_payment_refunds",
+            "list_balance_transactions",
+            "retrieve_balance_transaction",
+            "list_disputes",
+            "retrieve_dispute",
+            "list_checkouts",
+            "retrieve_checkout",
+            "list_sub_accounts",
+            "get_sub_account",
+            "get_sub_account_payout_account",
+            "get_sub_account_settings",
+            "list_proceeds",
+            "retrieve_proceed",
         }
 
         assert expected_tools.issubset(set(tools))
@@ -58,7 +74,7 @@ class TestDiscoverTools:
         tools = discover_tools()
 
         # Should not include utility functions
-        excluded = {'standardize_response', 'wrap_tool_call'}
+        excluded = {"standardize_response", "wrap_tool_call"}
         for excluded_func in excluded:
             assert excluded_func not in tools
 
@@ -73,24 +89,28 @@ class TestExtractToolMetadata:
         metadata = extract_tool_metadata(retrieve_payout)
 
         # Should extract docstring
-        assert 'docstring' in metadata
-        assert len(metadata['docstring']) > 10
+        assert "docstring" in metadata
+        assert len(metadata["docstring"]) > 10
         # Check for payout-related content (might be in wrapped function docstring)
-        docstring_lower = metadata['docstring'].lower()
-        assert 'payout' in docstring_lower or 'retrieve' in docstring_lower or 'operation' in docstring_lower
+        docstring_lower = metadata["docstring"].lower()
+        assert (
+            "payout" in docstring_lower
+            or "retrieve" in docstring_lower
+            or "operation" in docstring_lower
+        )
 
         # Should extract signature
-        assert 'signature' in metadata
-        assert metadata['signature'] is not None
+        assert "signature" in metadata
+        assert metadata["signature"] is not None
 
         # Should extract annotations (excluding client)
-        assert 'annotations' in metadata
-        assert 'client' not in metadata['annotations']
+        assert "annotations" in metadata
+        assert "client" not in metadata["annotations"]
 
         # Should have parameters without client
-        assert 'parameters' in metadata
-        param_names = [p.name for p in metadata['parameters']]
-        assert 'client' not in param_names
+        assert "parameters" in metadata
+        param_names = [p.name for p in metadata["parameters"]]
+        assert "client" not in param_names
         # Check if payout_id is in the parameters (wrapped function might have different signature)
         assert len(param_names) > 0  # Should have at least some parameters
 
@@ -102,26 +122,26 @@ class TestExtractToolMetadata:
         metadata = extract_tool_metadata(retrieve_payout)
 
         # Should still extract proper metadata despite decorators
-        assert metadata['docstring'] is not None
-        assert metadata['signature'] is not None
-        assert len(metadata['parameters']) > 0
+        assert metadata["docstring"] is not None
+        assert metadata["signature"] is not None
+        assert len(metadata["parameters"]) > 0
 
     def test_extract_tool_metadata_fallback_on_error(self):
         """Test metadata extraction gracefully handles errors."""
         # Create a mock function that will cause signature extraction to fail
         mock_func = MagicMock()
-        mock_func.__name__ = 'test_func'
+        mock_func.__name__ = "test_func"
         mock_func.__doc__ = None
         del mock_func.__wrapped__  # Ensure no wrapped attribute
 
-        with patch('inspect.signature', side_effect=Exception("Test error")):
+        with patch("inspect.signature", side_effect=Exception("Test error")):
             metadata = extract_tool_metadata(mock_func)
 
         # Should provide fallback values
-        assert metadata['docstring'] == "Execute test_func operation"
-        assert metadata['signature'] is None
-        assert metadata['annotations'] == {}
-        assert metadata['parameters'] == []
+        assert metadata["docstring"] == "Execute test_func operation"
+        assert metadata["signature"] is None
+        assert metadata["annotations"] == {}
+        assert metadata["parameters"] == []
 
 
 class TestCreateMcpFunction:
@@ -134,18 +154,20 @@ class TestCreateMcpFunction:
         client = JustiFiClient("test_client", "test_secret")
         metadata = extract_tool_metadata(retrieve_payout)
 
-        mcp_func = create_mcp_function("retrieve_payout", retrieve_payout, client, metadata)
+        mcp_func = create_mcp_function(
+            "retrieve_payout", retrieve_payout, client, metadata
+        )
 
         # Should have correct name and docstring
         assert mcp_func.__name__ == "retrieve_payout"
-        assert mcp_func.__doc__ == metadata['docstring']
+        assert mcp_func.__doc__ == metadata["docstring"]
 
         # Should be a coroutine function
         assert inspect.iscoroutinefunction(mcp_func)
 
         # Should have preserved signature if available
-        if metadata['signature']:
-            assert mcp_func.__signature__ == metadata['signature']
+        if metadata["signature"]:
+            assert mcp_func.__signature__ == metadata["signature"]
 
     def test_create_mcp_function_with_fallback_metadata(self):
         """Test MCP function creation with fallback metadata."""
@@ -155,11 +177,11 @@ class TestCreateMcpFunction:
 
         # Create metadata with no signature (simulates extraction failure)
         metadata = {
-            'signature': None,
-            'annotations': {},
-            'parameters': [],
-            'docstring': 'Test function',
-            'return_annotation': dict[str, Any]
+            "signature": None,
+            "annotations": {},
+            "parameters": [],
+            "docstring": "Test function",
+            "return_annotation": dict[str, Any],
         }
 
         mcp_func = create_mcp_function("test_func", retrieve_payout, client, metadata)
@@ -177,10 +199,14 @@ class TestCreateMcpFunction:
         client = JustiFiClient("test_client", "test_secret")
         metadata = extract_tool_metadata(retrieve_payout)
 
-        mcp_func = create_mcp_function("retrieve_payout", retrieve_payout, client, metadata)
+        mcp_func = create_mcp_function(
+            "retrieve_payout", retrieve_payout, client, metadata
+        )
 
         # Mock wrap_tool_call to verify it's called correctly
-        with patch('modelcontextprotocol.auto_register.wrap_tool_call', new_callable=AsyncMock) as mock_wrap:
+        with patch(
+            "modelcontextprotocol.auto_register.wrap_tool_call", new_callable=AsyncMock
+        ) as mock_wrap:
             mock_wrap.return_value = {"test": "result"}
 
             result = await mcp_func("test_payout_id")
@@ -218,9 +244,12 @@ class TestRegisterSingleTool:
 
         # Mock function that will cause errors
         mock_func = MagicMock()
-        mock_func.__name__ = 'failing_func'
+        mock_func.__name__ = "failing_func"
 
-        with patch('modelcontextprotocol.auto_register.extract_tool_metadata', side_effect=Exception("Test error")):
+        with patch(
+            "modelcontextprotocol.auto_register.extract_tool_metadata",
+            side_effect=Exception("Test error"),
+        ):
             # Should not raise, but handle gracefully
             try:
                 register_single_tool(mcp, client, "failing_func", mock_func)
@@ -238,35 +267,46 @@ class TestAutoRegisterTools:
         mcp = MagicMock(spec=FastMCP)
         client = JustiFiClient("test_client", "test_secret")
 
-        with patch('modelcontextprotocol.auto_register.discover_tools') as mock_discover:
-            mock_discover.return_value = ['retrieve_payout', 'list_payments']
+        with patch(
+            "modelcontextprotocol.auto_register.discover_tools"
+        ) as mock_discover:
+            mock_discover.return_value = ["retrieve_payout", "list_payments"]
 
-            with patch('modelcontextprotocol.auto_register.register_single_tool') as mock_register:
+            with patch(
+                "modelcontextprotocol.auto_register.register_single_tool"
+            ) as mock_register:
                 auto_register_tools(mcp, client)
 
                 # Should call register_single_tool for each discovered tool
                 assert mock_register.call_count == 2
                 # Check that register_single_tool was called with correct tool names
-                call_args = [call[0][2] for call in mock_register.call_args_list]  # Extract tool names
-                assert 'retrieve_payout' in call_args
-                assert 'list_payments' in call_args
+                call_args = [
+                    call[0][2] for call in mock_register.call_args_list
+                ]  # Extract tool names
+                assert "retrieve_payout" in call_args
+                assert "list_payments" in call_args
 
     def test_auto_register_tools_continues_on_individual_failures(self):
         """Test auto-registration continues when individual tool registration fails."""
         mcp = MagicMock(spec=FastMCP)
         client = JustiFiClient("test_client", "test_secret")
 
-        with patch('modelcontextprotocol.auto_register.discover_tools') as mock_discover:
-            mock_discover.return_value = ['tool1', 'tool2', 'tool3']
+        with patch(
+            "modelcontextprotocol.auto_register.discover_tools"
+        ) as mock_discover:
+            mock_discover.return_value = ["tool1", "tool2", "tool3"]
 
-            with patch('modelcontextprotocol.auto_register.register_single_tool') as mock_register:
-                with patch('python.tools.tool1', create=True), \
-                     patch('python.tools.tool2', create=True), \
-                     patch('python.tools.tool3', create=True):
-
+            with patch(
+                "modelcontextprotocol.auto_register.register_single_tool"
+            ) as mock_register:
+                with (
+                    patch("python.tools.tool1", create=True),
+                    patch("python.tools.tool2", create=True),
+                    patch("python.tools.tool3", create=True),
+                ):
                     # Make the second tool registration fail
                     def side_effect(mcp, client, tool_name, tool_func):
-                        if tool_name == 'tool2':
+                        if tool_name == "tool2":
                             raise Exception("Registration failed")
 
                     mock_register.side_effect = side_effect
@@ -298,16 +338,19 @@ class TestIntegration:
     async def test_full_auto_registration_integration(self):
         """Test full integration of auto-registration system."""
         # Set environment variable for auto-registration
-        os.environ['MCP_AUTO_REGISTER'] = 'true'
+        os.environ["MCP_AUTO_REGISTER"] = "true"
 
         try:
             from modelcontextprotocol.server import create_mcp_server
 
             # Mock environment variables for JustiFi client
-            with patch.dict(os.environ, {
-                'JUSTIFI_CLIENT_ID': 'test_client',
-                'JUSTIFI_CLIENT_SECRET': 'test_secret'
-            }):
+            with patch.dict(
+                os.environ,
+                {
+                    "JUSTIFI_CLIENT_ID": "test_client",
+                    "JUSTIFI_CLIENT_SECRET": "test_secret",
+                },
+            ):
                 # Should create server without errors
                 server = create_mcp_server()
                 assert server is not None
@@ -317,18 +360,20 @@ class TestIntegration:
 
         finally:
             # Clean up environment
-            os.environ.pop('MCP_AUTO_REGISTER', None)
+            os.environ.pop("MCP_AUTO_REGISTER", None)
 
     def test_feature_flag_fallback_to_manual(self):
         """Test that feature flag allows fallback to manual registration."""
         # Set environment variable to disable auto-registration
-        os.environ['MCP_AUTO_REGISTER'] = 'false'
+        os.environ["MCP_AUTO_REGISTER"] = "false"
 
         try:
             mcp = MagicMock(spec=FastMCP)
             client = JustiFiClient("test_client", "test_secret")
 
-            with patch('modelcontextprotocol.server.register_tools_manual') as mock_manual:
+            with patch(
+                "modelcontextprotocol.server.register_tools_manual"
+            ) as mock_manual:
                 from modelcontextprotocol.server import register_tools
 
                 register_tools(mcp, client)
@@ -338,4 +383,4 @@ class TestIntegration:
 
         finally:
             # Clean up environment
-            os.environ.pop('MCP_AUTO_REGISTER', None)
+            os.environ.pop("MCP_AUTO_REGISTER", None)

@@ -41,11 +41,12 @@ def register_tools(mcp: FastMCP, client: JustiFiClient) -> None:
     """Register all JustiFi tools with FastMCP server."""
 
     # Check for auto-registration feature flag
-    use_auto_register = os.getenv('MCP_AUTO_REGISTER', 'true').lower() == 'true'
+    use_auto_register = os.getenv("MCP_AUTO_REGISTER", "true").lower() == "true"
 
     if use_auto_register:
         # Use automatic registration system
         from .auto_register import auto_register_tools
+
         auto_register_tools(mcp, client)
     else:
         # Fall back to manual registration

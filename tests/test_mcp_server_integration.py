@@ -16,11 +16,14 @@ class TestMcpServerIntegration:
     async def test_auto_registered_server_startup(self):
         """Test that auto-registered MCP server starts successfully."""
         # Set test environment variables
-        with patch.dict(os.environ, {
-            'JUSTIFI_CLIENT_ID': 'test_client',
-            'JUSTIFI_CLIENT_SECRET': 'test_secret',
-            'MCP_AUTO_REGISTER': 'true'
-        }):
+        with patch.dict(
+            os.environ,
+            {
+                "JUSTIFI_CLIENT_ID": "test_client",
+                "JUSTIFI_CLIENT_SECRET": "test_secret",
+                "MCP_AUTO_REGISTER": "true",
+            },
+        ):
             from modelcontextprotocol.server import create_mcp_server
 
             # Should create server without errors
@@ -32,11 +35,14 @@ class TestMcpServerIntegration:
     def test_manual_registration_server_startup(self):
         """Test that manual registration server starts successfully."""
         # Set test environment variables with manual registration
-        with patch.dict(os.environ, {
-            'JUSTIFI_CLIENT_ID': 'test_client',
-            'JUSTIFI_CLIENT_SECRET': 'test_secret',
-            'MCP_AUTO_REGISTER': 'false'
-        }):
+        with patch.dict(
+            os.environ,
+            {
+                "JUSTIFI_CLIENT_ID": "test_client",
+                "JUSTIFI_CLIENT_SECRET": "test_secret",
+                "MCP_AUTO_REGISTER": "false",
+            },
+        ):
             from modelcontextprotocol.server import create_mcp_server
 
             # Should create server without errors
@@ -56,8 +62,9 @@ class TestMcpServerIntegration:
 
         # Filter out utility functions
         expected_tools = [
-            name for name in tools_all
-            if name not in ['standardize_response', 'wrap_tool_call']
+            name
+            for name in tools_all
+            if name not in ["standardize_response", "wrap_tool_call"]
         ]
 
         # Auto-registration should find all exported tool functions
@@ -76,10 +83,11 @@ class TestMcpServerIntegration:
     def test_server_creation_with_partial_credentials_fails(self):
         """Test that server creation fails with partial credentials."""
         # Only provide client_id, not secret
-        with patch.dict(os.environ, {
-            'JUSTIFI_CLIENT_ID': 'test_client',
-            'MCP_AUTO_REGISTER': 'true'
-        }, clear=True):
+        with patch.dict(
+            os.environ,
+            {"JUSTIFI_CLIENT_ID": "test_client", "MCP_AUTO_REGISTER": "true"},
+            clear=True,
+        ):
             from modelcontextprotocol.server import create_mcp_server
 
             # Should raise ValueError for missing secret (pattern for pydantic validation error)
@@ -88,13 +96,20 @@ class TestMcpServerIntegration:
 
     def test_feature_flag_defaults_to_enabled(self):
         """Test that auto-registration is enabled by default."""
-        with patch.dict(os.environ, {
-            'JUSTIFI_CLIENT_ID': 'test_client',
-            'JUSTIFI_CLIENT_SECRET': 'test_secret'
-        }):
+        with patch.dict(
+            os.environ,
+            {
+                "JUSTIFI_CLIENT_ID": "test_client",
+                "JUSTIFI_CLIENT_SECRET": "test_secret",
+            },
+        ):
             # Don't set MCP_AUTO_REGISTER - should default to 'true'
-            with patch('modelcontextprotocol.auto_register.auto_register_tools') as mock_auto:
-                with patch('modelcontextprotocol.server.register_tools_manual') as mock_manual:
+            with patch(
+                "modelcontextprotocol.auto_register.auto_register_tools"
+            ) as mock_auto:
+                with patch(
+                    "modelcontextprotocol.server.register_tools_manual"
+                ) as mock_manual:
                     from fastmcp import FastMCP
 
                     from modelcontextprotocol.server import register_tools
@@ -119,11 +134,19 @@ class TestMcpServerIntegration:
         client = JustiFiClient("test_client", "test_secret")
 
         # Test values that should enable auto-registration
-        auto_values = ['true', 'True', 'TRUE']  # Only test values that work with .lower() == 'true'
+        auto_values = [
+            "true",
+            "True",
+            "TRUE",
+        ]  # Only test values that work with .lower() == 'true'
         for value in auto_values:
-            with patch.dict(os.environ, {'MCP_AUTO_REGISTER': value}):
-                with patch('modelcontextprotocol.auto_register.auto_register_tools') as mock_auto:
-                    with patch('modelcontextprotocol.server.register_tools_manual') as mock_manual:
+            with patch.dict(os.environ, {"MCP_AUTO_REGISTER": value}):
+                with patch(
+                    "modelcontextprotocol.auto_register.auto_register_tools"
+                ) as mock_auto:
+                    with patch(
+                        "modelcontextprotocol.server.register_tools_manual"
+                    ) as mock_manual:
                         from modelcontextprotocol.server import register_tools
 
                         register_tools(mcp, client)
@@ -132,11 +155,15 @@ class TestMcpServerIntegration:
                         mock_manual.assert_not_called()
 
         # Test values that should disable auto-registration
-        manual_values = ['false', 'False', 'FALSE', 'no', '0', 'disabled']
+        manual_values = ["false", "False", "FALSE", "no", "0", "disabled"]
         for value in manual_values:
-            with patch.dict(os.environ, {'MCP_AUTO_REGISTER': value}):
-                with patch('modelcontextprotocol.auto_register.auto_register_tools') as mock_auto:
-                    with patch('modelcontextprotocol.server.register_tools_manual') as mock_manual:
+            with patch.dict(os.environ, {"MCP_AUTO_REGISTER": value}):
+                with patch(
+                    "modelcontextprotocol.auto_register.auto_register_tools"
+                ) as mock_auto:
+                    with patch(
+                        "modelcontextprotocol.server.register_tools_manual"
+                    ) as mock_manual:
                         from modelcontextprotocol.server import register_tools
 
                         register_tools(mcp, client)
@@ -150,15 +177,21 @@ class TestMcpServerRobustness:
 
     def test_auto_registration_continues_on_tool_import_errors(self):
         """Test that auto-registration continues if some tool imports fail."""
-        with patch.dict(os.environ, {
-            'JUSTIFI_CLIENT_ID': 'test_client',
-            'JUSTIFI_CLIENT_SECRET': 'test_secret',
-            'MCP_AUTO_REGISTER': 'true'
-        }):
+        with patch.dict(
+            os.environ,
+            {
+                "JUSTIFI_CLIENT_ID": "test_client",
+                "JUSTIFI_CLIENT_SECRET": "test_secret",
+                "MCP_AUTO_REGISTER": "true",
+            },
+        ):
             # Mock a specific tool to fail during registration
-            with patch('modelcontextprotocol.auto_register.register_single_tool') as mock_register:
+            with patch(
+                "modelcontextprotocol.auto_register.register_single_tool"
+            ) as mock_register:
+
                 def side_effect(mcp, client, tool_name, tool_func):
-                    if tool_name == 'retrieve_payout':
+                    if tool_name == "retrieve_payout":
                         raise Exception("Tool registration failed")
 
                 mock_register.side_effect = side_effect
@@ -173,11 +206,14 @@ class TestMcpServerRobustness:
         """Test that server startup performance is reasonable."""
         import time
 
-        with patch.dict(os.environ, {
-            'JUSTIFI_CLIENT_ID': 'test_client',
-            'JUSTIFI_CLIENT_SECRET': 'test_secret',
-            'MCP_AUTO_REGISTER': 'true'
-        }):
+        with patch.dict(
+            os.environ,
+            {
+                "JUSTIFI_CLIENT_ID": "test_client",
+                "JUSTIFI_CLIENT_SECRET": "test_secret",
+                "MCP_AUTO_REGISTER": "true",
+            },
+        ):
             from modelcontextprotocol.server import create_mcp_server
 
             start_time = time.time()
@@ -191,11 +227,14 @@ class TestMcpServerRobustness:
 
     def test_tool_registration_idempotency(self):
         """Test that tools can be registered multiple times without issues."""
-        with patch.dict(os.environ, {
-            'JUSTIFI_CLIENT_ID': 'test_client',
-            'JUSTIFI_CLIENT_SECRET': 'test_secret',
-            'MCP_AUTO_REGISTER': 'true'
-        }):
+        with patch.dict(
+            os.environ,
+            {
+                "JUSTIFI_CLIENT_ID": "test_client",
+                "JUSTIFI_CLIENT_SECRET": "test_secret",
+                "MCP_AUTO_REGISTER": "true",
+            },
+        ):
             from modelcontextprotocol.server import create_mcp_server, register_tools
             from python.core import JustiFiClient
 
@@ -215,11 +254,14 @@ class TestBackwardCompatibility:
 
     def test_manual_registration_preserves_all_tools(self):
         """Test that manual registration still includes all expected tools."""
-        with patch.dict(os.environ, {
-            'JUSTIFI_CLIENT_ID': 'test_client',
-            'JUSTIFI_CLIENT_SECRET': 'test_secret',
-            'MCP_AUTO_REGISTER': 'false'
-        }):
+        with patch.dict(
+            os.environ,
+            {
+                "JUSTIFI_CLIENT_ID": "test_client",
+                "JUSTIFI_CLIENT_SECRET": "test_secret",
+                "MCP_AUTO_REGISTER": "false",
+            },
+        ):
             from modelcontextprotocol.server import create_mcp_server
 
             # Manual registration should still work
@@ -239,14 +281,16 @@ class TestBackwardCompatibility:
 
         # Test auto-registration
         auto_server = FastMCP("test-auto")
-        with patch.dict(os.environ, {'MCP_AUTO_REGISTER': 'true'}):
+        with patch.dict(os.environ, {"MCP_AUTO_REGISTER": "true"}):
             from modelcontextprotocol.server import register_tools
+
             register_tools(auto_server, client)
 
         # Test manual registration
         manual_server = FastMCP("test-manual")
-        with patch.dict(os.environ, {'MCP_AUTO_REGISTER': 'false'}):
+        with patch.dict(os.environ, {"MCP_AUTO_REGISTER": "false"}):
             from modelcontextprotocol.server import register_tools
+
             register_tools(manual_server, client)
 
         # Both should be FastMCP instances (detailed comparison would require

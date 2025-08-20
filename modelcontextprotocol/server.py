@@ -1,5 +1,6 @@
 """FastMCP Server Implementation for JustiFi."""
 
+import os
 from typing import Any
 
 from fastmcp import FastMCP
@@ -38,6 +39,21 @@ def create_mcp_server() -> FastMCP:
 
 def register_tools(mcp: FastMCP, client: JustiFiClient) -> None:
     """Register all JustiFi tools with FastMCP server."""
+
+    # Check for auto-registration feature flag
+    use_auto_register = os.getenv('MCP_AUTO_REGISTER', 'true').lower() == 'true'
+
+    if use_auto_register:
+        # Use automatic registration system
+        from .auto_register import auto_register_tools
+        auto_register_tools(mcp, client)
+    else:
+        # Fall back to manual registration
+        register_tools_manual(mcp, client)
+
+
+def register_tools_manual(mcp: FastMCP, client: JustiFiClient) -> None:
+    """Manual tool registration (legacy/fallback method)."""
 
     # Payout tools
     @mcp.tool

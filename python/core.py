@@ -180,6 +180,7 @@ class JustiFiClient:
         params: dict[str, Any] | None = None,
         data: dict[str, Any] | None = None,
         idempotency_key: str | None = None,
+        extra_headers: dict[str, str] | None = None,
         retries: int = 3,
     ) -> dict[str, Any]:
         """Make an authenticated request to the JustiFi API with retry logic.
@@ -190,6 +191,7 @@ class JustiFiClient:
             params: Query parameters
             data: Request body data
             idempotency_key: Optional idempotency key
+            extra_headers: Additional headers to include in the request
             retries: Number of retry attempts for transient errors
 
         Returns:
@@ -211,7 +213,7 @@ class JustiFiClient:
         for attempt in range(retries + 1):
             try:
                 return await self._make_request(
-                    method, url, params, data, idempotency_key
+                    method, url, params, data, idempotency_key, extra_headers
                 )
 
             except httpx.HTTPStatusError as e:
@@ -373,6 +375,7 @@ class JustiFiClient:
         params: dict[str, Any] | None,
         data: dict[str, Any] | None,
         idempotency_key: str | None,
+        extra_headers: dict[str, str] | None,
     ) -> dict[str, Any]:
         """Make the actual HTTP request with current token."""
         token = await self.get_access_token()
@@ -382,6 +385,8 @@ class JustiFiClient:
         }
         if idempotency_key:
             headers["Idempotency-Key"] = idempotency_key
+        if extra_headers:
+            headers.update(extra_headers)
 
         async with httpx.AsyncClient(timeout=30) as client:
             resp = await client.request(

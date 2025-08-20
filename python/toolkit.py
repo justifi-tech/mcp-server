@@ -13,37 +13,6 @@ if TYPE_CHECKING:
 
 from .config import JustiFiConfig
 
-# Simple tool registry for the toolkit
-_TOOL_NAMES = [
-    "list_balance_transactions",
-    "retrieve_balance_transaction",
-    "list_checkouts",
-    "retrieve_checkout",
-    "list_disputes",
-    "retrieve_dispute",
-    "retrieve_payment_method",
-    "create_payment_method_group",
-    "list_payment_method_groups",
-    "retrieve_payment_method_group",
-    "update_payment_method_group",
-    "remove_payment_method_from_group",
-    "list_payments",
-    "retrieve_payment",
-    "get_payout_status",
-    "get_recent_payouts",
-    "list_payouts",
-    "retrieve_payout",
-    "list_payment_refunds",
-    "list_proceeds",
-    "retrieve_proceed",
-    "list_refunds",
-    "retrieve_refund",
-    "get_sub_account",
-    "get_sub_account_payout_account",
-    "get_sub_account_settings",
-    "list_sub_accounts",
-]
-
 
 class JustiFiToolkit:
     """Multi-framework toolkit for JustiFi payment operations.
@@ -116,8 +85,11 @@ class JustiFiToolkit:
         # Import tools dynamically to avoid circular imports
         from . import tools
 
+        # Get all available tools from config auto-discovery
+        available_tools = self.config.get_available_tools()
+
         for tool_name in enabled_tool_names:
-            if tool_name in _TOOL_NAMES:
+            if tool_name in available_tools:
                 tool_func = getattr(tools, tool_name, None)
                 if tool_func:
                     enabled_tools[tool_name] = tool_func
@@ -135,7 +107,7 @@ class JustiFiToolkit:
             "rate_limit": self.config.context.rate_limit,
             "enabled_tools": list(enabled_tools.keys()),
             "total_tools": len(enabled_tools),
-            "available_tools": _TOOL_NAMES,
+            "available_tools": list(self.config.get_available_tools()),
         }
 
     # Framework-specific methods

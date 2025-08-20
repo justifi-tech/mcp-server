@@ -60,3 +60,87 @@ class TestJustiFiToolkitCriticalErrors:
         # Test that trying to execute a tool with invalid input raises an error
         with pytest.raises(ValidationError):
             await toolkit.execute_langchain_tool("retrieve_payout", payout_id="")
+
+
+class TestJustiFiToolkitAutoDiscovery:
+    """Test toolkit auto-discovery functionality from Phase 2."""
+
+    def test_get_enabled_tools_uses_auto_discovery(self):
+        """Test that get_enabled_tools uses auto-discovery instead of hardcoded list."""
+        # Create toolkit with specific tools enabled
+        toolkit = JustiFiToolkit(
+            client_id="test_client",
+            client_secret="test_secret",
+            enabled_tools=["retrieve_payout", "list_payments"]
+        )
+
+        enabled = toolkit.get_enabled_tools()
+
+        # Should have exactly the requested tools
+        assert len(enabled) == 2
+        assert "retrieve_payout" in enabled
+        assert "list_payments" in enabled
+
+        # Tools should be callable functions
+        assert callable(enabled["retrieve_payout"])
+        assert callable(enabled["list_payments"])
+
+    def test_get_enabled_tools_with_all(self):
+        """Test that 'all' enables all auto-discovered tools."""
+        toolkit = JustiFiToolkit(
+            client_id="test_client",
+            client_secret="test_secret",
+            enabled_tools="all"
+        )
+
+        enabled = toolkit.get_enabled_tools()
+        available = toolkit.config.get_available_tools()
+
+        # Should enable all available tools
+        assert len(enabled) == len(available)
+        assert set(enabled.keys()) == available
+
+    def test_get_configuration_summary_uses_auto_discovery(self):
+        """Test that configuration summary uses auto-discovery."""
+        toolkit = JustiFiToolkit(
+            client_id="test_client",
+            client_secret="test_secret",
+            enabled_tools=["retrieve_payout"]
+        )
+
+        summary = toolkit.get_configuration_summary()
+
+        # Should use auto-discovered available tools
+        available_tools = summary["available_tools"]
+        assert len(available_tools) >= 27
+        assert "retrieve_payout" in available_tools
+        assert "create_payment_method_group" in available_tools
+
+    def test_tool_validation_through_config(self):
+        """Test that invalid tools are caught by config validation."""
+        with pytest.raises(ValueError, match="Unknown tool 'nonexistent_tool'"):
+            JustiFiToolkit(
+                client_id="test_client",
+                client_secret="test_secret",
+                enabled_tools=["nonexistent_tool"]
+            )
+
+    def test_no_hardcoded_tool_names_remain(self):
+        """Test that no hardcoded _TOOL_NAMES reference exists."""
+        import python.toolkit as toolkit_module
+
+        # Should not have _TOOL_NAMES attribute after refactor
+        assert not hasattr(toolkit_module, '_TOOL_NAMES')
+
+    def test_toolkit_tool_count_matches_config(self):
+        """Test that toolkit available tools matches config auto-discovery."""
+        from python.config import JustiFiConfig
+
+        config = JustiFiConfig(client_id="test", client_secret="test")
+        toolkit = JustiFiToolkit(client_id="test", client_secret="test", enabled_tools="all")
+
+        config_tools = config.get_available_tools()
+        toolkit_summary = toolkit.get_configuration_summary()
+        toolkit_available = set(toolkit_summary["available_tools"])
+
+        assert config_tools == toolkit_available

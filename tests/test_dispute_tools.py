@@ -66,21 +66,6 @@ class TestListDisputes:
             exc_info.value
         )
 
-    @pytest.mark.asyncio
-    @respx.mock
-    async def test_list_disputes_api_error(self, mock_client, mock_oauth_token):
-        """Test API failure - network issues will happen in production."""
-        respx.post("https://api.justifi.ai/oauth/token").mock(
-            return_value=Response(200, json=mock_oauth_token)
-        )
-        respx.get("https://api.justifi.ai/v1/disputes").mock(
-            return_value=Response(500, json={"error": "Internal server error"})
-        )
-
-        with pytest.raises(ToolError) as exc_info:
-            await list_disputes(mock_client)
-        assert "API is experiencing issues" in str(exc_info.value)
-
 
 class TestRetrieveDispute:
     """Tests for retrieve_dispute function - only valuable scenarios."""

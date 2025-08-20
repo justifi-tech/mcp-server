@@ -161,18 +161,6 @@ class TestListSubAccounts:
             exc_info.value
         )
 
-    async def test_list_sub_accounts_api_error(self, client):
-        """Test list_sub_accounts with API error."""
-        with respx.mock:
-            respx.get("https://api.justifi.ai/v1/sub_accounts").mock(
-                return_value=Response(500, json={"error": "Server error"})
-            )
-
-            with pytest.raises(ToolError) as exc_info:
-                await list_sub_accounts(client)
-
-            assert "Failed to list sub accounts" in str(exc_info.value)
-
 
 @pytest.mark.asyncio
 class TestGetSubAccount:

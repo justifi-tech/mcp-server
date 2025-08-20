@@ -14,8 +14,33 @@ from .base import ToolError, ValidationError
 from .response_formatter import standardize_response
 
 
+def _validate_sub_account_id(sub_account_id: str) -> None:
+    """Validate sub_account_id parameter.
+
+    Args:
+        sub_account_id: The sub account ID to validate
+
+    Raises:
+        ValidationError: If sub_account_id is invalid
+    """
+    if not sub_account_id or not isinstance(sub_account_id, str):
+        raise ValidationError(
+            "sub_account_id is required and must be a non-empty string",
+            field="sub_account_id",
+            value=sub_account_id,
+        )
+
+    if not sub_account_id.strip():
+        raise ValidationError(
+            "sub_account_id cannot be empty or whitespace",
+            field="sub_account_id",
+            value=sub_account_id,
+        )
+
+
 async def create_payment_method_group(
     client: JustiFiClient,
+    sub_account_id: str,
     name: str,
     description: str | None = None,
     payment_method_ids: list[str] | None = None,
@@ -24,6 +49,7 @@ async def create_payment_method_group(
 
     Args:
         client: JustiFi API client
+        sub_account_id: The sub account ID this group belongs to (required)
         name: Name of the payment method group (required)
         description: Optional description of the group
         payment_method_ids: Optional list of payment method IDs to add to the group
@@ -35,6 +61,8 @@ async def create_payment_method_group(
         ValidationError: If parameters are invalid
         ToolError: If group creation fails
     """
+    _validate_sub_account_id(sub_account_id)
+
     if not name or not isinstance(name, str):
         raise ValidationError(
             "name is required and must be a non-empty string",
@@ -84,7 +112,12 @@ async def create_payment_method_group(
             ]
 
         # Call JustiFi API to create payment method group
-        result = await client.request("POST", "/v1/payment_method_groups", data=payload)
+        result = await client.request(
+            "POST",
+            "/v1/payment_method_groups",
+            data=payload,
+            extra_headers={"Sub-Account": sub_account_id.strip()},
+        )
         return standardize_response(result, "create_payment_method_group")
 
     except Exception as e:
@@ -96,6 +129,7 @@ async def create_payment_method_group(
 
 async def list_payment_method_groups(
     client: JustiFiClient,
+    sub_account_id: str,
     limit: int = 25,
     after_cursor: str | None = None,
     before_cursor: str | None = None,
@@ -104,6 +138,7 @@ async def list_payment_method_groups(
 
     Args:
         client: JustiFi API client
+        sub_account_id: The sub account ID to list groups for (required)
         limit: Number of groups to return (1-100, default: 25)
         after_cursor: Cursor for pagination - returns results after this cursor
         before_cursor: Cursor for pagination - returns results before this cursor
@@ -115,6 +150,9 @@ async def list_payment_method_groups(
         ValidationError: If parameters are invalid
         ToolError: If group listing fails
     """
+    # Validate sub_account_id
+    _validate_sub_account_id(sub_account_id)
+
     # Validate limit
     if not isinstance(limit, int) or limit < 1 or limit > 100:
         raise ValidationError(
@@ -154,7 +192,12 @@ async def list_payment_method_groups(
             params["before_cursor"] = before_cursor
 
         # Call JustiFi API to list payment method groups
-        result = await client.request("GET", "/v1/payment_method_groups", params=params)
+        result = await client.request(
+            "GET",
+            "/v1/payment_method_groups",
+            params=params,
+            extra_headers={"Sub-Account": sub_account_id.strip()},
+        )
         return standardize_response(result, "list_payment_method_groups")
 
     except Exception as e:
@@ -165,21 +208,24 @@ async def list_payment_method_groups(
 
 
 async def retrieve_payment_method_group(
-    client: JustiFiClient, group_id: str
+    client: JustiFiClient, sub_account_id: str, group_id: str
 ) -> dict[str, Any]:
     """Retrieve detailed information about a specific payment method group.
 
     Args:
         client: JustiFi API client
+        sub_account_id: The sub account ID that owns the group (required)
         group_id: The unique identifier for the payment method group
 
     Returns:
         Payment method group object with ID, name, payment methods, and metadata
 
     Raises:
-        ValidationError: If group_id is invalid
+        ValidationError: If parameters are invalid
         ToolError: If group retrieval fails
     """
+    _validate_sub_account_id(sub_account_id)
+
     if not group_id or not isinstance(group_id, str):
         raise ValidationError(
             "group_id is required and must be a non-empty string",
@@ -196,7 +242,11 @@ async def retrieve_payment_method_group(
 
     try:
         # Call JustiFi API to retrieve payment method group
-        result = await client.request("GET", f"/v1/payment_method_groups/{group_id}")
+        result = await client.request(
+            "GET",
+            f"/v1/payment_method_groups/{group_id}",
+            extra_headers={"Sub-Account": sub_account_id.strip()},
+        )
         return standardize_response(result, "retrieve_payment_method_group")
 
     except Exception as e:
@@ -208,6 +258,7 @@ async def retrieve_payment_method_group(
 
 async def update_payment_method_group(
     client: JustiFiClient,
+    sub_account_id: str,
     group_id: str,
     name: str | None = None,
     description: str | None = None,
@@ -217,6 +268,7 @@ async def update_payment_method_group(
 
     Args:
         client: JustiFi API client
+        sub_account_id: The sub account ID that owns the group (required)
         group_id: The unique identifier for the payment method group
         name: New name for the group (optional)
         description: New description for the group (optional)
@@ -229,6 +281,8 @@ async def update_payment_method_group(
         ValidationError: If parameters are invalid
         ToolError: If group update fails
     """
+    _validate_sub_account_id(sub_account_id)
+
     if not group_id or not isinstance(group_id, str):
         raise ValidationError(
             "group_id is required and must be a non-empty string",
@@ -304,7 +358,10 @@ async def update_payment_method_group(
 
         # Call JustiFi API to update payment method group
         result = await client.request(
-            "PATCH", f"/v1/payment_method_groups/{group_id}", data=payload
+            "PATCH",
+            f"/v1/payment_method_groups/{group_id}",
+            data=payload,
+            extra_headers={"Sub-Account": sub_account_id.strip()},
         )
         return standardize_response(result, "update_payment_method_group")
 
@@ -316,12 +373,13 @@ async def update_payment_method_group(
 
 
 async def remove_payment_method_from_group(
-    client: JustiFiClient, group_id: str, payment_method_id: str
+    client: JustiFiClient, sub_account_id: str, group_id: str, payment_method_id: str
 ) -> dict[str, Any]:
     """Remove a payment method from a payment method group.
 
     Args:
         client: JustiFi API client
+        sub_account_id: The sub account ID that owns the group (required)
         group_id: The unique identifier for the payment method group
         payment_method_id: The payment method ID to remove from the group
 
@@ -332,6 +390,8 @@ async def remove_payment_method_from_group(
         ValidationError: If parameters are invalid
         ToolError: If payment method removal fails
     """
+    _validate_sub_account_id(sub_account_id)
+
     if not group_id or not isinstance(group_id, str):
         raise ValidationError(
             "group_id is required and must be a non-empty string",
@@ -365,6 +425,7 @@ async def remove_payment_method_from_group(
         result = await client.request(
             "DELETE",
             f"/v1/payment_method_groups/{group_id}/payment_methods/{payment_method_id}",
+            extra_headers={"Sub-Account": sub_account_id.strip()},
         )
         return standardize_response(result, "remove_payment_method_from_group")
 

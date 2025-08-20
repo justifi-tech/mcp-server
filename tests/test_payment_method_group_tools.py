@@ -62,7 +62,9 @@ class TestCreatePaymentMethodGroup:
                 return_value=Response(200, json=mock_response)
             )
 
-            result = await create_payment_method_group(mock_client, "Test Group")
+            result = await create_payment_method_group(
+                mock_client, "acc_test123", "Test Group"
+            )
 
             assert result["data"][0]["name"] == "Test Group"
             assert result["metadata"]["tool"] == "create_payment_method_group"
@@ -95,6 +97,7 @@ class TestCreatePaymentMethodGroup:
 
             result = await create_payment_method_group(
                 mock_client,
+                "acc_test123",
                 "Test Group",
                 description="Test Description",
                 payment_method_ids=["pm_123", "pm_456"],
@@ -104,11 +107,33 @@ class TestCreatePaymentMethodGroup:
             assert result["data"][0]["payment_method_count"] == 2
 
     @pytest.mark.asyncio
+    async def test_create_group_empty_sub_account_id_error(self):
+        """Test validation error for empty sub_account_id."""
+
+        with pytest.raises(ValidationError) as exc_info:
+            await create_payment_method_group(mock_client, "", "Test Group")
+
+        assert "sub_account_id is required and must be a non-empty string" in str(
+            exc_info.value
+        )
+
+    @pytest.mark.asyncio
+    async def test_create_group_none_sub_account_id_error(self):
+        """Test validation error for None sub_account_id."""
+
+        with pytest.raises(ValidationError) as exc_info:
+            await create_payment_method_group(mock_client, None, "Test Group")
+
+        assert "sub_account_id is required and must be a non-empty string" in str(
+            exc_info.value
+        )
+
+    @pytest.mark.asyncio
     async def test_create_group_empty_name_error(self):
         """Test validation error for empty name."""
 
         with pytest.raises(ValidationError) as exc_info:
-            await create_payment_method_group(mock_client, "")
+            await create_payment_method_group(mock_client, "acc_test123", "")
 
         assert "name is required and must be a non-empty string" in str(exc_info.value)
 
@@ -117,7 +142,7 @@ class TestCreatePaymentMethodGroup:
         """Test validation error for None name."""
 
         with pytest.raises(ValidationError) as exc_info:
-            await create_payment_method_group(mock_client, None)
+            await create_payment_method_group(mock_client, "acc_test123", None)
 
         assert "name is required and must be a non-empty string" in str(exc_info.value)
 
@@ -126,7 +151,9 @@ class TestCreatePaymentMethodGroup:
         """Test validation error for invalid description type."""
 
         with pytest.raises(ValidationError) as exc_info:
-            await create_payment_method_group(mock_client, "Test", description=123)
+            await create_payment_method_group(
+                mock_client, "acc_test123", "Test", description=123
+            )
 
         assert "description must be a string if provided" in str(exc_info.value)
 
@@ -136,7 +163,7 @@ class TestCreatePaymentMethodGroup:
 
         with pytest.raises(ValidationError) as exc_info:
             await create_payment_method_group(
-                mock_client, "Test", payment_method_ids="not_a_list"
+                mock_client, "acc_test123", "Test", payment_method_ids="not_a_list"
             )
 
         assert "payment_method_ids must be a list if provided" in str(exc_info.value)
@@ -147,7 +174,7 @@ class TestCreatePaymentMethodGroup:
 
         with pytest.raises(ValidationError) as exc_info:
             await create_payment_method_group(
-                mock_client, "Test", payment_method_ids=["pm_123", ""]
+                mock_client, "acc_test123", "Test", payment_method_ids=["pm_123", ""]
             )
 
         assert "payment_method_ids[1] must be a non-empty string" in str(exc_info.value)
@@ -162,7 +189,9 @@ class TestCreatePaymentMethodGroup:
             )
 
             with pytest.raises(ToolError) as exc_info:
-                await create_payment_method_group(mock_client, "Test Group")
+                await create_payment_method_group(
+                    mock_client, "acc_test123", "Test Group"
+                )
 
             assert "Failed to create payment method group" in str(exc_info.value)
             assert exc_info.value.error_type == "PaymentMethodGroupCreationError"
@@ -202,7 +231,7 @@ class TestListPaymentMethodGroups:
                 return_value=Response(200, json=mock_response)
             )
 
-            result = await list_payment_method_groups(mock_client)
+            result = await list_payment_method_groups(mock_client, "acc_test123")
 
             assert len(result["data"]) == 2
             assert result["data"][0]["name"] == "Group 1"
@@ -226,7 +255,7 @@ class TestListPaymentMethodGroups:
             )
 
             result = await list_payment_method_groups(
-                mock_client, limit=10, after_cursor="cursor_123"
+                mock_client, "acc_test123", limit=10, after_cursor="cursor_123"
             )
 
             assert len(result["data"]) == 1
@@ -242,7 +271,7 @@ class TestListPaymentMethodGroups:
         """Test validation error for invalid limit."""
 
         with pytest.raises(ValidationError) as exc_info:
-            await list_payment_method_groups(mock_client, limit=0)
+            await list_payment_method_groups(mock_client, "acc_test123", limit=0)
 
         assert "limit must be an integer between 1 and 100" in str(exc_info.value)
 
@@ -251,7 +280,7 @@ class TestListPaymentMethodGroups:
         """Test validation error for limit too high."""
 
         with pytest.raises(ValidationError) as exc_info:
-            await list_payment_method_groups(mock_client, limit=101)
+            await list_payment_method_groups(mock_client, "acc_test123", limit=101)
 
         assert "limit must be an integer between 1 and 100" in str(exc_info.value)
 
@@ -261,7 +290,10 @@ class TestListPaymentMethodGroups:
 
         with pytest.raises(ValidationError) as exc_info:
             await list_payment_method_groups(
-                mock_client, after_cursor="cursor1", before_cursor="cursor2"
+                mock_client,
+                "acc_test123",
+                after_cursor="cursor1",
+                before_cursor="cursor2",
             )
 
         assert "Cannot specify both after_cursor and before_cursor" in str(
@@ -299,7 +331,9 @@ class TestRetrievePaymentMethodGroup:
                 "https://api.justifi.ai/v1/payment_method_groups/pmg_123abc"
             ).mock(return_value=Response(200, json=mock_response))
 
-            result = await retrieve_payment_method_group(mock_client, "pmg_123abc")
+            result = await retrieve_payment_method_group(
+                mock_client, "acc_test123", "pmg_123abc"
+            )
 
             assert result["data"][0]["name"] == "Test Group"
             assert result["data"][0]["payment_method_count"] == 2
@@ -310,7 +344,7 @@ class TestRetrievePaymentMethodGroup:
         """Test validation error for empty group_id."""
 
         with pytest.raises(ValidationError) as exc_info:
-            await retrieve_payment_method_group(mock_client, "")
+            await retrieve_payment_method_group(mock_client, "acc_test123", "")
 
         assert "group_id is required and must be a non-empty string" in str(
             exc_info.value
@@ -321,7 +355,7 @@ class TestRetrievePaymentMethodGroup:
         """Test validation error for None group_id."""
 
         with pytest.raises(ValidationError) as exc_info:
-            await retrieve_payment_method_group(mock_client, None)
+            await retrieve_payment_method_group(mock_client, "acc_test123", None)
 
         assert "group_id is required and must be a non-empty string" in str(
             exc_info.value
@@ -337,7 +371,9 @@ class TestRetrievePaymentMethodGroup:
             ).mock(return_value=Response(404, json={"error": "Not Found"}))
 
             with pytest.raises(ToolError) as exc_info:
-                await retrieve_payment_method_group(mock_client, "pmg_notfound")
+                await retrieve_payment_method_group(
+                    mock_client, "acc_test123", "pmg_notfound"
+                )
 
             assert "Failed to retrieve payment method group pmg_notfound" in str(
                 exc_info.value
@@ -371,7 +407,7 @@ class TestUpdatePaymentMethodGroup:
             ).mock(return_value=Response(200, json=mock_response))
 
             result = await update_payment_method_group(
-                mock_client, "pmg_123abc", name="Updated Name"
+                mock_client, "acc_test123", "pmg_123abc", name="Updated Name"
             )
 
             assert result["data"][0]["name"] == "Updated Name"
@@ -402,6 +438,7 @@ class TestUpdatePaymentMethodGroup:
 
             result = await update_payment_method_group(
                 mock_client,
+                "acc_test123",
                 "pmg_123abc",
                 name="Updated Name",
                 description="Updated Description",
@@ -417,7 +454,9 @@ class TestUpdatePaymentMethodGroup:
         """Test validation error for empty group_id."""
 
         with pytest.raises(ValidationError) as exc_info:
-            await update_payment_method_group(mock_client, "", name="Test")
+            await update_payment_method_group(
+                mock_client, "acc_test123", "", name="Test"
+            )
 
         assert "group_id is required and must be a non-empty string" in str(
             exc_info.value
@@ -428,7 +467,7 @@ class TestUpdatePaymentMethodGroup:
         """Test validation error for no update fields provided."""
 
         with pytest.raises(ValidationError) as exc_info:
-            await update_payment_method_group(mock_client, "pmg_123abc")
+            await update_payment_method_group(mock_client, "acc_test123", "pmg_123abc")
 
         assert (
             "At least one of name, description, or payment_method_ids must be provided"
@@ -440,7 +479,9 @@ class TestUpdatePaymentMethodGroup:
         """Test validation error for empty name."""
 
         with pytest.raises(ValidationError) as exc_info:
-            await update_payment_method_group(mock_client, "pmg_123abc", name="")
+            await update_payment_method_group(
+                mock_client, "acc_test123", "pmg_123abc", name=""
+            )
 
         assert "name cannot be empty or whitespace if provided" in str(exc_info.value)
 
@@ -450,7 +491,10 @@ class TestUpdatePaymentMethodGroup:
 
         with pytest.raises(ValidationError) as exc_info:
             await update_payment_method_group(
-                mock_client, "pmg_123abc", payment_method_ids=["valid", ""]
+                mock_client,
+                "acc_test123",
+                "pmg_123abc",
+                payment_method_ids=["valid", ""],
             )
 
         assert "payment_method_ids[1] must be a non-empty string" in str(exc_info.value)
@@ -482,7 +526,7 @@ class TestRemovePaymentMethodFromGroup:
             ).mock(return_value=Response(200, json=mock_response))
 
             result = await remove_payment_method_from_group(
-                mock_client, "pmg_123abc", "pm_123"
+                mock_client, "acc_test123", "pmg_123abc", "pm_123"
             )
 
             assert result["data"][0]["payment_method_count"] == 1
@@ -493,7 +537,9 @@ class TestRemovePaymentMethodFromGroup:
         """Test validation error for empty group_id."""
 
         with pytest.raises(ValidationError) as exc_info:
-            await remove_payment_method_from_group(mock_client, "", "pm_123")
+            await remove_payment_method_from_group(
+                mock_client, "acc_test123", "", "pm_123"
+            )
 
         assert "group_id is required and must be a non-empty string" in str(
             exc_info.value
@@ -504,7 +550,9 @@ class TestRemovePaymentMethodFromGroup:
         """Test validation error for empty payment_method_id."""
 
         with pytest.raises(ValidationError) as exc_info:
-            await remove_payment_method_from_group(mock_client, "pmg_123abc", "")
+            await remove_payment_method_from_group(
+                mock_client, "acc_test123", "pmg_123abc", ""
+            )
 
         assert "payment_method_id is required and must be a non-empty string" in str(
             exc_info.value
@@ -515,7 +563,9 @@ class TestRemovePaymentMethodFromGroup:
         """Test validation error for None payment_method_id."""
 
         with pytest.raises(ValidationError) as exc_info:
-            await remove_payment_method_from_group(mock_client, "pmg_123abc", None)
+            await remove_payment_method_from_group(
+                mock_client, "acc_test123", "pmg_123abc", None
+            )
 
         assert "payment_method_id is required and must be a non-empty string" in str(
             exc_info.value
@@ -532,7 +582,7 @@ class TestRemovePaymentMethodFromGroup:
 
             with pytest.raises(ToolError) as exc_info:
                 await remove_payment_method_from_group(
-                    mock_client, "pmg_123abc", "pm_notfound"
+                    mock_client, "acc_test123", "pmg_123abc", "pm_notfound"
                 )
 
             assert (

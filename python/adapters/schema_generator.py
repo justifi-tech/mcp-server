@@ -60,9 +60,7 @@ def extract_function_info(func) -> dict[str, Any]:
 
                         # Look for the function definition in the AST
                         for node in ast.walk(tree):
-                            if isinstance(
-                                node, ast.FunctionDef | ast.AsyncFunctionDef
-                            ):
+                            if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef):
                                 if node.name == target_func_name:
                                     # Found the function, build type hints from AST
                                     type_hints = {}
@@ -339,9 +337,7 @@ def get_original_docstring(func) -> str | None:
 
                         # Look for the function definition in the AST
                         for node in ast.walk(tree):
-                            if isinstance(
-                                node, ast.FunctionDef | ast.AsyncFunctionDef
-                            ):
+                            if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef):
                                 if node.name == target_func_name:
                                     # Extract docstring from AST
                                     if (

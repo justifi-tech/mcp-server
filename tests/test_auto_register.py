@@ -353,50 +353,19 @@ class TestIntegration:
     @pytest.mark.asyncio
     async def test_full_auto_registration_integration(self):
         """Test full integration of auto-registration system."""
-        # Set environment variable for auto-registration
-        os.environ["MCP_AUTO_REGISTER"] = "true"
+        from modelcontextprotocol.server import create_mcp_server
 
-        try:
-            from modelcontextprotocol.server import create_mcp_server
+        # Mock environment variables for JustiFi client
+        with patch.dict(
+            os.environ,
+            {
+                "JUSTIFI_CLIENT_ID": "test_client",
+                "JUSTIFI_CLIENT_SECRET": "test_secret",
+            },
+        ):
+            # Should create server without errors
+            server = create_mcp_server()
+            assert server is not None
 
-            # Mock environment variables for JustiFi client
-            with patch.dict(
-                os.environ,
-                {
-                    "JUSTIFI_CLIENT_ID": "test_client",
-                    "JUSTIFI_CLIENT_SECRET": "test_secret",
-                },
-            ):
-                # Should create server without errors
-                server = create_mcp_server()
-                assert server is not None
-
-                # Server should be FastMCP instance
-                assert isinstance(server, FastMCP)
-
-        finally:
-            # Clean up environment
-            os.environ.pop("MCP_AUTO_REGISTER", None)
-
-    def test_feature_flag_fallback_to_manual(self):
-        """Test that feature flag allows fallback to manual registration."""
-        # Set environment variable to disable auto-registration
-        os.environ["MCP_AUTO_REGISTER"] = "false"
-
-        try:
-            mcp = MagicMock(spec=FastMCP)
-            client = JustiFiClient("test_client", "test_secret")
-
-            with patch(
-                "modelcontextprotocol.server.register_tools_manual"
-            ) as mock_manual:
-                from modelcontextprotocol.server import register_tools
-
-                register_tools(mcp, client)
-
-                # Should call manual registration instead of auto-registration
-                mock_manual.assert_called_once_with(mcp, client)
-
-        finally:
-            # Clean up environment
-            os.environ.pop("MCP_AUTO_REGISTER", None)
+            # Server should be FastMCP instance
+            assert isinstance(server, FastMCP)

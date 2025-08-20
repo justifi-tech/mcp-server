@@ -384,7 +384,7 @@ make drift-check
 
 ## 📋 Standardized Response Format
 
-All 22 JustiFi MCP tools return responses in a consistent, standardized format to ensure uniform handling across different AI agents and applications:
+All 27 JustiFi MCP tools return responses in a consistent, standardized format to ensure uniform handling across different AI agents and applications:
 
 ```json
 {

@@ -4,7 +4,6 @@ This module provides dynamic discovery and registration of all available JustiFi
 eliminating the need for manual tool registration boilerplate.
 """
 
-import ast
 import inspect
 import logging
 from collections.abc import Callable
@@ -99,60 +98,17 @@ def register_single_tool(
 
 
 def extract_original_signature(tool_func: Callable) -> inspect.Signature:
-    """Extract original function signature, handling decorators.
+    """Extract original function signature from __wrapped__ attribute.
 
-    This function handles decorator chains by looking through __wrapped__ attributes
-    and falls back to AST parsing if needed.
+    Since decorators now properly preserve __wrapped__, we can directly access
+    the original signature without complex AST parsing.
     """
-    # Try to get original function through __wrapped__ chain
+    # Get original function through __wrapped__ chain
     original_func = tool_func
     while hasattr(original_func, "__wrapped__"):
         original_func = original_func.__wrapped__
 
-    try:
-        return inspect.signature(original_func)
-    except (ValueError, TypeError):
-        # Fallback: Parse signature from source code using AST
-        return parse_signature_from_source(tool_func)
-
-
-def parse_signature_from_source(func: Callable) -> inspect.Signature:
-    """Parse function signature from source code using AST."""
-    try:
-        source = inspect.getsource(func)
-        tree = ast.parse(source)
-        func_def = None
-
-        # Find the function definition in AST
-        for node in ast.walk(tree):
-            if isinstance(node, ast.AsyncFunctionDef) and node.name == func.__name__:
-                func_def = node
-                break
-
-        if func_def:
-            # Convert AST parameters to inspect.Parameter objects
-            parameters = []
-            for arg in func_def.args.args:
-                param = inspect.Parameter(
-                    arg.arg,
-                    inspect.Parameter.POSITIONAL_OR_KEYWORD,
-                    annotation=arg.annotation.id
-                    if arg.annotation
-                    else inspect.Parameter.empty,
-                )
-                parameters.append(param)
-
-            return inspect.Signature(parameters)
-    except Exception:
-        pass
-
-    # Final fallback - create minimal signature
-    return inspect.Signature(
-        [
-            inspect.Parameter("client", inspect.Parameter.POSITIONAL_OR_KEYWORD),
-            inspect.Parameter("args", inspect.Parameter.VAR_POSITIONAL),
-        ]
-    )
+    return inspect.signature(original_func)
 
 
 def extract_tool_metadata(tool_func: Callable) -> dict[str, Any]:
@@ -164,47 +120,38 @@ def extract_tool_metadata(tool_func: Callable) -> dict[str, Any]:
     Returns:
         Dictionary containing function metadata (signature, docstring, annotations)
     """
+    # Extract original signature
+    original_sig = extract_original_signature(tool_func)
+
+    # Remove 'client' parameter for MCP interface
+    filtered_params = []
+    for name, param in original_sig.parameters.items():
+        if name != "client":
+            filtered_params.append(param)
+
+    # Create new signature without client parameter
+    new_sig = original_sig.replace(parameters=filtered_params)
+
+    # Get type annotations (excluding client)
+    original_func = tool_func
+    while hasattr(original_func, "__wrapped__"):
+        original_func = original_func.__wrapped__
+
     try:
-        # Extract original signature using improved method
-        original_sig = extract_original_signature(tool_func)
-
-        # Remove 'client' parameter for MCP interface
-        filtered_params = []
-        for name, param in original_sig.parameters.items():
-            if name != "client":
-                filtered_params.append(param)
-
-        # Create new signature without client parameter
-        new_sig = original_sig.replace(parameters=filtered_params)
-
-        # Extract type annotations (excluding client)
-        try:
-            # Try to get type hints from original function
-            original_func = tool_func
-            while hasattr(original_func, "__wrapped__"):
-                original_func = original_func.__wrapped__
-
-            type_hints = get_type_hints(original_func)
-            annotations = {
-                name: hint for name, hint in type_hints.items() if name != "client"
-            }
-        except Exception:
-            # Fallback to basic annotations from signature
-            annotations = {}
-            for param in filtered_params:
-                if param.annotation != inspect.Parameter.empty:
-                    annotations[param.name] = param.annotation
-
-        return_annotation = original_sig.return_annotation
-        if return_annotation == inspect.Signature.empty:
-            return_annotation = dict[str, Any]
-
-    except Exception as e:
-        logger.warning(f"Failed to extract signature for {tool_func.__name__}: {e}")
-        # Create minimal signature as fallback
-        new_sig = None
+        type_hints = get_type_hints(original_func)
+        annotations = {
+            name: hint for name, hint in type_hints.items() if name != "client"
+        }
+    except Exception:
+        # Fallback to annotations from signature parameters
         annotations = {}
-        filtered_params = []
+        for param in filtered_params:
+            if param.annotation != inspect.Parameter.empty:
+                annotations[param.name] = param.annotation
+
+    # Get return annotation
+    return_annotation = original_sig.return_annotation
+    if return_annotation == inspect.Signature.empty:
         return_annotation = dict[str, Any]
 
     # Extract docstring
@@ -233,30 +180,22 @@ def create_mcp_function(
     Returns:
         MCP-compatible async function
     """
-    signature = metadata.get("signature")
+    signature = metadata["signature"]
     docstring = metadata["docstring"]
-    return_annotation = metadata.get("return_annotation", dict[str, Any])
+    return_annotation = metadata["return_annotation"]
 
-    if signature is not None:
-        # Create function with preserved signature
-        async def mcp_tool_wrapper(*args, **kwargs) -> dict[str, Any]:
-            """Dynamically created MCP tool wrapper with preserved signature."""
-            return await wrap_tool_call(tool_name, tool_func, client, *args, **kwargs)
+    # Create function with preserved signature
+    async def mcp_tool_wrapper(*args, **kwargs) -> dict[str, Any]:
+        """Dynamically created MCP tool wrapper with preserved signature."""
+        return await wrap_tool_call(tool_name, tool_func, client, *args, **kwargs)
 
-        # Apply the preserved signature
-        mcp_tool_wrapper.__signature__ = signature
-    else:
-        # Fallback for functions where signature extraction failed
-        async def mcp_tool_wrapper(*args, **kwargs) -> dict[str, Any]:
-            """Dynamically created MCP tool wrapper (fallback signature)."""
-            return await wrap_tool_call(tool_name, tool_func, client, *args, **kwargs)
-
-    # Set function metadata for MCP
+    # Apply the preserved signature and metadata
+    mcp_tool_wrapper.__signature__ = signature
     mcp_tool_wrapper.__name__ = tool_name
     mcp_tool_wrapper.__doc__ = docstring
     mcp_tool_wrapper.__annotations__ = {
         "return": return_annotation,
-        **metadata.get("annotations", {}),
+        **metadata["annotations"],
     }
     mcp_tool_wrapper.__qualname__ = tool_name
 

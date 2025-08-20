@@ -140,23 +140,6 @@ class TestExtractToolMetadata:
         assert metadata["signature"] is not None
         assert len(metadata["parameters"]) > 0
 
-    def test_extract_tool_metadata_fallback_on_error(self):
-        """Test metadata extraction gracefully handles errors."""
-        # Create a mock function that will cause signature extraction to fail
-        mock_func = MagicMock()
-        mock_func.__name__ = "test_func"
-        mock_func.__doc__ = None
-        del mock_func.__wrapped__  # Ensure no wrapped attribute
-
-        with patch("inspect.signature", side_effect=Exception("Test error")):
-            metadata = extract_tool_metadata(mock_func)
-
-        # Should provide fallback values
-        assert metadata["docstring"] == "Execute test_func operation"
-        assert metadata["signature"] is None
-        assert metadata["annotations"] == {}
-        assert metadata["parameters"] == []
-
 
 class TestCreateMcpFunction:
     """Tests for MCP function creation."""

@@ -16,6 +16,7 @@ from typing import Any
 from ..config import JustiFiConfig
 from ..core import JustiFiClient
 from ..tools.base import ToolError, ValidationError
+from .schema_generator import generate_langchain_schema
 
 
 class LangChainAdapter:
@@ -69,437 +70,54 @@ class LangChainAdapter:
                 "Install with: pip install langchain-core"
             ) from e
 
-        # Define tool schemas for LangChain integration
-        tool_configs = {
-            "retrieve_payout": {
-                "description": "Retrieve detailed information about a specific payout by ID.",
-                "input_model": create_model(
-                    "RetrievePayoutInput",
-                    payout_id=(
-                        str,
-                        Field(..., description="The ID of the payout to retrieve"),
-                    ),
-                ),
-            },
-            "list_payouts": {
-                "description": "List payouts with optional pagination using cursor-based pagination.",
-                "input_model": create_model(
-                    "ListPayoutsInput",
-                    limit=(
-                        int,
-                        Field(default=25, description="Number of payouts to return"),
-                    ),
-                    after_cursor=(
-                        str | None,
-                        Field(default=None, description="Pagination cursor"),
-                    ),
-                    before_cursor=(
-                        str | None,
-                        Field(default=None, description="Pagination cursor"),
-                    ),
-                ),
-            },
-            "get_payout_status": {
-                "description": "Get the current status of a payout (quick status check).",
-                "input_model": create_model(
-                    "GetPayoutStatusInput",
-                    payout_id=(
-                        str,
-                        Field(..., description="The ID of the payout to check"),
-                    ),
-                ),
-            },
-            "get_recent_payouts": {
-                "description": "Get the most recent payouts (optimized for recency).",
-                "input_model": create_model(
-                    "GetRecentPayoutsInput",
-                    limit=(
-                        int,
-                        Field(default=10, description="Number of recent payouts"),
-                    ),
-                ),
-            },
-            "retrieve_payment": {
-                "description": "Retrieve detailed information about a specific payment by ID.",
-                "input_model": create_model(
-                    "RetrievePaymentInput",
-                    payment_id=(
-                        str,
-                        Field(..., description="The ID of the payment to retrieve"),
-                    ),
-                ),
-            },
-            "list_payments": {
-                "description": "List payments with optional pagination using cursor-based pagination.",
-                "input_model": create_model(
-                    "ListPaymentsInput",
-                    limit=(
-                        int,
-                        Field(default=25, description="Number of payments to return"),
-                    ),
-                    after_cursor=(
-                        str | None,
-                        Field(default=None, description="Pagination cursor"),
-                    ),
-                    before_cursor=(
-                        str | None,
-                        Field(default=None, description="Pagination cursor"),
-                    ),
-                ),
-            },
-            "retrieve_payment_method": {
-                "description": "Retrieve detailed information about a specific payment method by token.",
-                "input_model": create_model(
-                    "RetrievePaymentMethodInput",
-                    payment_method_token=(
-                        str,
-                        Field(..., description="The payment method token"),
-                    ),
-                ),
-            },
-            "create_payment_method_group": {
-                "description": "Create a new payment method group to organize tokenized payment methods.",
-                "input_model": create_model(
-                    "CreatePaymentMethodGroupInput",
-                    name=(
-                        str,
-                        Field(..., description="Name of the payment method group"),
-                    ),
-                    description=(
-                        str | None,
-                        Field(
-                            default=None,
-                            description="Optional description of the group",
-                        ),
-                    ),
-                    payment_method_ids=(
-                        list[str] | None,
-                        Field(
-                            default=None,
-                            description="Optional list of payment method IDs to add to the group",
-                        ),
-                    ),
-                ),
-            },
-            "list_payment_method_groups": {
-                "description": "List payment method groups with optional pagination.",
-                "input_model": create_model(
-                    "ListPaymentMethodGroupsInput",
-                    limit=(
-                        int,
-                        Field(
-                            default=25, description="Number of groups to return (1-100)"
-                        ),
-                    ),
-                    after_cursor=(
-                        str | None,
-                        Field(
-                            default=None,
-                            description="Pagination cursor for results after this cursor",
-                        ),
-                    ),
-                    before_cursor=(
-                        str | None,
-                        Field(
-                            default=None,
-                            description="Pagination cursor for results before this cursor",
-                        ),
-                    ),
-                ),
-            },
-            "retrieve_payment_method_group": {
-                "description": "Retrieve detailed information about a specific payment method group.",
-                "input_model": create_model(
-                    "RetrievePaymentMethodGroupInput",
-                    group_id=(
-                        str,
-                        Field(
-                            ...,
-                            description="The unique identifier for the payment method group",
-                        ),
-                    ),
-                ),
-            },
-            "update_payment_method_group": {
-                "description": "Update an existing payment method group.",
-                "input_model": create_model(
-                    "UpdatePaymentMethodGroupInput",
-                    group_id=(
-                        str,
-                        Field(
-                            ...,
-                            description="The unique identifier for the payment method group",
-                        ),
-                    ),
-                    name=(
-                        str | None,
-                        Field(default=None, description="New name for the group"),
-                    ),
-                    description=(
-                        str | None,
-                        Field(
-                            default=None, description="New description for the group"
-                        ),
-                    ),
-                    payment_method_ids=(
-                        list[str] | None,
-                        Field(
-                            default=None,
-                            description="New list of payment method IDs to set in the group",
-                        ),
-                    ),
-                ),
-            },
-            "remove_payment_method_from_group": {
-                "description": "Remove a payment method from a payment method group.",
-                "input_model": create_model(
-                    "RemovePaymentMethodFromGroupInput",
-                    group_id=(
-                        str,
-                        Field(
-                            ...,
-                            description="The unique identifier for the payment method group",
-                        ),
-                    ),
-                    payment_method_id=(
-                        str,
-                        Field(
-                            ...,
-                            description="The payment method ID to remove from the group",
-                        ),
-                    ),
-                ),
-            },
-            "list_refunds": {
-                "description": "List all refunds with optional pagination using cursor-based pagination.",
-                "input_model": create_model(
-                    "ListRefundsInput",
-                    limit=(
-                        int,
-                        Field(default=25, description="Number of refunds to return"),
-                    ),
-                    after_cursor=(
-                        str | None,
-                        Field(default=None, description="Pagination cursor"),
-                    ),
-                    before_cursor=(
-                        str | None,
-                        Field(default=None, description="Pagination cursor"),
-                    ),
-                ),
-            },
-            "retrieve_refund": {
-                "description": "Retrieve detailed information about a specific refund by ID.",
-                "input_model": create_model(
-                    "RetrieveRefundInput",
-                    refund_id=(
-                        str,
-                        Field(..., description="The ID of the refund to retrieve"),
-                    ),
-                ),
-            },
-            "list_payment_refunds": {
-                "description": "List refunds for a specific payment by extracting them from the payment data.",
-                "input_model": create_model(
-                    "ListPaymentRefundsInput",
-                    payment_id=(str, Field(..., description="The ID of the payment")),
-                ),
-            },
-            "list_balance_transactions": {
-                "description": "List balance transactions with optional pagination and filtering by payout.",
-                "input_model": create_model(
-                    "ListBalanceTransactionsInput",
-                    limit=(
-                        int,
-                        Field(
-                            default=25,
-                            description="Number of balance transactions to return",
-                        ),
-                    ),
-                    after_cursor=(
-                        str | None,
-                        Field(default=None, description="Pagination cursor"),
-                    ),
-                    before_cursor=(
-                        str | None,
-                        Field(default=None, description="Pagination cursor"),
-                    ),
-                    payout_id=(
-                        str | None,
-                        Field(default=None, description="Filter by payout ID"),
-                    ),
-                ),
-            },
-            "retrieve_balance_transaction": {
-                "description": "Retrieve detailed information about a specific balance transaction by ID.",
-                "input_model": create_model(
-                    "RetrieveBalanceTransactionInput",
-                    balance_transaction_id=(
-                        str,
-                        Field(..., description="The ID of the balance transaction"),
-                    ),
-                ),
-            },
-            "list_disputes": {
-                "description": "List disputes with optional pagination using cursor-based pagination.",
-                "input_model": create_model(
-                    "ListDisputesInput",
-                    limit=(
-                        int,
-                        Field(default=25, description="Number of disputes to return"),
-                    ),
-                    after_cursor=(
-                        str | None,
-                        Field(default=None, description="Pagination cursor"),
-                    ),
-                    before_cursor=(
-                        str | None,
-                        Field(default=None, description="Pagination cursor"),
-                    ),
-                ),
-            },
-            "retrieve_dispute": {
-                "description": "Retrieve detailed information about a specific dispute by ID.",
-                "input_model": create_model(
-                    "RetrieveDisputeInput",
-                    dispute_id=(
-                        str,
-                        Field(..., description="The ID of the dispute to retrieve"),
-                    ),
-                ),
-            },
-            "list_checkouts": {
-                "description": "List checkouts with optional pagination and filtering by payment mode, status, and payment status.",
-                "input_model": create_model(
-                    "ListCheckoutsInput",
-                    limit=(
-                        int,
-                        Field(default=25, description="Number of checkouts to return"),
-                    ),
-                    after_cursor=(
-                        str | None,
-                        Field(default=None, description="Pagination cursor"),
-                    ),
-                    before_cursor=(
-                        str | None,
-                        Field(default=None, description="Pagination cursor"),
-                    ),
-                    payment_mode=(
-                        str | None,
-                        Field(default=None, description="Filter by payment mode"),
-                    ),
-                    status=(
-                        str | None,
-                        Field(default=None, description="Filter by checkout status"),
-                    ),
-                    payment_status=(
-                        str | None,
-                        Field(default=None, description="Filter by payment status"),
-                    ),
-                ),
-            },
-            "retrieve_checkout": {
-                "description": "Retrieve detailed information about a specific checkout by ID.",
-                "input_model": create_model(
-                    "RetrieveCheckoutInput",
-                    checkout_id=(
-                        str,
-                        Field(..., description="The ID of the checkout to retrieve"),
-                    ),
-                ),
-            },
-            "list_proceeds": {
-                "description": "List proceeds with optional pagination using cursor-based pagination.",
-                "input_model": create_model(
-                    "ListProceedsInput",
-                    limit=(
-                        int,
-                        Field(default=25, description="Number of proceeds to return"),
-                    ),
-                    after_cursor=(
-                        str | None,
-                        Field(default=None, description="Pagination cursor"),
-                    ),
-                    before_cursor=(
-                        str | None,
-                        Field(default=None, description="Pagination cursor"),
-                    ),
-                ),
-            },
-            "retrieve_proceed": {
-                "description": "Retrieve detailed information about a specific proceed by ID.",
-                "input_model": create_model(
-                    "RetrieveProceedInput",
-                    proceed_id=(
-                        str,
-                        Field(..., description="The ID of the proceed to retrieve"),
-                    ),
-                ),
-            },
-            "list_sub_accounts": {
-                "description": "List sub accounts with optional status filtering and pagination.",
-                "input_model": create_model(
-                    "ListSubAccountsInput",
-                    status=(
-                        str | None,
-                        Field(
-                            default=None,
-                            description="Filter by status (created, submitted, information_needed, rejected, approved, enabled, disabled, archived)",
-                        ),
-                    ),
-                    limit=(
-                        int,
-                        Field(
-                            default=25,
-                            description="Number of sub accounts to return (1-100)",
-                        ),
-                    ),
-                    after_cursor=(
-                        str | None,
-                        Field(default=None, description="Pagination cursor"),
-                    ),
-                    before_cursor=(
-                        str | None,
-                        Field(default=None, description="Pagination cursor"),
-                    ),
-                ),
-            },
-            "get_sub_account": {
-                "description": "Get detailed information about a specific sub account by ID.",
-                "input_model": create_model(
-                    "GetSubAccountInput",
-                    sub_account_id=(
-                        str,
-                        Field(..., description="The ID of the sub account to retrieve"),
-                    ),
-                ),
-            },
-            "get_sub_account_payout_account": {
-                "description": "Get information about the currently active payout bank account of a sub account.",
-                "input_model": create_model(
-                    "GetSubAccountPayoutAccountInput",
-                    sub_account_id=(
-                        str,
-                        Field(..., description="The ID of the sub account"),
-                    ),
-                ),
-            },
-            "get_sub_account_settings": {
-                "description": "Get information about sub account settings.",
-                "input_model": create_model(
-                    "GetSubAccountSettingsInput",
-                    sub_account_id=(
-                        str,
-                        Field(..., description="The ID of the sub account"),
-                    ),
-                ),
-            },
-        }
+        # Import tools for introspection
+        from .. import tools
 
-        if tool_name not in tool_configs:
+        # Get tool function
+        if not hasattr(tools, tool_name):
             return None
 
-        config = tool_configs[tool_name]
+        tool_func = getattr(tools, tool_name)
+
+        # Generate schema using auto-generation
+        schema = generate_langchain_schema(tool_name, tool_func)
+
+        # Convert schema to Pydantic model
+        model_fields = {}
+        for param_name, param_schema in schema["parameters"]["properties"].items():
+            param_type = str  # Default to string
+            field_kwargs = {"description": param_schema["description"]}
+
+            # Convert JSON Schema type to Python type
+            if param_schema["type"] == "integer":
+                param_type = int
+            elif param_schema["type"] == "number":
+                param_type = float
+            elif param_schema["type"] == "boolean":
+                param_type = bool
+            elif param_schema["type"] == "array":
+                param_type = list[str]  # Simplified - could be more specific
+            elif param_schema["type"] == "object":
+                param_type = dict
+
+            # Check if parameter is required
+            if param_name in schema["parameters"]["required"]:
+                field_kwargs["default"] = ...  # Required field marker
+            else:
+                # For optional parameters, make them Union with None
+                param_type = param_type | None
+                field_kwargs["default"] = None
+
+            model_fields[param_name] = (param_type, Field(**field_kwargs))
+
+        # Create input model
+        model_name = f"{tool_name.title().replace('_', '')}Input"
+        input_model = create_model(model_name, **model_fields)
+
+        config = {
+            "description": schema["description"],
+            "input_model": input_model,
+        }
 
         # Create async tool execution function
         async def execute_tool_async(**kwargs: Any) -> str:
@@ -518,22 +136,24 @@ class LangChainAdapter:
         )
 
     def get_tool_schemas(self) -> list[dict[str, Any]]:
-        """Get tool schemas in LangChain format.
+        """Get auto-generated tool schemas in LangChain format.
 
         Returns:
-            List of tool schema dictionaries
+            List of auto-generated tool schema dictionaries
         """
         enabled_tools = self.config.get_enabled_tools()
         schemas = []
 
-        # Simple schema definitions
+        # Import tools for introspection
+        from .. import tools
+
         for tool_name in enabled_tools:
-            schema = {
-                "name": tool_name,
-                "description": f"JustiFi tool: {tool_name}",
-                "framework": "langchain",
-            }
-            schemas.append(schema)
+            tool_func = getattr(tools, tool_name, None)
+            if tool_func:
+                schema = generate_langchain_schema(tool_name, tool_func)
+                # Add framework metadata
+                schema["framework"] = "langchain"
+                schemas.append(schema)
 
         return schemas
 

@@ -100,15 +100,15 @@ def register_single_tool(
 
 def extract_original_signature(tool_func: Callable) -> inspect.Signature:
     """Extract original function signature, handling decorators.
-    
+
     This function handles decorator chains by looking through __wrapped__ attributes
     and falls back to AST parsing if needed.
     """
     # Try to get original function through __wrapped__ chain
     original_func = tool_func
-    while hasattr(original_func, '__wrapped__'):
+    while hasattr(original_func, "__wrapped__"):
         original_func = original_func.__wrapped__
-    
+
     try:
         return inspect.signature(original_func)
     except (ValueError, TypeError):
@@ -122,13 +122,13 @@ def parse_signature_from_source(func: Callable) -> inspect.Signature:
         source = inspect.getsource(func)
         tree = ast.parse(source)
         func_def = None
-        
+
         # Find the function definition in AST
         for node in ast.walk(tree):
             if isinstance(node, ast.AsyncFunctionDef) and node.name == func.__name__:
                 func_def = node
                 break
-                
+
         if func_def:
             # Convert AST parameters to inspect.Parameter objects
             parameters = []
@@ -136,19 +136,23 @@ def parse_signature_from_source(func: Callable) -> inspect.Signature:
                 param = inspect.Parameter(
                     arg.arg,
                     inspect.Parameter.POSITIONAL_OR_KEYWORD,
-                    annotation=arg.annotation.id if arg.annotation else inspect.Parameter.empty
+                    annotation=arg.annotation.id
+                    if arg.annotation
+                    else inspect.Parameter.empty,
                 )
                 parameters.append(param)
-            
+
             return inspect.Signature(parameters)
     except Exception:
         pass
-    
+
     # Final fallback - create minimal signature
-    return inspect.Signature([
-        inspect.Parameter('client', inspect.Parameter.POSITIONAL_OR_KEYWORD),
-        inspect.Parameter('args', inspect.Parameter.VAR_POSITIONAL)
-    ])
+    return inspect.Signature(
+        [
+            inspect.Parameter("client", inspect.Parameter.POSITIONAL_OR_KEYWORD),
+            inspect.Parameter("args", inspect.Parameter.VAR_POSITIONAL),
+        ]
+    )
 
 
 def extract_tool_metadata(tool_func: Callable) -> dict[str, Any]:
@@ -177,9 +181,9 @@ def extract_tool_metadata(tool_func: Callable) -> dict[str, Any]:
         try:
             # Try to get type hints from original function
             original_func = tool_func
-            while hasattr(original_func, '__wrapped__'):
+            while hasattr(original_func, "__wrapped__"):
                 original_func = original_func.__wrapped__
-            
+
             type_hints = get_type_hints(original_func)
             annotations = {
                 name: hint for name, hint in type_hints.items() if name != "client"

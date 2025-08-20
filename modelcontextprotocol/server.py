@@ -37,5 +37,3 @@ def register_tools(mcp: FastMCP, client: JustiFiClient) -> None:
     from .auto_register import auto_register_tools
 
     auto_register_tools(mcp, client)
-
-

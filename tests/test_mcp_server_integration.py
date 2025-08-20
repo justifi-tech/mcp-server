@@ -88,6 +88,7 @@ class TestMcpServerIntegration:
             with pytest.raises(ValueError, match="client_secret"):
                 create_mcp_server()
 
+
 class TestMcpServerRobustness:
     """Tests for server robustness and error handling."""
 

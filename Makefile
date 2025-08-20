@@ -37,12 +37,16 @@ env-check:
 
 # Set up local development environment
 setup: env-check
-	@echo "🔧 Setting up local development environment..."
-	@echo "🐍 Creating virtual environment..."
-	uv venv .venv --quiet || true
-	@echo "📦 Installing dependencies with uv..."
-	uv pip install -e ".[dev]"
-	@echo "✅ Local development environment ready"
+	@if [ ! -d ".venv" ] || ! uv run python -c "import pytest" 2>/dev/null; then \
+		echo "🔧 Setting up local development environment..." \
+		echo "🐍 Creating virtual environment..." \
+		uv venv .venv --quiet || true \
+		echo "📦 Installing dependencies with uv..." \
+		uv pip install -e ".[dev]" \
+		echo "✅ Local development environment ready" \
+	else \
+		echo "✅ Development environment already set up"; \
+	fi
 
 # Start MCP server with auto-restart
 dev: env-check setup

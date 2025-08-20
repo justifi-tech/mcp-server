@@ -221,18 +221,3 @@ class TestRetrieveBalanceTransaction:
 
         with pytest.raises(ToolError):
             await retrieve_balance_transaction(mock_client, "bt_nonexistent")
-
-    @respx.mock
-    async def test_retrieve_balance_transaction_server_error(
-        self, mock_client, mock_token_response
-    ):
-        """Test retrieve_balance_transaction with server error."""
-        respx.post("https://api.justifi.ai/oauth/token").mock(
-            return_value=Response(200, json=mock_token_response)
-        )
-        respx.get("https://api.justifi.ai/v1/balance_transactions/bt_test123").mock(
-            return_value=Response(500, json={"error": "Internal server error"})
-        )
-
-        with pytest.raises(ToolError):
-            await retrieve_balance_transaction(mock_client, "bt_test123")

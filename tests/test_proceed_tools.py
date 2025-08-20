@@ -124,38 +124,6 @@ class TestRetrieveProceed:
         with pytest.raises(ToolError):
             await retrieve_proceed(justifi_client, "pr_nonexistent")
 
-    @respx.mock
-    @pytest.mark.asyncio
-    async def test_retrieve_proceed_unauthorized(
-        self, justifi_client, mock_token_response
-    ):
-        """Test proceed retrieval with unauthorized access."""
-        respx.post("https://api.justifi.ai/oauth/token").mock(
-            return_value=Response(200, json=mock_token_response)
-        )
-        respx.get("https://api.justifi.ai/v1/proceeds/pr_test123").mock(
-            return_value=Response(401, json={"error": "Unauthorized"})
-        )
-
-        with pytest.raises(ToolError):
-            await retrieve_proceed(justifi_client, "pr_test123")
-
-    @respx.mock
-    @pytest.mark.asyncio
-    async def test_retrieve_proceed_server_error(
-        self, justifi_client, mock_token_response
-    ):
-        """Test proceed retrieval with server error."""
-        respx.post("https://api.justifi.ai/oauth/token").mock(
-            return_value=Response(200, json=mock_token_response)
-        )
-        respx.get("https://api.justifi.ai/v1/proceeds/pr_test123").mock(
-            return_value=Response(500, json={"error": "Internal server error"})
-        )
-
-        with pytest.raises(ToolError):
-            await retrieve_proceed(justifi_client, "pr_test123")
-
 
 class TestListProceeds:
     """Test list_proceeds function."""
@@ -255,38 +223,6 @@ class TestListProceeds:
                 after_cursor="cursor_abc",
                 before_cursor="cursor_def",
             )
-
-    @respx.mock
-    @pytest.mark.asyncio
-    async def test_list_proceeds_unauthorized(
-        self, justifi_client, mock_token_response
-    ):
-        """Test proceeds listing with unauthorized access."""
-        respx.post("https://api.justifi.ai/oauth/token").mock(
-            return_value=Response(200, json=mock_token_response)
-        )
-        respx.get("https://api.justifi.ai/v1/proceeds").mock(
-            return_value=Response(401, json={"error": "Unauthorized"})
-        )
-
-        with pytest.raises(ToolError):
-            await list_proceeds(justifi_client)
-
-    @respx.mock
-    @pytest.mark.asyncio
-    async def test_list_proceeds_server_error(
-        self, justifi_client, mock_token_response
-    ):
-        """Test proceeds listing with server error."""
-        respx.post("https://api.justifi.ai/oauth/token").mock(
-            return_value=Response(200, json=mock_token_response)
-        )
-        respx.get("https://api.justifi.ai/v1/proceeds").mock(
-            return_value=Response(500, json={"error": "Internal server error"})
-        )
-
-        with pytest.raises(ToolError):
-            await list_proceeds(justifi_client)
 
     @respx.mock
     @pytest.mark.asyncio

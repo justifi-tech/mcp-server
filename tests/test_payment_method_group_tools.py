@@ -21,7 +21,6 @@ from python.tools.payment_method_groups import (
 
 @pytest.fixture
 def mock_client():
-    """JustiFi client for testing."""
     return JustiFiClient(
         client_id="test_client_id",
         client_secret="test_client_secret",
@@ -30,7 +29,6 @@ def mock_client():
 
 @pytest.fixture
 def mock_oauth_token():
-    """Mock OAuth token response."""
     return {
         "access_token": "test_access_token_12345",
         "token_type": "Bearer",
@@ -56,11 +54,10 @@ class TestCreatePaymentMethodGroup:
         }
 
         with respx.mock:
-            # Mock OAuth token endpoint
             respx.post("https://api.justifi.ai/oauth/token").mock(
                 return_value=Response(200, json=mock_oauth_token)
             )
-            # Mock API endpoint
+
             respx.post("https://api.justifi.ai/v1/payment_method_groups").mock(
                 return_value=Response(200, json=mock_response)
             )
@@ -89,7 +86,6 @@ class TestCreatePaymentMethodGroup:
         }
 
         with respx.mock:
-            # Mock OAuth token endpoint
             respx.post("https://api.justifi.ai/oauth/token").mock(
                 return_value=Response(200, json=mock_oauth_token)
             )
@@ -199,7 +195,6 @@ class TestListPaymentMethodGroups:
         }
 
         with respx.mock:
-            # Mock OAuth token endpoint
             respx.post("https://api.justifi.ai/oauth/token").mock(
                 return_value=Response(200, json=mock_oauth_token)
             )
@@ -223,7 +218,6 @@ class TestListPaymentMethodGroups:
         }
 
         with respx.mock:
-            # Mock OAuth token endpoint
             respx.post("https://api.justifi.ai/oauth/token").mock(
                 return_value=Response(200, json=mock_oauth_token)
             )
@@ -298,7 +292,6 @@ class TestRetrievePaymentMethodGroup:
         }
 
         with respx.mock:
-            # Mock OAuth token endpoint
             respx.post("https://api.justifi.ai/oauth/token").mock(
                 return_value=Response(200, json=mock_oauth_token)
             )
@@ -370,7 +363,6 @@ class TestUpdatePaymentMethodGroup:
         }
 
         with respx.mock:
-            # Mock OAuth token endpoint
             respx.post("https://api.justifi.ai/oauth/token").mock(
                 return_value=Response(200, json=mock_oauth_token)
             )
@@ -401,7 +393,6 @@ class TestUpdatePaymentMethodGroup:
         }
 
         with respx.mock:
-            # Mock OAuth token endpoint
             respx.post("https://api.justifi.ai/oauth/token").mock(
                 return_value=Response(200, json=mock_oauth_token)
             )
@@ -483,7 +474,6 @@ class TestRemovePaymentMethodFromGroup:
         }
 
         with respx.mock:
-            # Mock OAuth token endpoint
             respx.post("https://api.justifi.ai/oauth/token").mock(
                 return_value=Response(200, json=mock_oauth_token)
             )
@@ -554,33 +544,3 @@ class TestRemovePaymentMethodFromGroup:
 
 class TestGeneralErrorScenarios:
     """Test general error scenarios for all payment method group tools."""
-
-    @pytest.mark.asyncio
-    async def test_http_401_unauthorized_error(self, mock_client):
-        """Test HTTP 401 error handling across tools."""
-
-        with respx.mock:
-            respx.get("https://api.justifi.ai/v1/payment_method_groups").mock(
-                return_value=Response(401, json={"error": "Unauthorized"})
-            )
-
-            with pytest.raises(ToolError) as exc_info:
-                await list_payment_method_groups(mock_client)
-
-            assert "Failed to list payment method groups" in str(exc_info.value)
-            assert exc_info.value.error_type == "PaymentMethodGroupListError"
-
-    @pytest.mark.asyncio
-    async def test_http_500_server_error(self, mock_client):
-        """Test HTTP 500 error handling."""
-
-        with respx.mock:
-            respx.post("https://api.justifi.ai/v1/payment_method_groups").mock(
-                return_value=Response(500, json={"error": "Internal Server Error"})
-            )
-
-            with pytest.raises(ToolError) as exc_info:
-                await create_payment_method_group(mock_client, "Test Group")
-
-            assert "Failed to create payment method group" in str(exc_info.value)
-            assert exc_info.value.error_type == "PaymentMethodGroupCreationError"

@@ -140,23 +140,6 @@ class TestExtractToolMetadata:
         assert metadata["signature"] is not None
         assert len(metadata["parameters"]) > 0
 
-    def test_extract_tool_metadata_fallback_on_error(self):
-        """Test metadata extraction gracefully handles errors."""
-        # Create a mock function that will cause signature extraction to fail
-        mock_func = MagicMock()
-        mock_func.__name__ = "test_func"
-        mock_func.__doc__ = None
-        del mock_func.__wrapped__  # Ensure no wrapped attribute
-
-        with patch("inspect.signature", side_effect=Exception("Test error")):
-            metadata = extract_tool_metadata(mock_func)
-
-        # Should provide fallback values
-        assert metadata["docstring"] == "Execute test_func operation"
-        assert metadata["signature"] is None
-        assert metadata["annotations"] == {}
-        assert metadata["parameters"] == []
-
 
 class TestCreateMcpFunction:
     """Tests for MCP function creation."""
@@ -353,50 +336,19 @@ class TestIntegration:
     @pytest.mark.asyncio
     async def test_full_auto_registration_integration(self):
         """Test full integration of auto-registration system."""
-        # Set environment variable for auto-registration
-        os.environ["MCP_AUTO_REGISTER"] = "true"
+        from modelcontextprotocol.server import create_mcp_server
 
-        try:
-            from modelcontextprotocol.server import create_mcp_server
+        # Mock environment variables for JustiFi client
+        with patch.dict(
+            os.environ,
+            {
+                "JUSTIFI_CLIENT_ID": "test_client",
+                "JUSTIFI_CLIENT_SECRET": "test_secret",
+            },
+        ):
+            # Should create server without errors
+            server = create_mcp_server()
+            assert server is not None
 
-            # Mock environment variables for JustiFi client
-            with patch.dict(
-                os.environ,
-                {
-                    "JUSTIFI_CLIENT_ID": "test_client",
-                    "JUSTIFI_CLIENT_SECRET": "test_secret",
-                },
-            ):
-                # Should create server without errors
-                server = create_mcp_server()
-                assert server is not None
-
-                # Server should be FastMCP instance
-                assert isinstance(server, FastMCP)
-
-        finally:
-            # Clean up environment
-            os.environ.pop("MCP_AUTO_REGISTER", None)
-
-    def test_feature_flag_fallback_to_manual(self):
-        """Test that feature flag allows fallback to manual registration."""
-        # Set environment variable to disable auto-registration
-        os.environ["MCP_AUTO_REGISTER"] = "false"
-
-        try:
-            mcp = MagicMock(spec=FastMCP)
-            client = JustiFiClient("test_client", "test_secret")
-
-            with patch(
-                "modelcontextprotocol.server.register_tools_manual"
-            ) as mock_manual:
-                from modelcontextprotocol.server import register_tools
-
-                register_tools(mcp, client)
-
-                # Should call manual registration instead of auto-registration
-                mock_manual.assert_called_once_with(mcp, client)
-
-        finally:
-            # Clean up environment
-            os.environ.pop("MCP_AUTO_REGISTER", None)
+            # Server should be FastMCP instance
+            assert isinstance(server, FastMCP)

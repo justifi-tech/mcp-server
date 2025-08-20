@@ -5,6 +5,7 @@ This module provides the foundation for all JustiFi tools with common
 error handling, validation, and interface patterns.
 """
 
+import functools
 from abc import ABC, abstractmethod
 from typing import Any
 
@@ -95,6 +96,7 @@ class BaseTool(ABC):
 def handle_tool_errors(func: Any) -> Any:
     """Decorator to handle common tool errors and provide consistent error formatting."""
 
+    @functools.wraps(func)
     async def wrapper(*args: Any, **kwargs: Any) -> Any:
         try:
             return await func(*args, **kwargs)

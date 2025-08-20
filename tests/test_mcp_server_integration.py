@@ -7,6 +7,19 @@ import pytest
 from fastmcp import FastMCP
 
 from modelcontextprotocol.auto_register import get_registered_tool_count
+from python.core import JustiFiClient
+
+
+@pytest.fixture
+def mock_client():
+    """Create a mock JustiFi client."""
+    return JustiFiClient("test_client", "test_secret")
+
+
+@pytest.fixture
+def mock_token_response():
+    """Mock OAuth token response."""
+    return {"access_token": "test_token_123", "expires_in": 3600}
 
 
 class TestMcpServerIntegration:
@@ -94,7 +107,7 @@ class TestMcpServerIntegration:
             with pytest.raises(ValueError, match="client_secret"):
                 create_mcp_server()
 
-    def test_feature_flag_defaults_to_enabled(self):
+    def test_feature_flag_defaults_to_enabled(self, mock_client):
         """Test that auto-registration is enabled by default."""
         with patch.dict(
             os.environ,
@@ -113,10 +126,9 @@ class TestMcpServerIntegration:
                     from fastmcp import FastMCP
 
                     from modelcontextprotocol.server import register_tools
-                    from python.core import JustiFiClient
 
                     mcp = FastMCP("test")
-                    client = JustiFiClient("test", "test")
+                    client = mock_client
 
                     register_tools(mcp, client)
 
@@ -124,14 +136,12 @@ class TestMcpServerIntegration:
                     mock_auto.assert_called_once()
                     mock_manual.assert_not_called()
 
-    def test_feature_flag_various_values(self):
+    def test_feature_flag_various_values(self, mock_client):
         """Test feature flag with various values."""
         from fastmcp import FastMCP
 
-        from python.core import JustiFiClient
-
         mcp = FastMCP("test")
-        client = JustiFiClient("test_client", "test_secret")
+        client = mock_client
 
         # Test values that should enable auto-registration
         auto_values = [
@@ -225,7 +235,7 @@ class TestMcpServerRobustness:
             assert startup_time < 5.0, f"Server startup took {startup_time:.2f} seconds"
             assert server is not None
 
-    def test_tool_registration_idempotency(self):
+    def test_tool_registration_idempotency(self, mock_client):
         """Test that tools can be registered multiple times without issues."""
         with patch.dict(
             os.environ,
@@ -236,11 +246,10 @@ class TestMcpServerRobustness:
             },
         ):
             from modelcontextprotocol.server import create_mcp_server, register_tools
-            from python.core import JustiFiClient
 
             # Create server and client
             server = create_mcp_server()
-            client = JustiFiClient("test_client", "test_secret")
+            client = mock_client
 
             # Register tools multiple times - should not cause errors
             register_tools(server, client)
@@ -271,13 +280,11 @@ class TestBackwardCompatibility:
             # Should be the same FastMCP instance type
             assert isinstance(server, FastMCP)
 
-    def test_both_registration_methods_equivalent(self):
+    def test_both_registration_methods_equivalent(self, mock_client):
         """Test that both registration methods produce equivalent results."""
         from fastmcp import FastMCP
 
-        from python.core import JustiFiClient
-
-        client = JustiFiClient("test_client", "test_secret")
+        client = mock_client
 
         # Test auto-registration
         auto_server = FastMCP("test-auto")

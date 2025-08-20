@@ -6,7 +6,9 @@ from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+import respx
 from fastmcp import FastMCP
+from httpx import Response
 
 from modelcontextprotocol.auto_register import (
     auto_register_tools,
@@ -17,6 +19,18 @@ from modelcontextprotocol.auto_register import (
     register_single_tool,
 )
 from python.core import JustiFiClient
+
+
+@pytest.fixture
+def mock_client():
+    """Create a mock JustiFi client."""
+    return JustiFiClient("test_client", "test_secret")
+
+
+@pytest.fixture
+def mock_token_response():
+    """Mock OAuth token response."""
+    return {"access_token": "test_token_123", "expires_in": 3600}
 
 
 class TestDiscoverTools:
@@ -147,15 +161,14 @@ class TestExtractToolMetadata:
 class TestCreateMcpFunction:
     """Tests for MCP function creation."""
 
-    def test_create_mcp_function_with_valid_metadata(self):
+    def test_create_mcp_function_with_valid_metadata(self, mock_client):
         """Test MCP function creation with valid metadata."""
         from python.tools.payouts import retrieve_payout
 
-        client = JustiFiClient("test_client", "test_secret")
         metadata = extract_tool_metadata(retrieve_payout)
 
         mcp_func = create_mcp_function(
-            "retrieve_payout", retrieve_payout, client, metadata
+            "retrieve_payout", retrieve_payout, mock_client, metadata
         )
 
         # Should have correct name and docstring
@@ -169,11 +182,9 @@ class TestCreateMcpFunction:
         if metadata["signature"]:
             assert mcp_func.__signature__ == metadata["signature"]
 
-    def test_create_mcp_function_with_fallback_metadata(self):
+    def test_create_mcp_function_with_fallback_metadata(self, mock_client):
         """Test MCP function creation with fallback metadata."""
         from python.tools.payouts import retrieve_payout
-
-        client = JustiFiClient("test_client", "test_secret")
 
         # Create metadata with no signature (simulates extraction failure)
         metadata = {
@@ -184,7 +195,9 @@ class TestCreateMcpFunction:
             "return_annotation": dict[str, Any],
         }
 
-        mcp_func = create_mcp_function("test_func", retrieve_payout, client, metadata)
+        mcp_func = create_mcp_function(
+            "test_func", retrieve_payout, mock_client, metadata
+        )
 
         # Should still create valid function
         assert mcp_func.__name__ == "test_func"
@@ -192,15 +205,22 @@ class TestCreateMcpFunction:
         assert inspect.iscoroutinefunction(mcp_func)
 
     @pytest.mark.asyncio
-    async def test_created_mcp_function_calls_wrap_tool_call(self):
+    @respx.mock
+    async def test_created_mcp_function_calls_wrap_tool_call(
+        self, mock_client, mock_token_response
+    ):
         """Test that created MCP function properly calls wrap_tool_call."""
         from python.tools.payouts import retrieve_payout
 
-        client = JustiFiClient("test_client", "test_secret")
+        # Mock OAuth token
+        respx.post("https://api.justifi.ai/oauth/token").mock(
+            return_value=Response(200, json=mock_token_response)
+        )
+
         metadata = extract_tool_metadata(retrieve_payout)
 
         mcp_func = create_mcp_function(
-            "retrieve_payout", retrieve_payout, client, metadata
+            "retrieve_payout", retrieve_payout, mock_client, metadata
         )
 
         # Mock wrap_tool_call to verify it's called correctly
@@ -213,7 +233,7 @@ class TestCreateMcpFunction:
 
             # Should call wrap_tool_call with correct arguments
             mock_wrap.assert_called_once_with(
-                "retrieve_payout", retrieve_payout, client, "test_payout_id"
+                "retrieve_payout", retrieve_payout, mock_client, "test_payout_id"
             )
             assert result == {"test": "result"}
 
@@ -221,14 +241,13 @@ class TestCreateMcpFunction:
 class TestRegisterSingleTool:
     """Tests for single tool registration."""
 
-    def test_register_single_tool_success(self):
+    def test_register_single_tool_success(self, mock_client):
         """Test successful single tool registration."""
         mcp = MagicMock(spec=FastMCP)
-        client = JustiFiClient("test_client", "test_secret")
 
         from python.tools.payouts import retrieve_payout
 
-        register_single_tool(mcp, client, "retrieve_payout", retrieve_payout)
+        register_single_tool(mcp, mock_client, "retrieve_payout", retrieve_payout)
 
         # Should call mcp.tool with created function
         mcp.tool.assert_called_once()
@@ -237,10 +256,9 @@ class TestRegisterSingleTool:
         assert registered_func.__name__ == "retrieve_payout"
         assert inspect.iscoroutinefunction(registered_func)
 
-    def test_register_single_tool_handles_metadata_extraction_errors(self):
+    def test_register_single_tool_handles_metadata_extraction_errors(self, mock_client):
         """Test single tool registration handles metadata extraction errors gracefully."""
         mcp = MagicMock(spec=FastMCP)
-        client = JustiFiClient("test_client", "test_secret")
 
         # Mock function that will cause errors
         mock_func = MagicMock()
@@ -252,7 +270,7 @@ class TestRegisterSingleTool:
         ):
             # Should not raise, but handle gracefully
             try:
-                register_single_tool(mcp, client, "failing_func", mock_func)
+                register_single_tool(mcp, mock_client, "failing_func", mock_func)
                 # If no exception, registration should still proceed with fallbacks
             except Exception as e:
                 # If exception is raised, it should be handled by auto_register_tools
@@ -262,10 +280,9 @@ class TestRegisterSingleTool:
 class TestAutoRegisterTools:
     """Tests for the main auto-registration function."""
 
-    def test_auto_register_tools_success(self):
+    def test_auto_register_tools_success(self, mock_client):
         """Test successful auto-registration of all tools."""
         mcp = MagicMock(spec=FastMCP)
-        client = JustiFiClient("test_client", "test_secret")
 
         with patch(
             "modelcontextprotocol.auto_register.discover_tools"
@@ -275,7 +292,7 @@ class TestAutoRegisterTools:
             with patch(
                 "modelcontextprotocol.auto_register.register_single_tool"
             ) as mock_register:
-                auto_register_tools(mcp, client)
+                auto_register_tools(mcp, mock_client)
 
                 # Should call register_single_tool for each discovered tool
                 assert mock_register.call_count == 2
@@ -286,10 +303,9 @@ class TestAutoRegisterTools:
                 assert "retrieve_payout" in call_args
                 assert "list_payments" in call_args
 
-    def test_auto_register_tools_continues_on_individual_failures(self):
+    def test_auto_register_tools_continues_on_individual_failures(self, mock_client):
         """Test auto-registration continues when individual tool registration fails."""
         mcp = MagicMock(spec=FastMCP)
-        client = JustiFiClient("test_client", "test_secret")
 
         with patch(
             "modelcontextprotocol.auto_register.discover_tools"
@@ -312,7 +328,7 @@ class TestAutoRegisterTools:
                     mock_register.side_effect = side_effect
 
                     # Should not raise exception, but continue with other tools
-                    auto_register_tools(mcp, client)
+                    auto_register_tools(mcp, mock_client)
 
                     # Should attempt to register all tools
                     assert mock_register.call_count == 3

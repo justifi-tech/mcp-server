@@ -88,6 +88,11 @@ def _extract_data_type(tool_name: str, hint: str | None = None) -> str:
         "get_sub_account": "sub_account",
         "get_sub_account_payout_account": "sub_account_payout_account",
         "get_sub_account_settings": "sub_account_settings",
+        "list_terminals": "terminals",
+        "retrieve_terminal": "terminal",
+        "update_terminal": "terminal",
+        "get_terminal_status": "terminal_status",
+        "identify_terminal": "terminal_identify",
     }
 
     return type_mapping.get(tool_name, "unknown")

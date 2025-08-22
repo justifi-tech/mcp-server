@@ -101,6 +101,13 @@ This MCP server provides complete payment management capabilities across multipl
 - `get_sub_account_payout_account` - Get sub account payout account
 - `get_sub_account_settings` - Get sub account settings
 
+### Terminal Tools
+- `list_terminals` - List terminals with filtering and pagination
+- `retrieve_terminal` - Get detailed terminal information
+- `update_terminal` - Update terminal properties (nickname)
+- `get_terminal_status` - Get real-time terminal status
+- `identify_terminal` - Display identification on terminal screen
+
 
 
 ## 🚀 Quick Start
@@ -325,6 +332,8 @@ After configuration, restart Claude Desktop and you should see JustiFi payment t
 - "List recent payouts"
 - "Get the status of payout po_ABC123"
 - "Show me payment details for py_XYZ789"
+- "List all terminals"
+- "Get terminal status for trm_ABC123"
 
 ## 🌐 Environment Variables
 
@@ -384,7 +393,7 @@ make drift-check
 
 ## 📋 Standardized Response Format
 
-All 27 JustiFi MCP tools return responses in a consistent, standardized format to ensure uniform handling across different AI agents and applications:
+All 32 JustiFi MCP tools return responses in a consistent, standardized format to ensure uniform handling across different AI agents and applications:
 
 ```json
 {
@@ -461,7 +470,7 @@ All 27 JustiFi MCP tools return responses in a consistent, standardized format t
 }
 ```
 
-This standardization applies to all tools including payments, payouts, refunds, disputes, checkouts, balance transactions, payment methods, sub-accounts, and proceeds.
+This standardization applies to all tools including payments, payouts, refunds, disputes, checkouts, balance transactions, payment methods, sub-accounts, proceeds, and terminals.
 
 ## 📚 Documentation
 

@@ -57,6 +57,8 @@ coverage.xml
 cursor_mcp_config.json
 *_mcp_config.json
 claude_desktop_config.json
+./.claude/settings.local.json
+
 *claude_desktop_config.json
 
 # User directories (should never be in repo)

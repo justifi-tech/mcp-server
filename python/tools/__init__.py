@@ -29,6 +29,13 @@ from .sub_accounts import (
     get_sub_account_settings,
     list_sub_accounts,
 )
+from .terminals import (
+    get_terminal_status,
+    identify_terminal,
+    list_terminals,
+    retrieve_terminal,
+    update_terminal,
+)
 
 __all__ = [
     "create_payment_method_group",
@@ -58,6 +65,11 @@ __all__ = [
     "get_sub_account_payout_account",
     "get_sub_account_settings",
     "list_sub_accounts",
+    "get_terminal_status",
+    "identify_terminal",
+    "list_terminals",
+    "retrieve_terminal",
+    "update_terminal",
     "standardize_response",
     "wrap_tool_call",
 ]

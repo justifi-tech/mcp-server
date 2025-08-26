@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JustiFi Embedded Checkout Example</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        .product-card {
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+            background: #f9f9f9;
+        }
+        .price {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2c5aa0;
+            margin: 10px 0;
+        }
+        .checkout-container {
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            background: white;
+            margin-bottom: 20px;
+        }
+        .loading {
+            text-align: center;
+            color: #666;
+            padding: 40px;
+        }
+        .error {
+            background: #fff2f2;
+            border: 1px solid #ffb3b3;
+            color: #d63384;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .success {
+            background: #f0f9f0;
+            border: 1px solid #b3d9b3;
+            color: #28a745;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .btn {
+            background: #2c5aa0;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        .btn:hover {
+            background: #1e3f73;
+        }
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .code-block {
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 12px;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🛒 JustiFi Embedded Checkout</h1>
+        <p>Complete payment flow using MCP backend + Web Components frontend</p>
+    </div>
+
+    <div class="product-card">
+        <h2>Premium Plan</h2>
+        <p>Access to all premium features including advanced analytics, priority support, and custom integrations.</p>
+        <div class="price">$29.99/month</div>
+        <button id="start-checkout" class="btn">Start Checkout</button>
+    </div>
+
+    <div id="checkout-container" class="checkout-container" style="display: none;">
+        <h3>Complete Your Payment</h3>
+        <div id="checkout-content">
+            <div class="loading">Creating secure checkout session...</div>
+        </div>
+    </div>
+
+    <div id="status-messages"></div>
+
+    <div style="margin-top: 40px;">
+        <h3>🧪 Test Cards</h3>
+        <p>Use these test card numbers:</p>
+        <ul>
+            <li><code>4242424242424242</code> - Visa (success)</li>
+            <li><code>4000000000000002</code> - Visa (declined)</li>
+            <li><code>4000000000000341</code> - Visa (fails after tokenization)</li>
+        </ul>
+        <p><small>Expiration: Any future date | CVC: Any 3-digit number</small></p>
+    </div>
+
+    <!-- Load JustiFi Web Components -->
+    <script src="https://cdn.justifi.ai/webcomponents/dist/justifi.js"></script>
+    
+    <script>
+        // Real Backend API Client
+        // This calls your actual Express.js server, which makes real JustiFi API calls
+        // The MCP server helped developers understand the API during development
+        class BackendApiClient {
+            constructor() {
+                // Your real backend server (not MCP server)
+                this.baseUrl = window.location.origin;
+            }
+
+            async createCheckout(params) {
+                console.log('Creating checkout via backend API:', params);
+                
+                try {
+                    const response = await fetch('/api/checkout', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(params)
+                    });
+
+                    const data = await response.json();
+                    
+                    if (!response.ok) {
+                        throw new Error(data.error || 'Checkout creation failed');
+                    }
+
+                    return data;
+
+                } catch (error) {
+                    console.error('Checkout creation failed:', error);
+                    throw error;
+                }
+            }
+
+            async retrievePayment(paymentId) {
+                console.log('Retrieving payment via backend API:', paymentId);
+                
+                try {
+                    const response = await fetch(`/api/payment/${paymentId}`);
+                    const data = await response.json();
+                    
+                    if (!response.ok) {
+                        throw new Error(data.error || 'Payment retrieval failed');
+                    }
+
+                    return data;
+
+                } catch (error) {
+                    console.error('Payment retrieval failed:', error);
+                    throw error;
+                }
+            }
+        }
+
+        const apiClient = new BackendApiClient();
+        let currentCheckout = null;
+
+        // UI Elements
+        const startButton = document.getElementById('start-checkout');
+        const checkoutContainer = document.getElementById('checkout-container');
+        const checkoutContent = document.getElementById('checkout-content');
+        const statusMessages = document.getElementById('status-messages');
+
+        // Event Handlers
+        startButton.addEventListener('click', async () => {
+            try {
+                startButton.disabled = true;
+                showStatus('Creating checkout session...', 'info');
+                
+                // Step 1: Create checkout via backend API (which calls JustiFi API)
+                const checkout = await apiClient.createCheckout({
+                    amount: 2999, // $29.99
+                    description: 'Premium Plan Subscription'
+                });
+
+                if (!checkout.success) {
+                    throw new Error('Checkout creation failed');
+                }
+
+                currentCheckout = checkout.data;
+                showStatus('Checkout created successfully! Loading payment form...', 'success');
+
+                // Step 2: Show checkout container
+                checkoutContainer.style.display = 'block';
+                
+                // Step 3: Create and configure JustiFi Web Component
+                await createWebComponent(checkout.data.id);
+
+            } catch (error) {
+                console.error('Checkout creation error:', error);
+                showStatus(`Error creating checkout: ${error.message}`, 'error');
+                startButton.disabled = false;
+            }
+        });
+
+        async function createWebComponent(checkoutId) {
+            try {
+                // Clear loading message
+                checkoutContent.innerHTML = '';
+
+                // Create JustiFi checkout web component
+                const checkoutElement = document.createElement('justifi-checkout');
+                checkoutElement.setAttribute('checkout-id', checkoutId);
+                checkoutElement.setAttribute('auth-token', 'your_auth_token'); // Replace with your auth token
+                
+                // Optional: Customize payment methods
+                // checkoutElement.setAttribute('disable-bnpl', 'false');
+                // checkoutElement.setAttribute('disable-credit-card', 'false');
+                // checkoutElement.setAttribute('disable-bank-account', 'false');
+
+                // Event Listeners for Web Component (using real events)
+                checkoutElement.addEventListener('submit-event', async (event) => {
+                    console.log('Checkout submitted successfully:', event.detail);
+                    
+                    try {
+                        // The response contains payment completion data
+                        const { response } = event.detail;
+                        
+                        if (response.payment_id) {
+                            // Step 4: Optionally verify payment via backend API
+                            const payment = await apiClient.retrievePayment(response.payment_id);
+                            
+                            if (payment.success) {
+                                showStatus('🎉 Payment successful! Thank you for your purchase.', 'success');
+                                showPaymentDetails(payment.data);
+                                
+                                // Redirect to success page
+                                setTimeout(() => {
+                                    window.location.href = `/success?payment=${response.payment_id}`;
+                                }, 2000);
+                            } else {
+                                showStatus('Payment verification failed', 'error');
+                            }
+                        } else {
+                            showStatus('🎉 Checkout completed successfully!', 'success');
+                            showCheckoutDetails(response);
+                        }
+                    } catch (error) {
+                        console.error('Payment verification error:', error);
+                        showStatus('Payment completed but verification failed', 'error');
+                    }
+                });
+
+                checkoutElement.addEventListener('error-event', (event) => {
+                    console.log('Checkout error event:', event.detail);
+                    const { message, errorCode, severity } = event.detail;
+                    showStatus(`Checkout error: ${message} (${errorCode})`, 'error');
+                });
+
+                checkoutElement.addEventListener('loaded', (event) => {
+                    console.log('Checkout loaded event:', event.detail);
+                    const { checkout_status } = event.detail;
+                    showStatus(`Checkout loaded with status: ${checkout_status}`, 'info');
+                });
+
+                // Add the component to the page
+                checkoutContent.appendChild(checkoutElement);
+                
+                // Re-enable start button for retry
+                startButton.disabled = false;
+                startButton.textContent = 'Start New Checkout';
+
+            } catch (error) {
+                console.error('Web component creation error:', error);
+                showStatus(`Error loading payment form: ${error.message}`, 'error');
+                startButton.disabled = false;
+            }
+        }
+
+        function showStatus(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = type === 'error' ? 'error' : (type === 'success' ? 'success' : 'info');
+            div.textContent = message;
+            
+            statusMessages.appendChild(div);
+            
+            // Auto-remove info messages after 5 seconds
+            if (type === 'info') {
+                setTimeout(() => {
+                    if (div.parentNode) {
+                        div.parentNode.removeChild(div);
+                    }
+                }, 5000);
+            }
+        }
+
+        function showPaymentDetails(payment) {
+            const details = document.createElement('div');
+            details.className = 'code-block';
+            details.innerHTML = `
+                <strong>Payment Details:</strong><br>
+                Payment ID: ${payment.id}<br>
+                Amount: $${(payment.amount / 100).toFixed(2)}<br>
+                Status: ${payment.status}<br>
+                Description: ${payment.description}<br>
+                Created: ${new Date(payment.created_at).toLocaleString()}
+            `;
+            statusMessages.appendChild(details);
+        }
+
+        function showCheckoutDetails(response) {
+            const details = document.createElement('div');
+            details.className = 'code-block';
+            details.innerHTML = `
+                <strong>Checkout Response:</strong><br>
+                Payment ID: ${response.payment_id || 'N/A'}<br>
+                Payment Method ID: ${response.payment_method_id || 'N/A'}<br>
+                Status: ${response.status || 'N/A'}<br>
+                Payment Mode: ${response.payment_mode || 'N/A'}<br>
+                ${response.payment_status ? `Payment Status: ${response.payment_status}<br>` : ''}
+                Created: ${new Date().toLocaleString()}
+            `;
+            statusMessages.appendChild(details);
+        }
+
+        // Development helpers
+        console.log('🚀 JustiFi Embedded Checkout Example loaded');
+        console.log('💡 Open browser dev tools to see real API interactions');
+        console.log('📖 Check the README.md for setup instructions');
+        console.log('🔧 MCP server was used during development to understand the JustiFi API');
+    </script>
+</body>
+</html>

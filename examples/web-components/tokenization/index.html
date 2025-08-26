@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JustiFi Tokenization Flow Example</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        .two-column {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        .card-form-section, .payment-section, .stored-methods-section {
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            background: white;
+        }
+        .stored-methods-section {
+            grid-column: 1 / -1;
+        }
+        .method-card {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 10px 0;
+            background: #f9f9f9;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .method-info {
+            flex-grow: 1;
+        }
+        .method-actions {
+            display: flex;
+            gap: 10px;
+        }
+        .btn {
+            background: #2c5aa0;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        .btn:hover {
+            background: #1e3f73;
+        }
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .btn-secondary {
+            background: #6c757d;
+        }
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+        .btn-danger {
+            background: #dc3545;
+        }
+        .btn-danger:hover {
+            background: #c82333;
+        }
+        .loading {
+            text-align: center;
+            color: #666;
+            padding: 20px;
+        }
+        .error {
+            background: #fff2f2;
+            border: 1px solid #ffb3b3;
+            color: #d63384;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .success {
+            background: #f0f9f0;
+            border: 1px solid #b3d9b3;
+            color: #28a745;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .info {
+            background: #f0f8ff;
+            border: 1px solid #b3d9ff;
+            color: #0066cc;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .payment-form {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .payment-form input {
+            flex-grow: 1;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        h2 {
+            margin-top: 0;
+            color: #2c5aa0;
+        }
+        .test-cards {
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 20px 0;
+            font-size: 14px;
+        }
+        .test-cards ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        .code {
+            font-family: 'Monaco', 'Consolas', monospace;
+            background: #f5f5f5;
+            padding: 2px 4px;
+            border-radius: 2px;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🔐 JustiFi Tokenization Flow</h1>
+        <p>Secure card tokenization with Web Components + MCP backend</p>
+    </div>
+
+    <div class="test-cards">
+        <h3>🧪 Test Cards</h3>
+        <ul>
+            <li><span class="code">4242424242424242</span> - Visa (success)</li>
+            <li><span class="code">4000000000000002</span> - Visa (declined)</li>
+            <li><span class="code">4000000000000341</span> - Visa (fails after tokenization)</li>
+        </ul>
+        <p><small>Expiration: Any future date | CVC: Any 3-digit number</small></p>
+    </div>
+
+    <div class="two-column">
+        <div class="card-form-section">
+            <h2>💳 Add Payment Method</h2>
+            <p>Enter card details to create a secure token:</p>
+            <p><small>🔐 tokenization-only mode ensures no sensitive card data is stored on your servers</small></p>
+            
+            <div id="card-form-container">
+                <div class="loading">Loading secure card form...</div>
+            </div>
+            
+            <button id="tokenize-card" class="btn" disabled>Tokenize Card</button>
+        </div>
+
+        <div class="payment-section">
+            <h2>💰 Create Payment</h2>
+            <p>Use a stored payment method to create a payment:</p>
+            
+            <div class="payment-form">
+                <input type="number" id="payment-amount" placeholder="Amount (cents)" value="1999" min="100">
+                <input type="text" id="payment-description" placeholder="Description" value="Subscription fee">
+                <button id="create-payment" class="btn" disabled>Create Payment</button>
+            </div>
+            
+            <div id="payment-result"></div>
+        </div>
+    </div>
+
+    <div class="stored-methods-section">
+        <h2>💾 Stored Payment Methods</h2>
+        <p>Securely tokenized payment methods (no sensitive card data stored):</p>
+        <div id="stored-methods">
+            <div class="loading">No payment methods stored yet</div>
+        </div>
+    </div>
+
+    <div id="status-messages"></div>
+
+    <!-- Load JustiFi Web Components -->
+    <script type="module" src="https://cdn.jsdelivr.net/npm/@justifi/webcomponents@latest/dist/webcomponents/webcomponents.esm.js"></script>
+    <script nomodule src="https://cdn.jsdelivr.net/npm/@justifi/webcomponents@latest/dist/webcomponents/webcomponents.js"></script>
+    
+    <script>
+        // Real Backend API Client (not MCP simulation)
+        // This demonstrates calling actual backend endpoints that make JustiFi API calls
+        // MCP server helped developers understand the API structure during development
+        class BackendApiClient {
+            constructor() {
+                this.baseUrl = window.location.origin;
+            }
+
+            async tokenizePaymentMethod(cardData) {
+                console.log('Tokenizing via backend API:', cardData);
+                
+                try {
+                    const response = await fetch('/api/tokenize', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            card_number: cardData.card_number,
+                            exp_month: cardData.exp_month,
+                            exp_year: cardData.exp_year,
+                            cvc: cardData.cvc,
+                            name: cardData.name
+                        })
+                    });
+
+                    const data = await response.json();
+                    
+                    if (!response.ok) {
+                        throw new Error(data.error || 'Tokenization failed');
+                    }
+
+                    return data;
+
+                } catch (error) {
+                    console.error('Tokenization failed:', error);
+                    // For demo purposes, return mock data when backend isn't running
+                    return this.getMockToken(cardData);
+                }
+            }
+
+            async createPayment(params) {
+                console.log('Creating payment via backend API:', params);
+                
+                try {
+                    const response = await fetch('/api/payments', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(params)
+                    });
+
+                    const data = await response.json();
+                    
+                    if (!response.ok) {
+                        throw new Error(data.error || 'Payment creation failed');
+                    }
+
+                    return data;
+
+                } catch (error) {
+                    console.error('Payment creation failed:', error);
+                    // For demo purposes, return mock data when backend isn't running
+                    return this.getMockPayment(params);
+                }
+            }
+
+            // Mock data for demo purposes when backend isn't available
+            getMockToken(cardData) {
+                return {
+                    success: true,
+                    data: {
+                        id: 'pm_' + Math.random().toString(36).substr(2, 16),
+                        type: 'card',
+                        card: {
+                            brand: this.detectCardBrand(cardData.card_number),
+                            last_four: cardData.card_number.slice(-4),
+                            exp_month: cardData.exp_month,
+                            exp_year: cardData.exp_year
+                        },
+                        created_at: new Date().toISOString()
+                    }
+                };
+            }
+
+            getMockPayment(params) {
+                return {
+                    success: true,
+                    data: {
+                        id: 'pay_' + Math.random().toString(36).substr(2, 16),
+                        amount: params.amount,
+                        status: 'succeeded',
+                        description: params.description,
+                        payment_method_id: params.payment_method_id,
+                        created_at: new Date().toISOString()
+                    }
+                };
+            }
+
+            detectCardBrand(cardNumber) {
+                const number = cardNumber.replace(/\s/g, '');
+                if (number.startsWith('4')) return 'visa';
+                if (number.startsWith('5')) return 'mastercard';
+                if (number.startsWith('3')) return 'amex';
+                return 'unknown';
+            }
+        }
+
+        const apiClient = new BackendApiClient();
+        let storedMethods = [];
+        let currentCardData = null;
+
+        // UI Elements
+        const cardFormContainer = document.getElementById('card-form-container');
+        const tokenizeButton = document.getElementById('tokenize-card');
+        const createPaymentButton = document.getElementById('create-payment');
+        const storedMethodsContainer = document.getElementById('stored-methods');
+        const statusMessages = document.getElementById('status-messages');
+
+        // Initialize card form
+        async function initializeCardForm() {
+            try {
+                // Create JustiFi card form web component
+                const cardForm = document.createElement('justifi-card-form');
+                // No attributes needed - component handles its own configuration
+                
+                // Clear loading message and add form
+                cardFormContainer.innerHTML = '';
+                cardFormContainer.appendChild(cardForm);
+
+                // Listen for real card form events
+                cardForm.addEventListener('cardFormReady', (event) => {
+                    console.log('Card form ready:', event.detail);
+                    tokenizeButton.disabled = false;
+                });
+
+                cardForm.addEventListener('cardFormTokenize', (event) => {
+                    console.log('Card form tokenize event:', event.detail);
+                    // Handle tokenization result
+                    handleTokenizationResult(event.detail.data);
+                });
+
+                cardForm.addEventListener('cardFormValidate', (event) => {
+                    console.log('Card form validate event:', event.detail);
+                    const isValid = event.detail.data.isValid;
+                    console.log('Form is valid:', isValid);
+                });
+
+            } catch (error) {
+                console.error('Card form initialization error:', error);
+                cardFormContainer.innerHTML = `
+                    <div class="error">
+                        Failed to load card form. Make sure you have internet connectivity and the JustiFi CDN is accessible.
+                    </div>
+                `;
+            }
+        }
+
+        // Handle tokenization result from the real card form component
+        function handleTokenizationResult(tokenData) {
+            try {
+                if (tokenData && tokenData.id) {
+                    // Convert the real tokenization response to our expected format
+                    const paymentMethod = {
+                        id: tokenData.id,
+                        type: 'card',
+                        card: {
+                            brand: tokenData.card?.brand || 'unknown',
+                            last_four: tokenData.card?.last_four || '0000',
+                            exp_month: tokenData.card?.exp_month || '12',
+                            exp_year: tokenData.card?.exp_year || '2025'
+                        },
+                        created_at: tokenData.created_at || new Date().toISOString()
+                    };
+
+                    // Add to stored methods
+                    storedMethods.push(paymentMethod);
+                    updateStoredMethodsDisplay();
+                    
+                    showStatus('✅ Payment method tokenized successfully!', 'success');
+                    
+                    // Reset form state
+                    tokenizeButton.disabled = false;
+                    tokenizeButton.textContent = 'Tokenize Card';
+                    
+                    // Enable payment creation
+                    updatePaymentControls();
+                    
+                } else {
+                    throw new Error('Invalid tokenization response');
+                }
+            } catch (error) {
+                console.error('Tokenization result handling error:', error);
+                showStatus(`Tokenization failed: ${error.message}`, 'error');
+                tokenizeButton.disabled = false;
+                tokenizeButton.textContent = 'Tokenize Card';
+            }
+        }
+
+        // Event Handlers
+        tokenizeButton.addEventListener('click', async () => {
+            if (!currentCardData) {
+                showStatus('Please enter valid card details', 'error');
+                return;
+            }
+
+            try {
+                tokenizeButton.disabled = true;
+                tokenizeButton.textContent = 'Tokenizing...';
+                
+                showStatus('Tokenizing payment method...', 'info');
+
+                // Use the actual card form tokenization method
+                const cardForm = cardFormContainer.querySelector('justifi-card-form');
+                if (cardForm) {
+                    // All of this information would come from your form instead of being hard coded
+                    const paymentMethodData = {
+                        name: 'John Doe',
+                        address_line1: '123 Broadway',
+                        address_city: 'Minneapolis',
+                        address_state: 'MN',
+                        address_postal_code: '55413',
+                        address_country: 'US',
+                        metadata: { source: 'tokenization-example' }
+                    };
+                    
+                    // Call the real tokenize method - replace 'CLIENT_ID' with your actual client ID
+                    await cardForm.tokenize('test_your_client_id', paymentMethodData, 'ACCOUNT_ID');
+                } else {
+                    throw new Error('Card form not found');
+                }
+
+            } catch (error) {
+                console.error('Tokenization error:', error);
+                showStatus(`Tokenization failed: ${error.message}`, 'error');
+                tokenizeButton.disabled = false;
+                tokenizeButton.textContent = 'Tokenize Card';
+            }
+        });
+
+        createPaymentButton.addEventListener('click', async () => {
+            const amount = document.getElementById('payment-amount').value;
+            const description = document.getElementById('payment-description').value;
+            
+            if (!amount || amount < 100) {
+                showStatus('Amount must be at least $1.00 (100 cents)', 'error');
+                return;
+            }
+
+            if (storedMethods.length === 0) {
+                showStatus('Please add a payment method first', 'error');
+                return;
+            }
+
+            try {
+                createPaymentButton.disabled = true;
+                createPaymentButton.textContent = 'Creating...';
+                
+                showStatus('Creating payment...', 'info');
+
+                // Use the first stored method
+                const paymentMethod = storedMethods[0];
+                
+                const result = await apiClient.createPayment({
+                    amount: parseInt(amount),
+                    description: description || 'Payment',
+                    payment_method_id: paymentMethod.id
+                });
+
+                if (result.success) {
+                    showStatus('🎉 Payment created successfully!', 'success');
+                    showPaymentResult(result.data);
+                } else {
+                    throw new Error('Payment creation failed');
+                }
+
+            } catch (error) {
+                console.error('Payment creation error:', error);
+                showStatus(`Payment failed: ${error.message}`, 'error');
+            } finally {
+                createPaymentButton.disabled = false;
+                createPaymentButton.textContent = 'Create Payment';
+            }
+        });
+
+        // Helper Functions
+        function updateStoredMethodsDisplay() {
+            if (storedMethods.length === 0) {
+                storedMethodsContainer.innerHTML = '<div class="loading">No payment methods stored yet</div>';
+                return;
+            }
+
+            const methodsHtml = storedMethods.map(method => `
+                <div class="method-card">
+                    <div class="method-info">
+                        <strong>${method.card.brand.toUpperCase()} •••• ${method.card.last_four}</strong><br>
+                        <small>Expires ${method.card.exp_month}/${method.card.exp_year} • Added ${new Date(method.created_at).toLocaleDateString()}</small>
+                    </div>
+                    <div class="method-actions">
+                        <button class="btn btn-secondary" onclick="usePaymentMethod('${method.id}')">Use</button>
+                        <button class="btn btn-danger" onclick="removePaymentMethod('${method.id}')">Remove</button>
+                    </div>
+                </div>
+            `).join('');
+
+            storedMethodsContainer.innerHTML = methodsHtml;
+        }
+
+        function updatePaymentControls() {
+            createPaymentButton.disabled = storedMethods.length === 0;
+        }
+
+        function usePaymentMethod(methodId) {
+            const method = storedMethods.find(m => m.id === methodId);
+            if (method) {
+                showStatus(`Selected ${method.card.brand.toUpperCase()} •••• ${method.card.last_four}`, 'info');
+                // Move this method to the front for easy use
+                storedMethods = [method, ...storedMethods.filter(m => m.id !== methodId)];
+                updateStoredMethodsDisplay();
+            }
+        }
+
+        function removePaymentMethod(methodId) {
+            storedMethods = storedMethods.filter(m => m.id !== methodId);
+            updateStoredMethodsDisplay();
+            updatePaymentControls();
+            showStatus('Payment method removed', 'info');
+        }
+
+        function showPaymentResult(payment) {
+            const resultDiv = document.getElementById('payment-result');
+            resultDiv.innerHTML = `
+                <div class="success" style="margin-top: 15px;">
+                    <strong>Payment Created:</strong><br>
+                    ID: ${payment.id}<br>
+                    Amount: $${(payment.amount / 100).toFixed(2)}<br>
+                    Status: ${payment.status}<br>
+                    Description: ${payment.description}
+                </div>
+            `;
+        }
+
+        function showStatus(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = type === 'error' ? 'error' : (type === 'success' ? 'success' : 'info');
+            div.textContent = message;
+            
+            statusMessages.appendChild(div);
+            
+            // Auto-remove info messages after 5 seconds
+            if (type === 'info') {
+                setTimeout(() => {
+                    if (div.parentNode) {
+                        div.parentNode.removeChild(div);
+                    }
+                }, 5000);
+            }
+        }
+
+        // Initialize
+        initializeCardForm();
+        updatePaymentControls();
+
+        // Development helpers
+        console.log('🔐 JustiFi Tokenization Flow Example loaded');
+        console.log('💡 Open browser dev tools to see real API interactions');
+        console.log('📖 Check the README.md for setup instructions');
+        console.log('🔧 MCP server was used during development to understand tokenization flow');
+        console.log('⚠️  Backend APIs will fall back to mock data if real server is not running');
+
+        // Make functions globally accessible for onclick handlers
+        window.usePaymentMethod = usePaymentMethod;
+        window.removePaymentMethod = removePaymentMethod;
+    </script>
+</body>
+</html>

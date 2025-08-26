@@ -79,12 +79,13 @@ class _TokenCache(BaseModel):
 class JustiFiClient:
     """JustiFi API client with OAuth2 authentication and error handling."""
 
-    def __init__(self, client_id: str, client_secret: str):
+    def __init__(self, client_id: str, client_secret: str, base_url: str | None = None):
         """Initialize the JustiFi client.
 
         Args:
             client_id: JustiFi client ID
             client_secret: JustiFi client secret
+            base_url: Optional base URL (overrides JUSTIFI_BASE_URL env var)
 
         Raises:
             AuthenticationError: If credentials are invalid
@@ -96,7 +97,18 @@ class JustiFiClient:
 
         self.client_id = client_id
         self.client_secret = client_secret
-        self.base_url = os.getenv("JUSTIFI_BASE_URL", "https://api.justifi.ai")
+
+        # Priority: explicit parameter > env var > default
+        self.base_url = base_url or os.getenv(
+            "JUSTIFI_BASE_URL", "https://api.justifi.ai"
+        )
+
+        # Normalize URL - remove trailing slashes and warn about /v1 suffix
+        self.base_url = self.base_url.rstrip("/")
+        if self.base_url.endswith("/v1"):
+            logger.warning(f"Base URL should not include /v1 suffix: {self.base_url}")
+            self.base_url = self.base_url[:-3]  # Remove /v1 from end only
+
         self._token_cache = _TokenCache()
 
         logger.debug(f"JustiFi client initialized with base URL: {self.base_url}")

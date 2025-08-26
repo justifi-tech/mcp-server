@@ -10,7 +10,7 @@ This is a **JustiFi MCP (Model Context Protocol) server** designed for AI-assist
 - **Package Management**: uv (not pip)
 - **Testing**: pytest + pytest-asyncio (36/36 tests passing)
 - **Containerization**: Docker with auto-restart development workflow
-- **Observability**: LangSmith tracing with @traceable decorators
+- **Observability**: Comprehensive logging and error handling
 
 ## MCP Standards and Best Practices
 
@@ -131,7 +131,7 @@ Required:
 - `JUSTIFI_BASE_URL` - JustiFi API Base URL (default: https://api.justifi.ai)
 
 Optional:
-- `LANGCHAIN_API_KEY` - LangSmith tracing (recommended)
+- `Optional: LangChain integration for AI frameworks
 - `LANGCHAIN_TRACING_V2=true` - Enable tracing
 
 ### Adding New Tools
@@ -284,7 +284,7 @@ uv run pytest tests/ --cov=python --cov-report=html
 10. `list_balance_transactions` - List fund movements
 
 ## Troubleshooting
-- Check LangSmith traces for debugging tool execution
+- Check application logs for debugging tool execution
 - Verify JustiFi API credentials are set correctly
 - Use `make dev` for auto-restart development
 - Check container logs with `docker-compose logs mcp-dev`

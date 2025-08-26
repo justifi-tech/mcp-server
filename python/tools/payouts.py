@@ -10,14 +10,11 @@ from __future__ import annotations
 
 from typing import Any
 
-from langsmith import traceable
-
 from ..core import JustiFiClient
 from .base import ValidationError, handle_tool_errors
 from .response_formatter import standardize_response
 
 
-@traceable
 @handle_tool_errors
 async def retrieve_payout(client: JustiFiClient, payout_id: str) -> dict[str, Any]:
     """Retrieve a payout by its ID.
@@ -42,7 +39,6 @@ async def retrieve_payout(client: JustiFiClient, payout_id: str) -> dict[str, An
     return standardize_response(result, "retrieve_payout")
 
 
-@traceable
 @handle_tool_errors
 async def list_payouts(
     client: JustiFiClient,
@@ -84,7 +80,6 @@ async def list_payouts(
     return standardize_response(result, "list_payouts")
 
 
-@traceable
 @handle_tool_errors
 async def get_payout_status(client: JustiFiClient, payout_id: str) -> str:
     """Get the status of a specific payout.
@@ -109,7 +104,6 @@ async def get_payout_status(client: JustiFiClient, payout_id: str) -> str:
         raise KeyError(f"Payout response missing expected field: {e}") from e
 
 
-@traceable
 @handle_tool_errors
 async def get_recent_payouts(client: JustiFiClient, limit: int = 10) -> dict[str, Any]:
     """Get the most recent payouts.

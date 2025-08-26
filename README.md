@@ -358,12 +358,6 @@ Optional Configuration:
 JUSTIFI_BASE_URL=https://api.justifi.ai    # Default. Set custom URL if needed
 ```
 
-Optional (LangSmith):
-```bash
-LANGCHAIN_API_KEY=your_langsmith_key        # For tracing/observability
-LANGCHAIN_TRACING_V2=true                   # Enable tracing
-```
-
 **Note**: No AI model API keys needed! Those are handled by MCP clients, not this server.
 
 ## 🔄 API Drift Monitoring
@@ -393,7 +387,6 @@ make drift-check
 - JSON-RPC 2.0 over stdio transport
 - Proper tool schema definitions
 - Error handling and validation
-- LangSmith tracing support
 
 ## 📋 Standardized Response Format
 

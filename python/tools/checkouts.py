@@ -10,13 +10,10 @@ from __future__ import annotations
 
 from typing import Any
 
-from langsmith import traceable
-
 from ..core import JustiFiClient
 from .base import ValidationError, handle_tool_errors
 
 
-@traceable
 @handle_tool_errors
 async def list_checkouts(
     client: JustiFiClient,
@@ -85,7 +82,6 @@ async def list_checkouts(
     return await client.request("GET", "/v1/checkouts", params=params)
 
 
-@traceable
 @handle_tool_errors
 async def retrieve_checkout(client: JustiFiClient, checkout_id: str) -> dict[str, Any]:
     """Retrieve a checkout by its ID.

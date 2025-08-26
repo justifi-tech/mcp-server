@@ -93,6 +93,20 @@ def _extract_data_type(tool_name: str, hint: str | None = None) -> str:
         "update_terminal": "terminal",
         "get_terminal_status": "terminal_status",
         "identify_terminal": "terminal_identify",
+        # Payment creation tools
+        "create_payment": "payment",
+        "tokenize_payment_method": "payment_method",
+        "create_payment_with_card": "payment",
+        # Checkout creation tools
+        "create_checkout": "checkout",
+        "update_checkout": "checkout",
+        "complete_checkout": "checkout",
+        "expire_checkout": "checkout",
+        # Payment intent tools
+        "create_payment_intent": "payment_intent",
+        "capture_payment_intent": "payment_intent",
+        "cancel_payment_intent": "payment_intent",
+        "confirm_payment_intent": "payment_intent",
     }
 
     return type_mapping.get(tool_name, "unknown")

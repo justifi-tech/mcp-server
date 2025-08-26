@@ -353,9 +353,13 @@ JUSTIFI_ENABLED_TOOLS="retrieve_payout,list_payouts"         # Enable specific t
 JUSTIFI_ENABLED_TOOLS="retrieve_payout,get_payout_status"    # Custom combination
 ```
 
-Optional:
+Optional Configuration:
 ```bash
-JUSTIFI_BASE_URL=https://api.justifi.ai     # Default (no /v1 suffix)
+JUSTIFI_BASE_URL=https://api.justifi.ai    # Default. Set custom URL if needed
+```
+
+Optional (LangSmith):
+```bash
 LANGCHAIN_API_KEY=your_langsmith_key        # For tracing/observability
 LANGCHAIN_TRACING_V2=true                   # Enable tracing
 ```

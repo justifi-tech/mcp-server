@@ -11,7 +11,7 @@ from typing import Any
 from ..core import JustiFiClient
 from .base import ToolError, ValidationError
 from .response_formatter import standardize_response
-from .utils.security import validate_test_mode_for_payments, log_security_event
+from .utils.payment_security import validate_payment_creation
 
 
 async def create_payment_intent(
@@ -47,17 +47,8 @@ async def create_payment_intent(
         ValidationError: If parameters are invalid
         ToolError: If payment intent creation fails
     """
-    # Security validation - payment intent creation requires test mode
-    validation_result = validate_test_mode_for_payments(client.base_url, client.client_id)
-    
-    # Log security event
-    log_security_event("payment_intent_creation", {
-        "operation": "create_payment_intent",
-        "amount": amount,
-        "currency": currency,
-        "capture_method": capture_method,
-        "environment_info": validation_result["environment_info"]
-    })
+    # Security validation
+    validate_payment_creation(client.base_url, client.client_id)
 
     # Validate required parameters
     if not isinstance(amount, int) or amount <= 0:
@@ -127,7 +118,7 @@ async def create_payment_intent(
             payload["metadata"] = metadata
 
         # Call JustiFi API to create payment intent
-        result = await client.request("POST", "/v1/payment_intents", json=payload)
+        result = await client.request("POST", "/v1/payment_intents", data=payload)
         return standardize_response(result, "create_payment_intent")
 
     except Exception as e:
@@ -157,16 +148,8 @@ async def capture_payment_intent(
         ValidationError: If parameters are invalid
         ToolError: If payment intent capture fails
     """
-    # Security validation - payment intent operations require test mode
-    validation_result = validate_test_mode_for_payments(client.base_url, client.client_id)
-    
-    # Log security event
-    log_security_event("payment_intent_capture", {
-        "operation": "capture_payment_intent",
-        "intent_id": intent_id,
-        "capture_amount": amount,
-        "environment_info": validation_result["environment_info"]
-    })
+    # Security validation
+    validate_payment_creation(client.base_url, client.client_id)
 
     # Validate required parameters
     if not intent_id or not isinstance(intent_id, str):
@@ -193,7 +176,7 @@ async def capture_payment_intent(
 
         # Call JustiFi API to capture payment intent
         result = await client.request(
-            "POST", f"/v1/payment_intents/{intent_id}/capture", json=payload
+            "POST", f"/v1/payment_intents/{intent_id}/capture", data=payload
         )
         return standardize_response(result, "capture_payment_intent")
 
@@ -224,16 +207,8 @@ async def cancel_payment_intent(
         ValidationError: If parameters are invalid
         ToolError: If payment intent cancellation fails
     """
-    # Security validation - payment intent operations require test mode
-    validation_result = validate_test_mode_for_payments(client.base_url, client.client_id)
-    
-    # Log security event
-    log_security_event("payment_intent_cancellation", {
-        "operation": "cancel_payment_intent",
-        "intent_id": intent_id,
-        "reason": cancellation_reason,
-        "environment_info": validation_result["environment_info"]
-    })
+    # Security validation
+    validate_payment_creation(client.base_url, client.client_id)
 
     # Validate required parameters
     if not intent_id or not isinstance(intent_id, str):
@@ -259,7 +234,7 @@ async def cancel_payment_intent(
 
         # Call JustiFi API to cancel payment intent
         result = await client.request(
-            "POST", f"/v1/payment_intents/{intent_id}/cancel", json=payload
+            "POST", f"/v1/payment_intents/{intent_id}/cancel", data=payload
         )
         return standardize_response(result, "cancel_payment_intent")
 
@@ -290,15 +265,8 @@ async def confirm_payment_intent(
         ValidationError: If parameters are invalid
         ToolError: If payment intent confirmation fails
     """
-    # Security validation - payment intent operations require test mode
-    validation_result = validate_test_mode_for_payments(client.base_url, client.client_id)
-    
-    # Log security event
-    log_security_event("payment_intent_confirmation", {
-        "operation": "confirm_payment_intent",
-        "intent_id": intent_id,
-        "environment_info": validation_result["environment_info"]
-    })
+    # Security validation
+    validate_payment_creation(client.base_url, client.client_id)
 
     # Validate required parameters
     if not intent_id or not isinstance(intent_id, str):
@@ -324,7 +292,7 @@ async def confirm_payment_intent(
 
         # Call JustiFi API to confirm payment intent
         result = await client.request(
-            "POST", f"/v1/payment_intents/{intent_id}/confirm", json=payload
+            "POST", f"/v1/payment_intents/{intent_id}/confirm", data=payload
         )
         return standardize_response(result, "confirm_payment_intent")
 

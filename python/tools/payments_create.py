@@ -11,8 +11,7 @@ from typing import Any
 from ..core import JustiFiClient
 from .base import ToolError, ValidationError
 from .response_formatter import standardize_response
-from .utils.security import validate_test_mode_for_payments, log_security_event
-from .utils.test_cards import validate_test_card
+from .utils.payment_security import validate_payment_creation
 
 
 async def create_payment(
@@ -41,16 +40,8 @@ async def create_payment(
         ValidationError: If parameters are invalid
         ToolError: If payment creation fails
     """
-    # Security validation - payment creation requires test mode
-    validation_result = validate_test_mode_for_payments(client.base_url, client.client_id)
-    
-    # Log security event
-    log_security_event("payment_creation", {
-        "operation": "create_payment",
-        "amount": amount,
-        "currency": currency,
-        "environment_info": validation_result["environment_info"]
-    })
+    # Security validation
+    validate_payment_creation(client.base_url, client.client_id)
 
     # Validate required parameters
     if not isinstance(amount, int) or amount <= 0:
@@ -104,7 +95,7 @@ async def create_payment(
             payload["metadata"] = metadata
 
         # Call JustiFi API to create payment
-        result = await client.request("POST", "/v1/payments", json=payload)
+        result = await client.request("POST", "/v1/payments", data=payload)
         return standardize_response(result, "create_payment")
 
     except Exception as e:
@@ -138,7 +129,7 @@ async def tokenize_payment_method(
         cvc: Card verification code
         name: Cardholder name
         address_line1: Address line 1
-        address_line2: Address line 2  
+        address_line2: Address line 2
         address_city: City
         address_state: State/province
         address_postal_code: Postal/zip code
@@ -149,22 +140,11 @@ async def tokenize_payment_method(
 
     Raises:
         PaymentSecurityError: If test mode validation fails
-        SecurityError: If card validation fails
         ValidationError: If parameters are invalid
         ToolError: If tokenization fails
     """
-    # Security validation - payment method creation requires test mode
-    validation_result = validate_test_mode_for_payments(client.base_url, client.client_id)
-    
-    # Validate test card
-    validate_test_card(card_number, validation_result["environment_info"])
-    
-    # Log security event (without sensitive data)
-    log_security_event("payment_method_tokenization", {
-        "operation": "tokenize_payment_method",
-        "card_number": f"{card_number[:4]}...{card_number[-4:]}",
-        "environment_info": validation_result["environment_info"]
-    })
+    # Security validation
+    validate_payment_creation(client.base_url, client.client_id, card_number)
 
     # Validate card parameters
     if not card_number or not isinstance(card_number, str):
@@ -175,7 +155,7 @@ async def tokenize_payment_method(
         )
 
     # Clean card number and validate length
-    clean_card = ''.join(c for c in card_number if c.isdigit())
+    clean_card = "".join(c for c in card_number if c.isdigit())
     if len(clean_card) < 13 or len(clean_card) > 19:
         raise ValidationError(
             "card_number must be between 13 and 19 digits",
@@ -243,7 +223,7 @@ async def tokenize_payment_method(
         }
 
         # Call JustiFi API to tokenize payment method
-        result = await client.request("POST", "/v1/payment_methods", json=payload)
+        result = await client.request("POST", "/v1/payment_methods", data=payload)
         return standardize_response(result, "tokenize_payment_method")
 
     except Exception as e:
@@ -296,24 +276,11 @@ async def create_payment_with_card(
 
     Raises:
         PaymentSecurityError: If test mode validation fails
-        SecurityError: If card validation fails
         ValidationError: If parameters are invalid
         ToolError: If payment creation fails
     """
-    # Security validation - payment creation requires test mode
-    validation_result = validate_test_mode_for_payments(client.base_url, client.client_id)
-    
-    # Validate test card
-    validate_test_card(card_number, validation_result["environment_info"])
-    
-    # Log security event (without sensitive data)
-    log_security_event("direct_payment_creation", {
-        "operation": "create_payment_with_card",
-        "amount": amount,
-        "currency": currency,
-        "card_number": f"{card_number[:4]}...{card_number[-4:]}",
-        "environment_info": validation_result["environment_info"]
-    })
+    # Security validation
+    validate_payment_creation(client.base_url, client.client_id, card_number)
 
     # Validate amount
     if not isinstance(amount, int) or amount <= 0:

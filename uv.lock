@@ -1,5 +1,5 @@
 version = 1
-revision = 2
+revision = 3
 requires-python = ">=3.11"
 
 [[package]]
@@ -702,7 +702,6 @@ source = { editable = "." }
 dependencies = [
     { name = "fastmcp" },
     { name = "httpx" },
-    { name = "langsmith" },
     { name = "mcp" },
     { name = "pydantic" },
     { name = "python-dotenv" },
@@ -767,7 +766,6 @@ requires-dist = [
     { name = "httpx" },
     { name = "langchain-core", marker = "extra == 'all'" },
     { name = "langchain-openai", marker = "extra == 'all'" },
-    { name = "langsmith" },
     { name = "mcp" },
     { name = "mkdocs", marker = "extra == 'all'" },
     { name = "mkdocs", marker = "extra == 'docs'" },

@@ -9,14 +9,14 @@ import respx
 from httpx import Response
 
 from python.core import JustiFiClient
-from python.tools.base import ToolError, ValidationError
+from python.tools.base import ValidationError
 from python.tools.checkouts_create import (
     complete_checkout,
     create_checkout,
     expire_checkout,
     update_checkout,
 )
-from python.tools.utils.security import PaymentSecurityError
+from python.tools.utils.payment_security import PaymentSecurityError
 
 
 @pytest.fixture
@@ -91,18 +91,20 @@ class TestCreateCheckout:
 
     @pytest.mark.asyncio
     @respx.mock
-    async def test_create_checkout_success(self, test_client, mock_token_response, mock_checkout_response):
+    async def test_create_checkout_success(
+        self, test_client, mock_token_response, mock_checkout_response
+    ):
         """Test successful checkout creation."""
         # Mock OAuth token request
         respx.post("https://api.justifi.ai/oauth/token").mock(
             return_value=Response(200, json=mock_token_response)
         )
-        
+
         # Mock checkout creation request
         respx.post("https://api.justifi.ai/v1/checkouts").mock(
             return_value=Response(200, json=mock_checkout_response)
         )
-        
+
         result = await create_checkout(
             client=test_client,
             amount=1000,
@@ -111,16 +113,18 @@ class TestCreateCheckout:
             success_url="https://example.com/success",
             cancel_url="https://example.com/cancel",
         )
-        
-        assert result["data"]["id"] == "checkout_test123"
-        assert result["data"]["amount"] == 1000
-        assert result["data"]["description"] == "Test checkout"
-        assert result["data"]["status"] == "open"
+
+        assert result["data"][0]["id"] == "checkout_test123"
+        assert result["data"][0]["amount"] == 1000
+        assert result["data"][0]["description"] == "Test checkout"
+        assert result["data"][0]["status"] == "open"
 
     @pytest.mark.asyncio
     async def test_create_checkout_production_without_test_key(self, production_client):
         """Test checkout creation fails in production without test key."""
-        with pytest.raises(PaymentSecurityError, match="Payment creation requires test API credentials"):
+        with pytest.raises(
+            PaymentSecurityError, match="Payment creation requires test API credentials"
+        ):
             await create_checkout(
                 client=production_client,
                 amount=1000,
@@ -138,7 +142,7 @@ class TestCreateCheckout:
                 description="Test checkout",
                 payment_method_group_id="pmg_test123",
             )
-        
+
         with pytest.raises(ValidationError, match="amount must be a positive integer"):
             await create_checkout(
                 client=test_client,
@@ -157,7 +161,7 @@ class TestCreateCheckout:
                 description="",
                 payment_method_group_id="pmg_test123",
             )
-        
+
         with pytest.raises(ValidationError, match="description is required"):
             await create_checkout(
                 client=test_client,
@@ -169,7 +173,9 @@ class TestCreateCheckout:
     @pytest.mark.asyncio
     async def test_create_checkout_invalid_payment_method_group_id(self, test_client):
         """Test checkout creation with invalid payment method group ID."""
-        with pytest.raises(ValidationError, match="payment_method_group_id is required"):
+        with pytest.raises(
+            ValidationError, match="payment_method_group_id is required"
+        ):
             await create_checkout(
                 client=test_client,
                 amount=1000,
@@ -180,7 +186,9 @@ class TestCreateCheckout:
     @pytest.mark.asyncio
     async def test_create_checkout_invalid_currency(self, test_client):
         """Test checkout creation with invalid currency."""
-        with pytest.raises(ValidationError, match="currency must be a 3-character currency code"):
+        with pytest.raises(
+            ValidationError, match="currency must be a 3-character currency code"
+        ):
             await create_checkout(
                 client=test_client,
                 amount=1000,
@@ -200,7 +208,7 @@ class TestCreateCheckout:
                 payment_method_group_id="pmg_test123",
                 success_url=123,
             )
-        
+
         with pytest.raises(ValidationError, match="cancel_url must be a string"):
             await create_checkout(
                 client=test_client,
@@ -216,31 +224,35 @@ class TestUpdateCheckout:
 
     @pytest.mark.asyncio
     @respx.mock
-    async def test_update_checkout_success(self, test_client, mock_token_response, mock_checkout_response):
+    async def test_update_checkout_success(
+        self, test_client, mock_token_response, mock_checkout_response
+    ):
         """Test successful checkout update."""
         # Mock OAuth token request
         respx.post("https://api.justifi.ai/oauth/token").mock(
             return_value=Response(200, json=mock_token_response)
         )
-        
+
         # Mock checkout update request
         respx.patch("https://api.justifi.ai/v1/checkouts/checkout_test123").mock(
             return_value=Response(200, json=mock_checkout_response)
         )
-        
+
         result = await update_checkout(
             client=test_client,
             checkout_id="checkout_test123",
             description="Updated checkout",
             metadata={"key": "value"},
         )
-        
-        assert result["data"]["id"] == "checkout_test123"
+
+        assert result["data"][0]["id"] == "checkout_test123"
 
     @pytest.mark.asyncio
     async def test_update_checkout_production_without_test_key(self, production_client):
         """Test checkout update fails in production without test key."""
-        with pytest.raises(PaymentSecurityError, match="Payment creation requires test API credentials"):
+        with pytest.raises(
+            PaymentSecurityError, match="Payment creation requires test API credentials"
+        ):
             await update_checkout(
                 client=production_client,
                 checkout_id="checkout_test123",
@@ -260,7 +272,9 @@ class TestUpdateCheckout:
     @pytest.mark.asyncio
     async def test_update_checkout_no_fields(self, test_client):
         """Test checkout update with no fields to update."""
-        with pytest.raises(ValidationError, match="At least one field must be provided"):
+        with pytest.raises(
+            ValidationError, match="At least one field must be provided"
+        ):
             await update_checkout(
                 client=test_client,
                 checkout_id="checkout_test123",
@@ -282,31 +296,37 @@ class TestCompleteCheckout:
 
     @pytest.mark.asyncio
     @respx.mock
-    async def test_complete_checkout_success(self, test_client, mock_token_response, mock_completed_checkout_response):
+    async def test_complete_checkout_success(
+        self, test_client, mock_token_response, mock_completed_checkout_response
+    ):
         """Test successful checkout completion."""
         # Mock OAuth token request
         respx.post("https://api.justifi.ai/oauth/token").mock(
             return_value=Response(200, json=mock_token_response)
         )
-        
+
         # Mock checkout complete request
-        respx.post("https://api.justifi.ai/v1/checkouts/checkout_test123/complete").mock(
-            return_value=Response(200, json=mock_completed_checkout_response)
-        )
-        
+        respx.post(
+            "https://api.justifi.ai/v1/checkouts/checkout_test123/complete"
+        ).mock(return_value=Response(200, json=mock_completed_checkout_response))
+
         result = await complete_checkout(
             client=test_client,
             checkout_id="checkout_test123",
             payment_method_id="pm_test123",
         )
-        
-        assert result["data"]["id"] == "checkout_test123"
-        assert result["data"]["status"] == "completed"
+
+        assert result["data"][0]["id"] == "checkout_test123"
+        assert result["data"][0]["status"] == "completed"
 
     @pytest.mark.asyncio
-    async def test_complete_checkout_production_without_test_key(self, production_client):
+    async def test_complete_checkout_production_without_test_key(
+        self, production_client
+    ):
         """Test checkout completion fails in production without test key."""
-        with pytest.raises(PaymentSecurityError, match="Payment creation requires test API credentials"):
+        with pytest.raises(
+            PaymentSecurityError, match="Payment creation requires test API credentials"
+        ):
             await complete_checkout(
                 client=production_client,
                 checkout_id="checkout_test123",
@@ -339,30 +359,34 @@ class TestExpireCheckout:
 
     @pytest.mark.asyncio
     @respx.mock
-    async def test_expire_checkout_success(self, test_client, mock_token_response, mock_expired_checkout_response):
+    async def test_expire_checkout_success(
+        self, test_client, mock_token_response, mock_expired_checkout_response
+    ):
         """Test successful checkout expiration."""
         # Mock OAuth token request
         respx.post("https://api.justifi.ai/oauth/token").mock(
             return_value=Response(200, json=mock_token_response)
         )
-        
+
         # Mock checkout expire request
         respx.post("https://api.justifi.ai/v1/checkouts/checkout_test123/expire").mock(
             return_value=Response(200, json=mock_expired_checkout_response)
         )
-        
+
         result = await expire_checkout(
             client=test_client,
             checkout_id="checkout_test123",
         )
-        
-        assert result["data"]["id"] == "checkout_test123"
-        assert result["data"]["status"] == "expired"
+
+        assert result["data"][0]["id"] == "checkout_test123"
+        assert result["data"][0]["status"] == "expired"
 
     @pytest.mark.asyncio
     async def test_expire_checkout_production_without_test_key(self, production_client):
         """Test checkout expiration fails in production without test key."""
-        with pytest.raises(PaymentSecurityError, match="Payment creation requires test API credentials"):
+        with pytest.raises(
+            PaymentSecurityError, match="Payment creation requires test API credentials"
+        ):
             await expire_checkout(
                 client=production_client,
                 checkout_id="checkout_test123",

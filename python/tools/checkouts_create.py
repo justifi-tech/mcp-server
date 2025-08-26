@@ -11,7 +11,7 @@ from typing import Any
 from ..core import JustiFiClient
 from .base import ToolError, ValidationError
 from .response_formatter import standardize_response
-from .utils.security import validate_test_mode_for_payments, log_security_event
+from .utils.payment_security import validate_payment_creation
 
 
 async def create_checkout(
@@ -49,17 +49,8 @@ async def create_checkout(
         ValidationError: If parameters are invalid
         ToolError: If checkout creation fails
     """
-    # Security validation - checkout creation requires test mode
-    validation_result = validate_test_mode_for_payments(client.base_url, client.client_id)
-    
-    # Log security event
-    log_security_event("checkout_creation", {
-        "operation": "create_checkout",
-        "amount": amount,
-        "currency": currency,
-        "payment_method_group_id": payment_method_group_id,
-        "environment_info": validation_result["environment_info"]
-    })
+    # Security validation
+    validate_payment_creation(client.base_url, client.client_id)
 
     # Validate required parameters
     if not isinstance(amount, int) or amount <= 0:
@@ -141,7 +132,7 @@ async def create_checkout(
             payload["expires_at"] = expires_at
 
         # Call JustiFi API to create checkout
-        result = await client.request("POST", "/v1/checkouts", json=payload)
+        result = await client.request("POST", "/v1/checkouts", data=payload)
         return standardize_response(result, "create_checkout")
 
     except Exception as e:
@@ -175,15 +166,8 @@ async def update_checkout(
         ValidationError: If parameters are invalid
         ToolError: If checkout update fails
     """
-    # Security validation - checkout operations require test mode
-    validation_result = validate_test_mode_for_payments(client.base_url, client.client_id)
-    
-    # Log security event
-    log_security_event("checkout_update", {
-        "operation": "update_checkout",
-        "checkout_id": checkout_id,
-        "environment_info": validation_result["environment_info"]
-    })
+    # Security validation
+    validate_payment_creation(client.base_url, client.client_id)
 
     # Validate required parameters
     if not checkout_id or not isinstance(checkout_id, str):
@@ -237,7 +221,9 @@ async def update_checkout(
             payload["expires_at"] = expires_at
 
         # Call JustiFi API to update checkout
-        result = await client.request("PATCH", f"/v1/checkouts/{checkout_id}", json=payload)
+        result = await client.request(
+            "PATCH", f"/v1/checkouts/{checkout_id}", data=payload
+        )
         return standardize_response(result, "update_checkout")
 
     except Exception as e:
@@ -267,15 +253,8 @@ async def complete_checkout(
         ValidationError: If parameters are invalid
         ToolError: If checkout completion fails
     """
-    # Security validation - checkout operations require test mode
-    validation_result = validate_test_mode_for_payments(client.base_url, client.client_id)
-    
-    # Log security event
-    log_security_event("checkout_completion", {
-        "operation": "complete_checkout",
-        "checkout_id": checkout_id,
-        "environment_info": validation_result["environment_info"]
-    })
+    # Security validation
+    validate_payment_creation(client.base_url, client.client_id)
 
     # Validate required parameters
     if not checkout_id or not isinstance(checkout_id, str):
@@ -300,7 +279,7 @@ async def complete_checkout(
 
         # Call JustiFi API to complete checkout
         result = await client.request(
-            "POST", f"/v1/checkouts/{checkout_id}/complete", json=payload
+            "POST", f"/v1/checkouts/{checkout_id}/complete", data=payload
         )
         return standardize_response(result, "complete_checkout")
 
@@ -329,15 +308,8 @@ async def expire_checkout(
         ValidationError: If parameters are invalid
         ToolError: If checkout expiration fails
     """
-    # Security validation - checkout operations require test mode
-    validation_result = validate_test_mode_for_payments(client.base_url, client.client_id)
-    
-    # Log security event
-    log_security_event("checkout_expiration", {
-        "operation": "expire_checkout",
-        "checkout_id": checkout_id,
-        "environment_info": validation_result["environment_info"]
-    })
+    # Security validation
+    validate_payment_creation(client.base_url, client.client_id)
 
     # Validate required parameters
     if not checkout_id or not isinstance(checkout_id, str):

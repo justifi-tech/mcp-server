@@ -3,6 +3,7 @@
 # Import all tools for direct usage
 from .balances import list_balance_transactions, retrieve_balance_transaction
 from .checkouts import list_checkouts, retrieve_checkout
+from .code_generators import generate_unified_checkout_integration
 from .disputes import list_disputes, retrieve_dispute
 from .payment_method_groups import (
     create_payment_method_group,
@@ -39,6 +40,7 @@ from .terminals import (
 
 __all__ = [
     "create_payment_method_group",
+    "generate_unified_checkout_integration",
     "list_balance_transactions",
     "list_payment_method_groups",
     "remove_payment_method_from_group",

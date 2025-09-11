@@ -6,10 +6,10 @@ These tools generate production-ready code tailored to specific frameworks and u
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
 from ..core import JustiFiClient
-from .base import ToolError, ValidationError, handle_tool_errors
+from .base import ToolError, handle_tool_errors
 from .response_formatter import standardize_response
 
 
@@ -21,7 +21,7 @@ async def generate_unified_checkout_integration(
 
     Provides:
     - Working Express.js backend + frontend example
-    - YAML integration guide with requirements and troubleshooting  
+    - YAML integration guide with requirements and troubleshooting
     - Framework-agnostic patterns for any language/stack
 
     Requirements:
@@ -33,7 +33,7 @@ async def generate_unified_checkout_integration(
         client: JustiFi API client
 
     Returns:
-        Dictionary with complete Express.js example, framework-agnostic patterns, 
+        Dictionary with complete Express.js example, framework-agnostic patterns,
         setup instructions, and comprehensive documentation
 
     Raises:
@@ -46,10 +46,10 @@ async def generate_unified_checkout_integration(
         frontend_code = _generate_vanilla_frontend()
         config = _generate_configuration()
         tests = _generate_test_suite()
-        
+
         # Generate framework-agnostic integration patterns
         patterns = _generate_integration_patterns()
-        
+
         # Combine everything into comprehensive response
         all_files = {
             **backend_code,
@@ -58,7 +58,7 @@ async def generate_unified_checkout_integration(
             **tests,
             **patterns,
         }
-        
+
         result = {
             "success": True,
             "description": "Complete JustiFi checkout integration: Express.js example + framework-agnostic patterns",
@@ -66,7 +66,7 @@ async def generate_unified_checkout_integration(
             "resources": _get_justifi_resources(),
             "next_steps": _get_comprehensive_next_steps(),
             "working_example": "Express.js + vanilla HTML (ready to run)",
-            "adaptable_patterns": "Framework-agnostic code snippets for any technology stack"
+            "adaptable_patterns": "Framework-agnostic code snippets for any technology stack",
         }
 
         return standardize_response(result, "generate_unified_checkout_integration")
@@ -88,7 +88,7 @@ def _generate_backend_code(framework: str, features: list[str]) -> dict[str, str
 def _generate_express_backend() -> dict[str, str]:
     """Generate Express.js backend code that actually works."""
 
-    server_code = '''require('dotenv').config();
+    server_code = """require('dotenv').config();
 const express = require('express');
 const app = express();
 
@@ -118,14 +118,14 @@ async function getAccessToken() {
 app.post('/api/checkout', async (req, res) => {
     try {
         const { amount, description } = req.body;
-        
+
         if (!amount || amount < 100) {
             return res.status(400).json({ success: false, error: 'Amount must be at least $1.00' });
         }
         if (!description) {
             return res.status(400).json({ success: false, error: 'Description is required' });
         }
-        
+
         const token = await getAccessToken();
 
         // Step 1: Create checkout
@@ -181,17 +181,17 @@ app.post('/api/checkout', async (req, res) => {
     <title>Checkout - ${description}</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@justifi/webcomponents@5.7.6/dist/webcomponents/webcomponents.css"/>
     <style>
-        body { 
+        body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             max-width: 600px; margin: 50px auto; padding: 20px; background: #f5f5f5;
         }
-        .container { 
-            background: white; border-radius: 12px; padding: 30px; 
+        .container {
+            background: white; border-radius: 12px; padding: 30px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
         h1 { text-align: center; color: #333; }
-        .order-summary { 
-            background: #f8f9fa; border-radius: 8px; padding: 20px; 
+        .order-summary {
+            background: #f8f9fa; border-radius: 8px; padding: 20px;
             margin-bottom: 30px; border: 1px solid #e9ecef;
         }
         .amount { font-size: 24px; font-weight: bold; color: #2c5aa0; }
@@ -207,36 +207,36 @@ app.post('/api/checkout', async (req, res) => {
         </div>
         <div id="checkout-container"></div>
     </div>
-    
+
     <script type="module" src="https://cdn.jsdelivr.net/npm/@justifi/webcomponents@5.7.6/dist/webcomponents/webcomponents.esm.js"></script>
     <script>
         // Data is embedded during server-side rendering - no API calls needed
         const checkoutId = '${checkoutId}';
         const authToken = '${webComponentToken}';
-        
+
         // Wait for web components to load
         customElements.whenDefined('justifi-checkout').then(() => {
             const checkoutElement = document.createElement('justifi-checkout');
             checkoutElement.setAttribute('checkout-id', checkoutId);
             checkoutElement.setAttribute('auth-token', authToken);
-            
+
             // Event handlers
             checkoutElement.addEventListener('submit-event', (event) => {
                 console.log('Payment submitted:', event.detail);
                 alert('Payment successful! Thank you for your purchase.');
             });
-            
+
             checkoutElement.addEventListener('error-event', (event) => {
                 console.log('Payment error:', event.detail);
                 alert('Payment failed: ' + (event.detail.message || 'Unknown error'));
             });
-            
+
             document.getElementById('checkout-container').appendChild(checkoutElement);
         });
     </script>
 </body>
 </html>`;
-        
+
         res.setHeader('Content-Type', 'text/html');
         res.send(checkoutHtml);
 
@@ -246,7 +246,7 @@ app.post('/api/checkout', async (req, res) => {
 });
 
 
-app.listen(process.env.PORT || 3001);'''
+app.listen(process.env.PORT || 3001);"""
 
     return {
         "server.js": server_code,
@@ -295,7 +295,7 @@ def _generate_frontend_code(frontend: str, features: list[str]) -> dict[str, str
 def _generate_vanilla_frontend() -> dict[str, str]:
     """Generate minimal working frontend with clear security warnings."""
 
-    html_code = '''<!DOCTYPE html>
+    html_code = """<!DOCTYPE html>
 <html>
 <head>
     <title>JustiFi Checkout</title>
@@ -312,10 +312,10 @@ def _generate_vanilla_frontend() -> dict[str, str]:
 </head>
 <body>
     <h1>JustiFi Checkout Integration</h1>
-    
+
     <!-- ⚠️ SECURITY WARNING: This page NEVER calls api.justifi.ai directly! -->
     <!-- All JustiFi API calls happen on YOUR backend server only -->
-    
+
     <form id="payment-form" action="/api/checkout" method="POST">
         <div class="form-group">
             <label>Amount (cents):</label>
@@ -337,7 +337,7 @@ def _generate_vanilla_frontend() -> dict[str, str]:
 
     <!-- JustiFi Stylesheet (required for component styling) -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@justifi/webcomponents@5.7.6/dist/webcomponents/webcomponents.css"/>
-    
+
     <!-- JustiFi Web Components v5.7.6+ (requires type="module") -->
     <!-- SSR WARNING: Web components require client-side loading -->
     <!-- Next.js: Use dynamic import with ssr: false -->
@@ -345,101 +345,11 @@ def _generate_vanilla_frontend() -> dict[str, str]:
     <!-- SvelteKit: Use browser check or onMount -->
     <script type="module" src="https://cdn.jsdelivr.net/npm/@justifi-tech/justifi-webcomponents@5.7.6/dist/index.js"></script>
 </body>
-</html>'''
-
-    js_code = '''// ⚠️ SECURITY WARNING: Frontend NEVER calls JustiFi API directly!
-// This code only calls YOUR backend at /api/checkout and /api/web-component-token
-
-// ⚠️ SSR WARNING: This code creates web components that require client-side execution
-// Framework-specific SSR handling:
-// - Next.js: Use dynamic() with ssr: false
-// - Nuxt.js: Wrap in <ClientOnly>
-// - SvelteKit: Use browser check or onMount()
-// - React: useEffect() with proper cleanup
-
-document.getElementById('payment-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    const amount = document.getElementById('amount').value;
-    const description = document.getElementById('description').value;
-    
-    try {
-        // Step 1: Call YOUR backend to create checkout (never call JustiFi directly!)
-        const checkoutResponse = await fetch('/api/checkout', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ amount: parseInt(amount), description })
-        });
-        
-        if (!checkoutResponse.ok) {
-            throw new Error(`Server error: ${checkoutResponse.status}`);
-        }
-        
-        const checkoutData = await checkoutResponse.json();
-        if (!checkoutData.success) throw new Error(checkoutData.error);
-        
-        // Step 2: Call YOUR backend to get web component token (never call JustiFi directly!)
-        const tokenResponse = await fetch(`/api/web-component-token?checkout_id=${checkoutData.data.id}`);
-        
-        if (!tokenResponse.ok) {
-            throw new Error(`Token error: ${tokenResponse.status}`);
-        }
-        
-        const tokenData = await tokenResponse.json();
-        if (!tokenData.success) throw new Error(tokenData.error);
-        
-        // Step 3: Create JustiFi checkout component
-        const checkoutElement = document.createElement('justifi-checkout');
-        checkoutElement.setAttribute('checkout-id', checkoutData.data.id);
-        checkoutElement.setAttribute('auth-token', tokenData.token);
-        
-        // Enable all payment methods (v5.7.6+ requirement)
-        checkoutElement.setAttribute('disable-card-form', 'false');
-        checkoutElement.setAttribute('disable-bnpl-form', 'false');
-        checkoutElement.setAttribute('disable-bank-account-form', 'false');
-        
-        // Listen for payment completion
-        checkoutElement.addEventListener('submit-event', (event) => {
-            if (event.detail.response?.payment_id) {
-                showMessage('Payment successful! 🎉', 'success');
-                setTimeout(() => location.reload(), 2000);
-            }
-        });
-        
-        checkoutElement.addEventListener('error-event', (event) => {
-            showMessage(`Payment error: ${event.detail.message}`, 'error');
-        });
-        
-        // Show the component
-        document.getElementById('checkout-container').style.display = 'block';
-        document.getElementById('checkout-content').innerHTML = '';
-        document.getElementById('checkout-content').appendChild(checkoutElement);
-        
-    } catch (error) {
-        showMessage(error.message, 'error');
-    }
-});
-
-function showMessage(message, type) {
-    const div = document.createElement('div');
-    div.className = `message ${type}`;
-    div.textContent = message;
-    document.getElementById('messages').appendChild(div);
-    
-    if (type !== 'error') {
-        setTimeout(() => div.remove(), 5000);
-    }
-}'''
+</html>"""
 
     return {
         "public/index.html": html_code,
     }
-
-
-
-
-
-
 
 
 def _generate_react_frontend(features: list[str]) -> dict[str, str]:
@@ -506,7 +416,7 @@ framework_patterns:
   oauth_token_pattern: "fetch oauth token → use for authenticated API calls"
   input_validation_pattern: "amount >= 100 && description.trim().length > 0 && typeof amount === integer"
   oauth_flow_pattern: "POST oauth/token with client_credentials → get access_token → use Bearer token for API calls"
-  
+
 security_patterns:
   frontend_rule: "Frontend only calls YOUR backend APIs, never api.justifi.ai directly"
   backend_rule: "Backend includes Sub-Account header on all authenticated JustiFi API calls"
@@ -529,22 +439,22 @@ common_dependencies:
     http_clients: ["axios", "fetch (built-in)", "got", "node-fetch"]
     environment: ["dotenv", "@types/node (TypeScript)"]
     frameworks: ["express", "next", "fastify", "koa"]
-    
+
   python:
     http_clients: ["requests", "httpx", "urllib3", "aiohttp"]
     environment: ["python-dotenv", "pydantic (validation)"]
     frameworks: ["fastapi", "django", "flask", "starlette"]
-    
+
   go:
     http_clients: ["net/http (standard)", "resty", "gentleman"]
     environment: ["godotenv", "viper", "envconfig"]
     frameworks: ["gin", "echo", "fiber", "net/http (standard)"]
-    
+
   php:
     http_clients: ["guzzlehttp/guzzle", "curl", "file_get_contents"]
     environment: ["vlucas/phpdotenv", "symfony/dotenv"]
     frameworks: ["laravel", "symfony", "slim", "vanilla-php"]
-    
+
   ruby:
     http_clients: ["httparty", "net/http", "faraday", "rest-client"]
     environment: ["dotenv", "figaro", "config"]
@@ -557,25 +467,25 @@ language_hints:
     error_handling: "try/catch blocks, throw new Error()"
     env_vars: "process.env.VARIABLE_NAME"
     json_handling: "JSON.stringify() and response.json()"
-    
+
   python:
     async_pattern: "Use requests.post() or httpx.AsyncClient()"
     error_handling: "try/except blocks, raise Exception()"
     env_vars: "os.getenv('VARIABLE_NAME')"
     json_handling: "response.json() and json.dumps()"
-    
+
   go:
     async_pattern: "Use net/http.Client with context.Context"
     error_handling: "if err != nil { return nil, err }"
     env_vars: "os.Getenv() with validation"
     json_handling: "json.Marshal() and json.Unmarshal()"
-    
+
   php:
     async_pattern: "Use Guzzle or cURL with timeout settings"
     error_handling: "try/catch blocks, throw new Exception()"
     env_vars: "$_ENV['VARIABLE_NAME'] with validation"
     json_handling: "json_encode() and json_decode()"
-    
+
   ruby:
     async_pattern: "Use HTTParty or Net::HTTP with proper headers"
     error_handling: "rescue blocks, raise StandardError"
@@ -629,368 +539,6 @@ resources:
   examples: "https://github.com/justifi-tech/web-component-library/tree/main/apps/component-examples"
   storybook: "https://storybook.justifi.ai"
   docs: "https://docs.justifi.ai/api-spec"
-"""
-
-    readme = """
-# JustiFi Checkout Integration
-
-Complete Express.js backend with vanilla HTML frontend integration.
-
-## 📋 Version Requirements & Compatibility
-
-### JustiFi Web Components v5.7.6+
-- **Required**: ES6 modules (`type="module"` in script tag)
-- **Token Scope**: Uses `write:tokenize:${accountId}` format (not checkout-specific)
-- **Component Attributes**: Enable payment methods with `disable-*-form="false"` 
-- **Breaking Changes**: Older versions use different token scopes and may not require ES modules
-
-### Browser Compatibility
-- **Supports**: Chrome 61+, Firefox 60+, Safari 10.1+, Edge 16+
-- **Required**: ES6 modules, Web Components, Shadow DOM support
-- **Fallback**: For older browsers, consider JustiFi v5.6.x with different integration approach
-
-### Node.js Backend Requirements  
-- **Node.js**: 14+ (for ES6 features and modern fetch API)
-- **Dependencies**: Express 4.18+, dotenv 16+
-- **Environment**: Supports both development (localhost) and production environments
-
-## 🏗️ Architecture Overview
-
-**IMPORTANT: This is a full-stack application with clear separation:**
-
-### Frontend (Browser)
-- **Web Components**: Loads JustiFi components from `https://cdn.jsdelivr.net/npm/@justifi-tech/justifi-webcomponents@latest/dist/index.js`
-- **API Calls**: Makes requests to YOUR local backend (NOT directly to JustiFi)
-- **URLs Used**: `/api/checkout`, `/api/web-component-token`, `/api/payment/:id`
-
-### Backend (Your Server) 
-- **JustiFi API Integration**: YOUR server talks to `https://api.justifi.ai` using OAuth
-- **Environment Variables**: `JUSTIFI_BASE_URL=https://api.justifi.ai` (default)
-- **Endpoints Provided**: Creates `/api/checkout`, `/api/web-component-token`, etc. for frontend
-
-**⚠️ NEVER connect frontend directly to JustiFi API - always go through your backend!**
-
-### Data Flow Diagram
-```
-Browser (Frontend)           Your Server (Backend)         JustiFi API
-     │                             │                           │
-     │ 1. POST /api/checkout       │                           │
-     │────────────────────────────>│                           │
-     │                             │ 2. OAuth + Create Checkout│
-     │                             │──────────────────────────>│
-     │                             │ 3. checkout_id            │
-     │                             │<──────────────────────────│
-     │ 4. checkout_id              │                           │
-     │<────────────────────────────│                           │
-     │                             │                           │
-     │ 5. GET /api/web-component-  │                           │
-     │    token?checkout_id=co_123 │                           │
-     │────────────────────────────>│                           │
-     │                             │ 6. Get Web Component Token│
-     │                             │──────────────────────────>│
-     │                             │ 7. wct_token              │
-     │                             │<──────────────────────────│
-     │ 8. wct_token                │                           │
-     │<────────────────────────────│                           │
-     │                             │                           │
-     │ 9. Load JustiFi Web Component with checkout_id + wct_token │
-     │ (Components loaded from cdn.jsdelivr.net but use your tokens) │
-```
-
-## 🚀 Quick Start
-
-1. **Install dependencies:**
-   ```bash
-   npm install
-   ```
-
-2. **Configure environment variables:**
-   ```bash
-   cp .env.example .env
-   # Edit .env with your JustiFi credentials
-   ```
-
-## 🔐 Three-Step Checkout Process 
-
-⚠️  **CRITICAL REQUIREMENTS:**
-1. **Sub-Account header is REQUIRED for ALL authenticated API calls** (except OAuth) - Never forget this!
-2. **Three-step authentication process** - Must be done in order
-
-**Process Flow:**
-```
-Step 1: Get Bearer Token (OAuth) → Step 2: Create Checkout → Step 3: Get Web Component Token → Step 4: Use with Component
-```
-
-### Step 1: 🔑 Get OAuth Bearer Token FIRST
-
-You **MUST** get a Bearer token first before doing anything else.
-
-**Required Credentials:**
-- `JUSTIFI_CLIENT_ID` - Your JustiFi client ID  
-- `JUSTIFI_CLIENT_SECRET` - Your JustiFi client secret
-- `JUSTIFI_SUB_ACCOUNT_ID` - Your JustiFi sub-account ID (format: `acc_xxxxxxxx`)
-
-**How to get credentials:** Visit your JustiFi dashboard → API Settings → Client Credentials
-
-**Test OAuth Bearer Token (Step 1):**
-```bash
-# OAuth does NOT require Sub-Account header:
-curl -X POST https://api.justifi.ai/oauth/token \\
-  -H "Content-Type: application/x-www-form-urlencoded" \\
-  -d "grant_type=client_credentials&client_id=YOUR_CLIENT_ID&client_secret=YOUR_CLIENT_SECRET"
-```
-✅ **Success:** You get `{{"access_token": "eyJ...", "expires_in": 3600}}`
-❌ **Failed:** Check your client ID and secret are correct
-
-### Step 2: 🛒 Create Checkout (Using Bearer Token)
-
-Once you have the Bearer token, create a checkout to get a checkout_id.
-
-**Test Checkout Creation (Step 2):**
-
-⚠️  **CRITICAL: Sub-Account header is REQUIRED for authenticated API calls**
-
-```bash
-# Use the Bearer token from Step 1 + REQUIRED Sub-Account header:
-curl -X POST https://api.justifi.ai/v1/checkouts \\
-  -H "Authorization: Bearer YOUR_BEARER_TOKEN_FROM_STEP_1" \\
-  -H "Content-Type: application/json" \\
-  -H "Sub-Account: YOUR_SUB_ACCOUNT_ID" \\
-  -d '{{
-    "amount": 2999,
-    "description": "Test Payment",
-    "origin_url": "localhost:3001"
-  }}'
-```
-
-**Minimal request body (only 3 fields required):**
-- `amount` (integer, cents) - REQUIRED
-- `description` (string) - REQUIRED  
-- `origin_url` (string) - REQUIRED for web components
-
-❌ **Do NOT include:** payment_intent, customer, metadata, or other fields
-✅ **Success:** You get `{{"id": "co_xxxxxxxx", "amount": 2999, ...}}`
-❌ **Failed:** Check Bearer token, Sub-Account ID, and required fields
-
-### Step 3: 🎟️ Get Web Component Token (Using Bearer Token + Checkout ID)
-
-Now use the Bearer token AND checkout_id to get a Web Component token.
-
-**Test Web Component Token (Step 3):**
-
-⚠️  **CRITICAL: Sub-Account header is REQUIRED here too!**
-
-```bash
-# Use the Bearer token from Step 1 AND sub-account ID + REQUIRED Sub-Account header:
-curl -X POST https://api.justifi.ai/v1/web_component_tokens \\
-  -H "Authorization: Bearer YOUR_BEARER_TOKEN_FROM_STEP_1" \\
-  -H "Content-Type: application/json" \\
-  -H "Sub-Account: YOUR_SUB_ACCOUNT_ID" \\
-  -d '{{"resources": ["write:tokenize:YOUR_SUB_ACCOUNT_ID"]}}'
-```
-✅ **Success:** You get `{{"token": "wct_xxxxxxxx", "expires_in": 3600}}`
-❌ **Failed:** Check Bearer token and Sub-Account ID format
-
-### Step 4: ✅ Verify Complete Flow
-
-Test that your server can do all steps automatically:
-```bash
-# After starting your server, test the complete flow:
-# 1. Create checkout (returns checkout_id)
-CHECKOUT_RESPONSE=$(curl -s -X POST http://localhost:3001/api/checkout \\
-  -H "Content-Type: application/json" \\
-  -d '{{"amount": 2999, "description": "Test Payment"}}')
-
-# 2. Extract checkout_id from response  
-CHECKOUT_ID=$(echo $CHECKOUT_RESPONSE | jq -r '.data.id')
-
-# 3. Get web component token using checkout_id
-curl "http://localhost:3001/api/web-component-token?checkout_id=$CHECKOUT_ID"
-```
-✅ **Success:** You should get `{{"success": true, "token": "wct_xxxxxxxx"}}`
-❌ **Failed:** Check the server logs - likely Step 1, Step 2, or Step 3 failed
-
-## 🧪 Validate Your Sub-Account
-
-Verify your sub-account works with your Bearer token:
-```bash
-# Use Bearer token from Step 1:
-curl -X GET https://api.justifi.ai/v1/sub_accounts/YOUR_SUB_ACCOUNT_ID \\
-  -H "Authorization: Bearer YOUR_BEARER_TOKEN_FROM_STEP_1"
-```
-✅ **Success:** You should get account details with `"status": "enabled"`
-❌ **Failed:** Check your sub-account ID format and that the account is active
-
-## 🏃‍♂️ Running the Application
-
-3. **Start the server:**
-   ```bash
-   npm run dev
-   ```
-
-4. **Open your browser:**
-   ```
-   http://localhost:3001
-   ```
-
-5. **Test the checkout flow:**
-   - Enter amount: `2999` (for $29.99)
-   - Enter description: `Test Payment`
-   - Click "Create Checkout"
-   - The JustiFi checkout component should load
-   - Use test card: `4242424242424242` with any future expiry and CVC
-
-## 🧪 Test Cards
-
-| Card Number | Description | Expected Result |
-|------------|-------------|-----------------|
-| `4242424242424242` | Visa Success | Payment succeeds |
-| `4000000000000002` | Visa Decline | Payment declined |
-| `4000000000000069` | Visa Expired | Card expired error |
-
-## 🔧 Troubleshooting
-
-### ❌ Step 1 Failed: "Invalid client credentials" error
-- **Problem:** Cannot get OAuth Bearer token
-- **Solution:** 
-  - Check `JUSTIFI_CLIENT_ID` and `JUSTIFI_CLIENT_SECRET` are correct
-  - Ensure you're using the correct environment (test vs live)
-  - Test Step 1 manually with curl command above
-
-### ❌ Step 2 Failed: "Checkout creation failed" error
-- **Problem:** Bearer token works, but cannot create checkout
-- **Solution:**
-  - Check `JUSTIFI_SUB_ACCOUNT_ID` is in format `acc_xxxxxxxx`
-  - Verify the sub-account exists and is enabled in your JustiFi dashboard
-  - Test Step 2 manually with curl command above
-  - Ensure required fields (amount, description, origin_url) are provided
-
-### ❌ Step 3 Failed: "Web component token failed" error
-- **Problem:** Bearer token and checkout work, but cannot get Web Component token
-- **Solution:**
-  - Verify the checkout_id from Step 2 is correct format (`co_xxxxxxxx`)
-  - Test Step 3 manually with curl command above
-  - Ensure you're passing the correct `Sub-Account` header
-  - Check that the checkout is in correct status for token generation
-
-### ❌ "Sub-Account header required" error  
-- **Problem:** Missing or incorrect Sub-Account header
-- **Solution:**
-  - Check `JUSTIFI_SUB_ACCOUNT_ID` is set and in correct format
-  - Verify the sub-account exists in your JustiFi dashboard
-  - Test sub-account validation with curl command above
-
-### ❌ Web component doesn't load
-- **Problem:** Authentication worked, but checkout component fails
-- **Solution:**
-  - Check browser console for JavaScript errors
-  - Verify the checkout ID was created successfully  
-  - Test the complete flow with Step 3 curl command above
-  - Ensure the web component token is not expired
-
-### ❌ "Unexpected token 'export'" JavaScript error
-- **Problem:** Web component fails to load with ES6 module error
-- **Solution:**
-  - Add `type="module"` attribute to script tag: `<script type="module" src="https://..."></script>`
-  - Ensure you're using v5.7.6+ web components which require ES6 modules
-  - Check browser console for additional module loading errors
-
-### ❌ Only credit card payment method shows in checkout
-- **Problem:** BNPL and bank account options not visible
-- **Solution:**
-  - Add component attributes to enable all payment methods:
-    ```javascript
-    checkoutElement.setAttribute('disable-card-form', 'false');
-    checkoutElement.setAttribute('disable-bnpl-form', 'false');
-    checkoutElement.setAttribute('disable-bank-account-form', 'false');
-    ```
-  - Verify your JustiFi account has these payment methods enabled
-
-### ❌ "403 Forbidden" on checkout creation with valid credentials
-- **Problem:** OAuth works but checkout API returns 403
-- **Solution:**
-  - Check `origin_url` format - remove protocol prefix (use `localhost:3001` not `http://localhost:3001`)
-  - Verify sub-account is active and has checkout permissions
-  - Ensure request body only includes required fields: `amount`, `description`, `origin_url`
-  - Check Sub-Account header is included in request
-
-### ❌ CORS errors when calling JustiFi API from browser
-- **Problem:** Direct frontend calls to api.justifi.ai fail with CORS
-- **Solution:**
-  - **This is correct behavior** - never call JustiFi API directly from frontend
-  - All JustiFi API calls must go through YOUR backend server
-  - Frontend should only call your local APIs: `/api/checkout`, `/api/web-component-token`
-  - Use the provided Express.js backend example as reference
-
-### ❌ "Invalid scope" error on web component token (v5.7.6+)
-- **Problem:** Web component token request fails with invalid scope
-- **Solution:**
-  - Update scope format from `write:checkout:${checkoutId}` to `write:tokenize:${accountId}`
-  - Use sub-account ID instead of checkout ID in token request
-  - Ensure you're using the latest token format for v5.7.6+
-
-### ❌ Environment variables not loading
-- **Problem:** Server can't find JUSTIFI_CLIENT_ID or other env vars
-- **Solution:**
-  - Install dotenv: `npm install dotenv`
-  - Add to top of server.js: `require('dotenv').config();`
-  - Ensure .env file is in project root directory
-  - Check .env file format (no quotes, no spaces around =)
-  - Verify .env is not committed to version control
-
-### ❌ Browser compatibility issues
-- **Problem:** Components not loading due to browser support
-- **Solution:**
-  - **Browser requirements**: ES6 modules support (Chrome 61+, Firefox 60+, Safari 10.1+)
-  - **Script tag**: Must include `type="module"` attribute for v5.7.6+
-  - **Check console**: Look for module loading errors in browser developer tools
-
-## 📚 JustiFi Resources
-
-### Official Documentation
-- **Main Docs:** https://docs.justifi.ai
-- **API Reference:** https://docs.justifi.ai/api-spec
-- **Getting Started:** https://docs.justifi.ai/guide
-
-### Web Components
-- **Storybook:** https://storybook.justifi.ai
-- **GitHub Repo:** https://github.com/justifi-tech/web-component-library
-- **Checkout Component:** https://storybook.justifi.ai/?path=/docs/payment-facilitation-unified-fintech-checkout--docs
-
-### Official Examples
-- **Component Examples:** https://github.com/justifi-tech/web-component-library/tree/main/apps/component-examples
-- **Express.js Checkout Example:** https://raw.githubusercontent.com/justifi-tech/web-component-library/refs/heads/main/apps/component-examples/examples/checkout.js
-- **Working Examples Directory:** https://github.com/justifi-tech/web-component-library/blob/main/apps/component-examples/examples/
-
-### Developer Resources
-- **API Testing:** https://docs.justifi.ai/api-spec#section/Authentication
-- **Webhook Setup:** https://docs.justifi.ai/guide/webhooks
-- **Test Environment:** https://docs.justifi.ai/guide/environments
-
-## 🚀 Next Steps
-
-1. **Security:** Replace localhost origin_url for production
-2. **Webhooks:** Set up payment status webhooks for reliability
-3. **Error Handling:** Add custom error pages and user messaging  
-4. **UI/UX:** Customize styling to match your brand
-5. **Testing:** Add comprehensive test coverage
-6. **Monitoring:** Implement logging and error tracking
-
-## Features Included
-
-- OAuth token management with caching
-- Sub-Account header handling
-- Web component token generation  
-- JustiFi checkout web component integration
-- Payment verification and status checking
-- Test card support for development
-- Comprehensive error handling and validation
-
-## 💬 Need Help?
-
-- **JustiFi Support:** support@justifi.ai
-- **Developer Discord:** [Join JustiFi Discord](https://discord.gg/justifi)
-- **Documentation Issues:** https://github.com/justifi-tech/docs/issues
 """
 
     return {
@@ -1131,7 +679,7 @@ def _get_justifi_resources() -> dict[str, dict[str, str]]:
             "github_docs": "https://github.com/justifi-tech/docs - Open source documentation repository",
             "openapi_spec": "https://api.justifi.ai/openapi.yaml - Machine-readable API specification",
             "authentication_guide": "https://docs.justifi.ai/api-spec#section/Authentication - OAuth implementation details",
-            "checkout_guide": "https://docs.justifi.ai/guide/checkouts - Checkout integration walkthrough"
+            "checkout_guide": "https://docs.justifi.ai/guide/checkouts - Checkout integration walkthrough",
         },
         "web_components": {
             "storybook_main": "https://storybook.justifi.ai - Interactive component playground and documentation",
@@ -1140,26 +688,26 @@ def _get_justifi_resources() -> dict[str, dict[str, str]]:
             "official_examples": "https://github.com/justifi-tech/web-component-library/tree/main/apps/component-examples - Official working examples",
             "express_checkout_example": "https://raw.githubusercontent.com/justifi-tech/web-component-library/refs/heads/main/apps/component-examples/examples/checkout.js - Official Express.js checkout example",
             "styling_guide": "https://storybook.justifi.ai/?path=/docs/design-system-overview--docs - Component styling and theming",
-            "cdn_url": "https://cdn.jsdelivr.net/npm/@justifi-tech/justifi-webcomponents@latest/dist/index.js - Web components CDN"
+            "cdn_url": "https://cdn.jsdelivr.net/npm/@justifi-tech/justifi-webcomponents@latest/dist/index.js - Web components CDN",
         },
         "testing": {
             "test_cards": "https://docs.justifi.ai/testing/test-cards - Test card numbers and expected results",
             "sandbox_environment": "https://docs.justifi.ai/guide/environments - Test environment setup",
             "api_testing": "https://docs.justifi.ai/api-spec#section/Testing - API testing guidelines",
-            "webhook_testing": "https://docs.justifi.ai/guide/webhooks - Webhook testing and validation"
+            "webhook_testing": "https://docs.justifi.ai/guide/webhooks - Webhook testing and validation",
         },
         "troubleshooting": {
             "common_errors": "https://docs.justifi.ai/troubleshooting/common-errors - Common integration issues",
             "authentication_errors": "https://docs.justifi.ai/troubleshooting/authentication - OAuth troubleshooting",
             "checkout_errors": "https://docs.justifi.ai/troubleshooting/checkout-errors - Checkout-specific issues",
-            "support_discord": "https://discord.gg/justifi - Developer community support"
+            "support_discord": "https://discord.gg/justifi - Developer community support",
         },
         "advanced": {
             "webhooks": "https://docs.justifi.ai/guide/webhooks - Payment status notifications",
             "sub_accounts": "https://docs.justifi.ai/concepts/sub-accounts - Multi-tenant setup",
             "marketplace": "https://docs.justifi.ai/use-cases/marketplace - Marketplace payment flows",
-            "pci_compliance": "https://docs.justifi.ai/compliance/pci - PCI compliance guidelines"
-        }
+            "pci_compliance": "https://docs.justifi.ai/compliance/pci - PCI compliance guidelines",
+        },
     }
 
 
@@ -1167,13 +715,13 @@ def _get_express_vanilla_next_steps() -> list[str]:
     """Get specific next steps for express-vanilla example."""
     return [
         "1. Copy the generated files to your project directory",
-        "2. Run 'npm install' to install dependencies", 
+        "2. Run 'npm install' to install dependencies",
         "3. Copy .env.example to .env and add your JustiFi credentials",
         "4. Start with 'npm run dev' and test at http://localhost:3001",
         "5. For your framework, adapt the patterns shown in the 'patterns' example",
         "6. Check Storybook for web component customization: https://storybook.justifi.ai",
         "7. Review authentication flow in Context7: https://context7.justifi.ai",
-        "8. See API reference for additional features: https://docs.justifi.ai/api-spec"
+        "8. See API reference for additional features: https://docs.justifi.ai/api-spec",
     ]
 
 
@@ -1187,7 +735,7 @@ def _get_patterns_next_steps() -> list[str]:
         "5. Test the complete flow with provided test cards",
         "6. For complete examples, generate 'express-vanilla' type to see working code",
         "7. Check Storybook for component integration: https://storybook.justifi.ai",
-        "8. Reference OpenAPI spec for TypeScript types: https://api.justifi.ai/openapi.yaml"
+        "8. Reference OpenAPI spec for TypeScript types: https://api.justifi.ai/openapi.yaml",
     ]
 
 
@@ -1196,7 +744,7 @@ def _get_comprehensive_next_steps() -> list[str]:
     return [
         "1. QUICK START: Run the Express.js example to see JustiFi integration working",
         "   - Copy files to your project directory",
-        "   - Run 'npm install' to install dependencies", 
+        "   - Run 'npm install' to install dependencies",
         "   - Add your JustiFi credentials to .env",
         "   - Start with 'npm run dev' and test at http://localhost:3001",
         "",
@@ -1209,5 +757,5 @@ def _get_comprehensive_next_steps() -> list[str]:
         "   - Storybook for web component customization: https://storybook.justifi.ai",
         "   - Context7 for authentication flow: https://context7.justifi.ai",
         "   - API reference for advanced features: https://docs.justifi.ai/api-spec",
-        "   - OpenAPI spec for TypeScript types: https://api.justifi.ai/openapi.yaml"
+        "   - OpenAPI spec for TypeScript types: https://api.justifi.ai/openapi.yaml",
     ]

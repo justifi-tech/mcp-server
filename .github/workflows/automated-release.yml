@@ -74,7 +74,7 @@ jobs:
           JUSTIFI_SUPPORT_NPM_TOKEN: ${{ secrets.JUSTIFI_SUPPORT_NPM_TOKEN }}
       
       - name: Create GitHub Release
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const version = context.ref.replace('refs/tags/', '');

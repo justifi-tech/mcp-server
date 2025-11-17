@@ -57,6 +57,16 @@ class JustiFiConfig(BaseModel):
     client_secret: str | None = None
     """JustiFi client secret (or from JUSTIFI_CLIENT_SECRET env var)."""
 
+    # OAuth 2.1 Configuration (optional)
+    auth0_domain: str = Field(default="justifi.us.auth0.com")
+    """Auth0 domain for OAuth 2.1 (or from JUSTIFI_AUTH0_DOMAIN env var)."""
+
+    auth0_audience: str = Field(default="https://api.justifi.ai")
+    """Auth0 audience for OAuth 2.1 (or from JUSTIFI_AUTH0_AUDIENCE env var)."""
+
+    oauth_scopes: list[str] = Field(default_factory=list)
+    """OAuth scopes supported by this resource (or from JUSTIFI_OAUTH_SCOPES env var, comma-separated)."""
+
     # Tool selection (whitelist approach)
     enabled_tools: list[str] | str = Field(default=[])
     """List of enabled tool names, or 'all' to enable all tools. Default: [] (no tools enabled - secure by default)."""
@@ -73,6 +83,24 @@ class JustiFiConfig(BaseModel):
 
         if "client_secret" not in data or not data["client_secret"]:
             data["client_secret"] = os.getenv("JUSTIFI_CLIENT_SECRET")
+
+        # Load OAuth 2.1 configuration from environment
+        if "auth0_domain" not in data:
+            env_domain = os.getenv("JUSTIFI_AUTH0_DOMAIN")
+            if env_domain:
+                data["auth0_domain"] = env_domain
+
+        if "auth0_audience" not in data:
+            env_audience = os.getenv("JUSTIFI_AUTH0_AUDIENCE")
+            if env_audience:
+                data["auth0_audience"] = env_audience
+
+        if "oauth_scopes" not in data:
+            env_scopes = os.getenv("JUSTIFI_OAUTH_SCOPES")
+            if env_scopes:
+                data["oauth_scopes"] = [
+                    s.strip() for s in env_scopes.split(",") if s.strip()
+                ]
 
         # Handle context configuration
         if "context" in data and data["context"] is None:

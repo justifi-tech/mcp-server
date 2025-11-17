@@ -1,9 +1,13 @@
 """FastMCP Server Implementation for JustiFi."""
 
 from fastmcp import FastMCP
+from starlette.requests import Request
+from starlette.responses import JSONResponse, Response
 
 from python.config import JustiFiConfig
 from python.core import JustiFiClient
+
+from .oauth_metadata import get_protected_resource_metadata
 
 
 def create_mcp_server() -> FastMCP:
@@ -28,7 +32,28 @@ def create_mcp_server() -> FastMCP:
     # Register all JustiFi tools
     register_tools(mcp, client)
 
+    # Register OAuth 2.0 Protected Resource Metadata endpoint (RFC 9728)
+    register_oauth_metadata_route(mcp, config)
+
     return mcp
+
+
+def register_oauth_metadata_route(mcp: FastMCP, config: JustiFiConfig) -> None:
+    """Register OAuth 2.0 Protected Resource Metadata endpoint per RFC 9728.
+
+    This endpoint does NOT require authentication and provides metadata about
+    the OAuth authorization servers and scopes supported by this resource.
+
+    Args:
+        mcp: FastMCP server instance
+        config: JustiFi configuration with OAuth settings
+    """
+
+    @mcp.custom_route("/.well-known/oauth-protected-resource", methods=["GET"])
+    async def oauth_metadata_endpoint(request: Request) -> Response:
+        """OAuth 2.0 Protected Resource Metadata endpoint (RFC 9728)."""
+        metadata = get_protected_resource_metadata(config)
+        return JSONResponse(metadata)
 
 
 def register_tools(mcp: FastMCP, client: JustiFiClient) -> None:

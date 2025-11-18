@@ -1,8 +1,10 @@
 """FastMCP Server Implementation for JustiFi."""
 
+import os
+
 from fastmcp import FastMCP
 from starlette.requests import Request
-from starlette.responses import JSONResponse, Response
+from starlette.responses import JSONResponse, PlainTextResponse, Response
 
 from python.config import JustiFiConfig
 from python.core import JustiFiClient
@@ -29,11 +31,20 @@ def create_mcp_server() -> FastMCP:
         client_secret=client_secret,
     )
 
+    # Add OAuth middleware for HTTP transport
+    if os.getenv("MCP_TRANSPORT") == "http":
+        from .middleware.oauth import OAuthMiddleware
+
+        mcp.add_middleware(OAuthMiddleware)
+
     # Register all JustiFi tools
     register_tools(mcp, client)
 
     # Register OAuth 2.0 Protected Resource Metadata endpoint (RFC 9728)
     register_oauth_metadata_route(mcp, config)
+
+    # Register health check endpoint
+    register_health_check_route(mcp)
 
     return mcp
 
@@ -54,6 +65,22 @@ def register_oauth_metadata_route(mcp: FastMCP, config: JustiFiConfig) -> None:
         """OAuth 2.0 Protected Resource Metadata endpoint (RFC 9728)."""
         metadata = get_protected_resource_metadata(config)
         return JSONResponse(metadata)
+
+
+def register_health_check_route(mcp: FastMCP) -> None:
+    """Register health check endpoint for load balancer health checks.
+
+    This endpoint does NOT require authentication and returns a simple
+    "OK" response to indicate the server is running.
+
+    Args:
+        mcp: FastMCP server instance
+    """
+
+    @mcp.custom_route("/health", methods=["GET"])
+    async def health_check_endpoint(request: Request) -> Response:
+        """Health check endpoint for ALB/load balancer health checks."""
+        return PlainTextResponse("OK")
 
 
 def register_tools(mcp: FastMCP, client: JustiFiClient) -> None:

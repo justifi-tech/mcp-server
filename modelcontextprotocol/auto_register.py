@@ -9,25 +9,24 @@ import logging
 from collections.abc import Callable
 from typing import Any, get_type_hints
 
-from fastmcp import FastMCP
+from fastmcp import Context, FastMCP
 
+from python.config import JustiFiConfig
 from python.core import JustiFiClient
 from python.tools.response_wrapper import wrap_tool_call
 
 logger = logging.getLogger(__name__)
 
 
-def auto_register_tools(mcp: FastMCP, client: JustiFiClient) -> None:
+def auto_register_tools(mcp: FastMCP, config: JustiFiConfig) -> None:
     """Automatically register all available tools with MCP server.
 
     Args:
         mcp: FastMCP server instance
-        client: JustiFi client instance
+        config: JustiFi configuration instance
     """
-    # Import tools package for discovery
     from python import tools
 
-    # Discover available tools
     available_tools = discover_tools()
 
     logger.info(f"Auto-registering {len(available_tools)} tools")
@@ -35,11 +34,10 @@ def auto_register_tools(mcp: FastMCP, client: JustiFiClient) -> None:
     for tool_name in available_tools:
         try:
             tool_func = getattr(tools, tool_name)
-            register_single_tool(mcp, client, tool_name, tool_func)
+            register_single_tool(mcp, config, tool_name, tool_func)
             logger.debug(f"Successfully registered tool: {tool_name}")
         except Exception as e:
             logger.error(f"Failed to register tool {tool_name}: {e}")
-            # Continue registering other tools even if one fails
             continue
 
 
@@ -53,16 +51,13 @@ def discover_tools() -> list[str]:
 
     tool_functions = []
 
-    # Get all exported functions from __all__ if available
     if hasattr(tools, "__all__"):
-        # Filter out non-functions and utility functions
         for name in tools.__all__:
             if name not in ["standardize_response", "wrap_tool_call"]:
                 obj = getattr(tools, name, None)
                 if obj and inspect.iscoroutinefunction(obj):
                     tool_functions.append(name)
     else:
-        # Fallback: inspect all public functions
         for name in dir(tools):
             if not name.startswith("_") and name not in [
                 "standardize_response",
@@ -77,23 +72,20 @@ def discover_tools() -> list[str]:
 
 
 def register_single_tool(
-    mcp: FastMCP, client: JustiFiClient, tool_name: str, tool_func: Callable
+    mcp: FastMCP, config: JustiFiConfig, tool_name: str, tool_func: Callable
 ) -> None:
     """Register a single tool with the MCP server.
 
     Args:
         mcp: FastMCP server instance
-        client: JustiFi client instance
+        config: JustiFi configuration instance
         tool_name: Name of the tool to register
         tool_func: Tool function to register
     """
-    # Extract function metadata for MCP registration
     metadata = extract_tool_metadata(tool_func)
 
-    # Create dynamic MCP tool function with preserved signature
-    mcp_tool_wrapper = create_mcp_function(tool_name, tool_func, client, metadata)
+    mcp_tool_wrapper = create_mcp_function(tool_name, tool_func, config, metadata)
 
-    # Register with MCP
     mcp.tool(mcp_tool_wrapper)
 
 
@@ -103,7 +95,6 @@ def extract_original_signature(tool_func: Callable) -> inspect.Signature:
     Since decorators now properly preserve __wrapped__, we can directly access
     the original signature without complex AST parsing.
     """
-    # Get original function through __wrapped__ chain
     original_func = tool_func
     while hasattr(original_func, "__wrapped__"):
         original_func = original_func.__wrapped__
@@ -120,19 +111,15 @@ def extract_tool_metadata(tool_func: Callable) -> dict[str, Any]:
     Returns:
         Dictionary containing function metadata (signature, docstring, annotations)
     """
-    # Extract original signature
     original_sig = extract_original_signature(tool_func)
 
-    # Remove 'client' parameter for MCP interface
     filtered_params = []
     for name, param in original_sig.parameters.items():
         if name != "client":
             filtered_params.append(param)
 
-    # Create new signature without client parameter
     new_sig = original_sig.replace(parameters=filtered_params)
 
-    # Get type annotations (excluding client)
     original_func = tool_func
     while hasattr(original_func, "__wrapped__"):
         original_func = original_func.__wrapped__
@@ -143,18 +130,15 @@ def extract_tool_metadata(tool_func: Callable) -> dict[str, Any]:
             name: hint for name, hint in type_hints.items() if name != "client"
         }
     except Exception:
-        # Fallback to annotations from signature parameters
         annotations = {}
         for param in filtered_params:
             if param.annotation != inspect.Parameter.empty:
                 annotations[param.name] = param.annotation
 
-    # Get return annotation
     return_annotation = original_sig.return_annotation
     if return_annotation == inspect.Signature.empty:
         return_annotation = dict[str, Any]
 
-    # Extract docstring
     docstring = inspect.getdoc(tool_func) or f"Execute {tool_func.__name__} operation"
 
     return {
@@ -167,14 +151,14 @@ def extract_tool_metadata(tool_func: Callable) -> dict[str, Any]:
 
 
 def create_mcp_function(
-    tool_name: str, tool_func: Callable, client: JustiFiClient, metadata: dict[str, Any]
+    tool_name: str, tool_func: Callable, config: JustiFiConfig, metadata: dict[str, Any]
 ) -> Callable:
     """Create MCP function with correct signature and proper error handling.
 
     Args:
         tool_name: Name of the tool
         tool_func: Original tool function
-        client: JustiFi client instance
+        config: JustiFi configuration instance
         metadata: Extracted function metadata
 
     Returns:
@@ -184,12 +168,37 @@ def create_mcp_function(
     docstring = metadata["docstring"]
     return_annotation = metadata["return_annotation"]
 
-    # Create function with preserved signature
     async def mcp_tool_wrapper(*args, **kwargs) -> dict[str, Any]:
-        """Dynamically created MCP tool wrapper with preserved signature."""
+        """Dynamically created MCP tool wrapper with per-request client."""
+        ctx = Context.get_current()
+
+        auth_type = ctx.metadata.get("auth_type")
+        bearer_token = ctx.metadata.get("bearer_token")
+        client_id = ctx.metadata.get("client_id")
+        client_secret = ctx.metadata.get("client_secret")
+
+        if auth_type == "oauth" and bearer_token:
+            client = JustiFiClient(
+                client_id=config.client_id or "",
+                client_secret=config.client_secret or "",
+                base_url=config.get_effective_base_url(),
+                bearer_token=bearer_token,
+            )
+        elif auth_type == "client_credentials" and client_id and client_secret:
+            client = JustiFiClient(
+                client_id=client_id,
+                client_secret=client_secret,
+                base_url=config.get_effective_base_url(),
+            )
+        else:
+            client = JustiFiClient(
+                client_id=config.client_id or "",
+                client_secret=config.client_secret or "",
+                base_url=config.get_effective_base_url(),
+            )
+
         return await wrap_tool_call(tool_name, tool_func, client, *args, **kwargs)
 
-    # Apply the preserved signature and metadata
     mcp_tool_wrapper.__signature__ = signature
     mcp_tool_wrapper.__name__ = tool_name
     mcp_tool_wrapper.__doc__ = docstring

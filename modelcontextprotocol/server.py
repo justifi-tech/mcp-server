@@ -7,43 +7,30 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse, PlainTextResponse, Response
 
 from python.config import JustiFiConfig
-from python.core import JustiFiClient
 
 from .oauth_metadata import get_protected_resource_metadata
 
 
 def create_mcp_server() -> FastMCP:
     """Create and configure the FastMCP server with all JustiFi tools."""
-    # Initialize FastMCP server
     mcp: FastMCP = FastMCP("JustiFi Payment Server")
 
-    # Load configuration
     config = JustiFiConfig()
 
-    # Ensure we have valid credentials
     client_id = config.client_id
     client_secret = config.client_secret
     if not client_id or not client_secret:
         raise ValueError("JustiFi client_id and client_secret must be configured")
 
-    client = JustiFiClient(
-        client_id=client_id,
-        client_secret=client_secret,
-    )
-
-    # Add OAuth middleware for HTTP transport
     if os.getenv("MCP_TRANSPORT") == "http":
         from .middleware.oauth import OAuthMiddleware
 
         mcp.add_middleware(OAuthMiddleware)
 
-    # Register all JustiFi tools
-    register_tools(mcp, client)
+    register_tools(mcp, config)
 
-    # Register OAuth 2.0 Protected Resource Metadata endpoint (RFC 9728)
     register_oauth_metadata_route(mcp, config)
 
-    # Register health check endpoint
     register_health_check_route(mcp)
 
     return mcp
@@ -83,9 +70,8 @@ def register_health_check_route(mcp: FastMCP) -> None:
         return PlainTextResponse("OK")
 
 
-def register_tools(mcp: FastMCP, client: JustiFiClient) -> None:
+def register_tools(mcp: FastMCP, config: JustiFiConfig) -> None:
     """Register all JustiFi tools with FastMCP server."""
-    # Use automatic registration system
     from .auto_register import auto_register_tools
 
-    auto_register_tools(mcp, client)
+    auto_register_tools(mcp, config)

@@ -33,14 +33,14 @@ class TestOAuthMetadata:
             assert "scopes_supported" in metadata
             assert metadata["scopes_supported"] == []
 
-    def test_custom_auth0_domain(self):
-        """Test metadata with custom Auth0 domain."""
+    def test_custom_oauth_issuer(self):
+        """Test metadata with custom OAuth issuer."""
         with patch.dict(
             os.environ,
             {
                 "JUSTIFI_CLIENT_ID": "test_id",
                 "JUSTIFI_CLIENT_SECRET": "test_secret",
-                "JUSTIFI_AUTH0_DOMAIN": "custom.auth0.com",
+                "OAUTH_ISSUER": "https://custom.auth0.com",
             },
         ):
             config = JustiFiConfig()
@@ -58,7 +58,7 @@ class TestOAuthMetadata:
             {
                 "JUSTIFI_CLIENT_ID": "test_id",
                 "JUSTIFI_CLIENT_SECRET": "test_secret",
-                "JUSTIFI_OAUTH_SCOPES": "read:payments,write:payments,read:refunds",
+                "OAUTH_SCOPES": "read:payments,write:payments,read:refunds",
             },
         ):
             config = JustiFiConfig()
@@ -77,7 +77,7 @@ class TestOAuthMetadata:
             {
                 "JUSTIFI_CLIENT_ID": "test_id",
                 "JUSTIFI_CLIENT_SECRET": "test_secret",
-                "JUSTIFI_OAUTH_SCOPES": "read:payments , write:payments,  read:refunds",
+                "OAUTH_SCOPES": "read:payments , write:payments,  read:refunds",
             },
         ):
             config = JustiFiConfig()
@@ -99,8 +99,8 @@ class TestOAuthMetadata:
             },
         ):
             config = JustiFiConfig(
-                auth0_domain="example.auth0.com",
-                auth0_audience="https://api.example.com",
+                oauth_issuer="https://example.auth0.com",
+                oauth_audience="https://api.example.com",
                 oauth_scopes=["read:payments", "write:payments"],
             )
             metadata = get_protected_resource_metadata(config)

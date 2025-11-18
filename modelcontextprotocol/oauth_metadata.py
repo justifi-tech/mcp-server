@@ -20,7 +20,7 @@ def get_protected_resource_metadata(config: JustiFiConfig) -> dict[str, list]:
     """Return OAuth 2.0 Protected Resource Metadata per RFC 9728.
 
     Args:
-        config: JustiFi configuration containing Auth0 domain and OAuth scopes
+        config: JustiFi configuration containing OAuth issuer and scopes
 
     Returns:
         Dictionary containing:
@@ -39,6 +39,6 @@ def get_protected_resource_metadata(config: JustiFiConfig) -> dict[str, list]:
         }
     """
     return {
-        "authorization_servers": [{"issuer": f"https://{config.auth0_domain}"}],
+        "authorization_servers": [{"issuer": config.oauth_issuer}],
         "scopes_supported": config.oauth_scopes,
     }

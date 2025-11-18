@@ -17,12 +17,16 @@ def create_mcp_server() -> FastMCP:
 
     config = JustiFiConfig()
 
-    client_id = config.client_id
-    client_secret = config.client_secret
-    if not client_id or not client_secret:
-        raise ValueError("JustiFi client_id and client_secret must be configured")
+    # For stdio mode, credentials are required
+    # For HTTP mode with OAuth, credentials are optional (bearer tokens used)
+    transport = os.getenv("MCP_TRANSPORT", "stdio")
+    if transport == "stdio":
+        if not config.client_id or not config.client_secret:
+            raise ValueError(
+                "JustiFi client_id and client_secret must be configured for stdio mode"
+            )
 
-    if os.getenv("MCP_TRANSPORT") == "http":
+    if transport == "http":
         from .middleware.oauth import OAuthMiddleware
 
         mcp.add_middleware(OAuthMiddleware)

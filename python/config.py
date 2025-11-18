@@ -119,13 +119,11 @@ class JustiFiConfig(BaseModel):
     @field_validator("client_id", "client_secret")
     @classmethod
     def validate_credentials(cls, v, info):
-        """Validate that credentials are provided."""
-        field_name = info.field_name
-        if not v:
-            raise ValueError(
-                f"{field_name} must be provided or set in "
-                f"JUSTIFI_{field_name.upper()} environment variable"
-            )
+        """Validate that credentials are provided for stdio mode.
+
+        For HTTP mode with OAuth, credentials are optional (bearer tokens used instead).
+        """
+        # Allow None - validation happens at client creation time
         return v
 
     def _discover_available_tools(self) -> set[str]:

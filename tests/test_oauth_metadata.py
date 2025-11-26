@@ -25,7 +25,9 @@ class TestProtectedResourceMetadata:
 
         assert "authorization_servers" in metadata
         assert len(metadata["authorization_servers"]) == 1
-        assert metadata["authorization_servers"][0]["issuer"] == "https://mcp.justifi.ai"
+        assert (
+            metadata["authorization_servers"][0]["issuer"] == "https://mcp.justifi.ai"
+        )
         assert metadata["resource"] == "https://mcp.justifi.ai"
         assert metadata["scopes_supported"] == ["read:payments", "write:payments"]
 
@@ -116,7 +118,10 @@ class TestAuthorizationServerMetadata:
 
         # Should point to Auth0 for authorization/token
         assert metadata["issuer"] == "https://justifi.us.auth0.com"
-        assert metadata["authorization_endpoint"] == "https://justifi.us.auth0.com/authorize"
+        assert (
+            metadata["authorization_endpoint"]
+            == "https://justifi.us.auth0.com/authorize"
+        )
         assert metadata["token_endpoint"] == "https://justifi.us.auth0.com/oauth/token"
 
         # Should point to MCP server for registration
@@ -133,7 +138,9 @@ class TestAuthorizationServerMetadata:
         metadata = get_authorization_server_metadata(config)
 
         assert metadata["issuer"] == "https://custom.auth0.com"
-        assert metadata["authorization_endpoint"] == "https://custom.auth0.com/authorize"
+        assert (
+            metadata["authorization_endpoint"] == "https://custom.auth0.com/authorize"
+        )
         assert metadata["token_endpoint"] == "https://custom.auth0.com/oauth/token"
 
     def test_without_mcp_server_url(self):

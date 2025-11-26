@@ -217,9 +217,13 @@ class TestCreateMcpFunction:
             "retrieve_payout", retrieve_payout, mock_config, metadata
         )
 
-        with patch(
-            "modelcontextprotocol.auto_register.wrap_tool_call", new_callable=AsyncMock
-        ) as mock_wrap, patch("modelcontextprotocol.auto_register.Context") as MockContext:
+        with (
+            patch(
+                "modelcontextprotocol.auto_register.wrap_tool_call",
+                new_callable=AsyncMock,
+            ) as mock_wrap,
+            patch("modelcontextprotocol.auto_register.Context") as MockContext,
+        ):
             mock_ctx = Mock()
             mock_ctx.metadata = {}
             MockContext.get_current.return_value = mock_ctx

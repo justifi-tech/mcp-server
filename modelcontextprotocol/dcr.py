@@ -18,7 +18,9 @@ if TYPE_CHECKING:
     from python.config import JustiFiConfig
 
 
-async def handle_client_registration(request: Request, config: JustiFiConfig) -> Response:
+async def handle_client_registration(
+    request: Request, config: JustiFiConfig
+) -> Response:
     """Handle RFC 7591 Dynamic Client Registration requests.
 
     This endpoint returns shared OAuth credentials to MCP clients.

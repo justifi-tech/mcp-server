@@ -17,16 +17,29 @@ async def list_refunds(
     after_cursor: str | None = None,
     before_cursor: str | None = None,
 ) -> dict[str, Any]:
-    """List refunds with pagination support.
+    """List all refunds across your account with cursor-based pagination.
+
+    Use this for a global view of refund activity across all payments. Useful for
+    refund reporting, reconciliation, and monitoring refund trends. For refunds
+    associated with a specific payment, use `list_payment_refunds` instead.
+
+    Pagination: Use `page_info.end_cursor` as `after_cursor` to fetch subsequent pages.
+
+    Related tools:
+    - Use `retrieve_refund` with a refund ID for complete details
+    - Use `list_payment_refunds` to see refunds for a specific payment
+    - Use `retrieve_payment` to see the original payment that was refunded
 
     Args:
         client: JustiFi API client
-        limit: Number of refunds to return (1-100, default: 25)
-        after_cursor: Cursor for pagination - returns results after this cursor
-        before_cursor: Cursor for pagination - returns results before this cursor
+        limit: Number of refunds to return per page (1-100, default: 25).
+        after_cursor: Pagination cursor for fetching the next page of results.
+        before_cursor: Pagination cursor for fetching the previous page of results.
 
     Returns:
-        Dict containing refunds list and pagination info
+        Object containing:
+        - data: Array of refund objects with id, amount, status, payment_id, reason
+        - page_info: Pagination metadata for navigating through results
 
     Raises:
         ValidationError: If parameters are invalid
@@ -56,14 +69,30 @@ async def retrieve_refund(
     client: JustiFiClient,
     refund_id: str,
 ) -> dict[str, Any]:
-    """Retrieve a specific refund by ID.
+    """Retrieve detailed information about a specific refund by ID.
+
+    Use this to get complete refund details including the amount, status, reason,
+    and associated payment information. Essential for customer service inquiries
+    about refund status or investigating refund processing issues.
+
+    Related tools:
+    - Use `list_refunds` first to find refund IDs
+    - Use `retrieve_payment` to get details about the original payment
+    - Use `list_payment_refunds` to see all refunds for the associated payment
 
     Args:
         client: JustiFi API client
-        refund_id: The ID of the refund to retrieve
+        refund_id: The unique identifier for the refund (e.g., 're_ABC123XYZ').
+            Obtain this from `list_refunds`, `list_payment_refunds`, or webhook events.
 
     Returns:
-        Dict containing refund details
+        Refund object containing:
+        - id: Unique refund identifier
+        - amount: Refund amount in cents
+        - status: Refund state (pending, succeeded, failed)
+        - reason: Reason for the refund (duplicate, fraudulent, customer_request)
+        - payment_id: ID of the original payment that was refunded
+        - created_at: ISO 8601 timestamp of refund creation
 
     Raises:
         ValidationError: If refund_id is invalid
@@ -85,14 +114,31 @@ async def list_payment_refunds(
     client: JustiFiClient,
     payment_id: str,
 ) -> dict[str, Any]:
-    """List all refunds for a specific payment.
+    """List all refunds associated with a specific payment.
+
+    Use this to see the complete refund history for a single payment. A payment can
+    have multiple partial refunds, and this tool shows all of them. Useful for
+    customer service inquiries or verifying refund totals against the original
+    payment amount.
+
+    Note: This fetches refunds embedded in the payment object, not a separate refunds
+    endpoint. No pagination is needed as refunds are returned with the payment.
+
+    Related tools:
+    - Use `list_refunds` for a global view of all refunds across payments
+    - Use `retrieve_payment` to see the full payment details including refund total
+    - Use `retrieve_refund` to get detailed info on a specific refund
 
     Args:
         client: JustiFi API client
-        payment_id: The ID of the payment to get refunds for
+        payment_id: The unique identifier for the payment (e.g., 'py_ABC123XYZ').
+            Obtain this from `list_payments` or webhook events.
 
     Returns:
-        Dict containing refunds list (extracted from payment data)
+        Object containing:
+        - data: Array of refund objects with id, amount, status, reason, created_at
+        - type: 'array' indicating this is a list response
+        - page_info: null (refunds from payment data don't use pagination)
 
     Raises:
         ValidationError: If payment_id is invalid

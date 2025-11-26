@@ -15,14 +15,35 @@ from .base import ToolError, ValidationError
 async def retrieve_payment_method(
     client: JustiFiClient, payment_method_token: str
 ) -> dict[str, Any]:
-    """Retrieve detailed information about a specific payment method by token.
+    """Retrieve detailed information about a tokenized payment method.
+
+    Use this to get details about a saved card or bank account, such as card brand,
+    last 4 digits, expiration, or bank account type. Payment methods are created when
+    customers save payment information during checkout or through the payment method
+    tokenization flow.
+
+    Note: For security, full card numbers and CVVs are never returned. Only masked/partial
+    information is available.
+
+    Related tools:
+    - Use `retrieve_payment` to see a payment method in context of a transaction
+    - Use `list_payment_method_groups` to see how payment methods are organized
+    - Use `retrieve_payment_method_group` to see payment methods within a group
 
     Args:
         client: JustiFi API client
-        payment_method_token: The unique token for the payment method (e.g., 'pm_ABC123XYZ')
+        payment_method_token: The unique token for the payment method (e.g., 'pm_ABC123XYZ').
+            Obtain from payment responses, checkout completion, or tokenization flows.
 
     Returns:
-        Payment method object with token, type, card/bank details, and metadata
+        Payment method object containing:
+        - token: Unique payment method identifier
+        - type: 'card' or 'bank_account'
+        - card (if type='card'): brand, last4, exp_month, exp_year, fingerprint
+        - bank_account (if type='bank_account'): bank_name, account_type, last4
+        - billing_address: Associated billing address if provided
+        - metadata: Custom key-value data attached to the payment method
+        - created_at: ISO 8601 timestamp
 
     Raises:
         ValidationError: If payment_method_token is invalid

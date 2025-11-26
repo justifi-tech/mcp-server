@@ -16,12 +16,30 @@ from .response_formatter import standardize_response
 async def retrieve_payment(client: JustiFiClient, payment_id: str) -> dict[str, Any]:
     """Retrieve detailed information about a specific payment by ID.
 
+    Use this to get complete payment details including status, amount, payment method,
+    and transaction metadata. Common use cases include checking payment status after
+    creation, retrieving details for customer service inquiries, and auditing transactions.
+
+    Related tools:
+    - Use `list_payments` first to find payment IDs
+    - Use `list_payment_refunds` to see refunds associated with this payment
+    - Use `retrieve_payment_method` to get details about the payment method used
+
     Args:
         client: JustiFi API client
-        payment_id: The unique identifier for the payment (e.g., 'py_ABC123XYZ')
+        payment_id: The unique identifier for the payment (e.g., 'py_ABC123XYZ').
+            Obtain this from `list_payments`, checkout completion, or webhook events.
 
     Returns:
-        Payment object with ID, status, amount, and details
+        Payment object containing:
+        - id: Unique payment identifier
+        - status: Payment state (pending, authorized, succeeded, failed, disputed, refunded)
+        - amount: Amount in cents (e.g., 1000 = $10.00)
+        - currency: Three-letter ISO currency code (e.g., 'usd')
+        - payment_method: Nested object with card/bank account details
+        - refunds: Array of associated refund objects
+        - metadata: Custom key-value data attached to the payment
+        - created_at: ISO 8601 timestamp of payment creation
 
     Raises:
         ValidationError: If payment_id is invalid
@@ -59,16 +77,34 @@ async def list_payments(
     after_cursor: str | None = None,
     before_cursor: str | None = None,
 ) -> dict[str, Any]:
-    """List payments with optional pagination using cursor-based pagination.
+    """List payments with cursor-based pagination.
+
+    Use this to browse payment history, find specific transactions, or build payment
+    reports. Returns payments in reverse chronological order (newest first). For
+    details on a specific payment, use `retrieve_payment` with the payment ID.
+
+    Pagination: Use `page_info.end_cursor` from the response as `after_cursor` in
+    the next request to fetch the next page. Continue until `page_info.has_next_page`
+    is false.
+
+    Related tools:
+    - Use `retrieve_payment` with a payment ID from results to get full details
+    - Use `list_refunds` for a global view of all refunds across payments
 
     Args:
         client: JustiFi API client
-        limit: Number of payments to return (1-100, default: 25)
-        after_cursor: Cursor for pagination - returns results after this cursor
-        before_cursor: Cursor for pagination - returns results before this cursor
+        limit: Number of payments to return per page (1-100, default: 25).
+            Use smaller values for quick lookups, larger for batch processing.
+        after_cursor: Pagination cursor from previous response's `page_info.end_cursor`.
+            Returns payments created before the cursor position.
+        before_cursor: Pagination cursor from previous response's `page_info.start_cursor`.
+            Returns payments created after the cursor position (for reverse pagination).
 
     Returns:
-        Paginated list of payments with page_info for navigation
+        Object containing:
+        - data: Array of payment objects with id, status, amount, currency, created_at
+        - page_info: Pagination metadata with has_next_page, has_previous_page,
+          start_cursor, end_cursor for navigating through results
 
     Raises:
         ValidationError: If parameters are invalid

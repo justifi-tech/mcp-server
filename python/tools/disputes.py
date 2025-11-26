@@ -21,16 +21,31 @@ async def list_disputes(
     after_cursor: str | None = None,
     before_cursor: str | None = None,
 ) -> dict[str, Any]:
-    """List disputes with cursor-based pagination.
+    """List payment disputes (chargebacks) with cursor-based pagination.
+
+    Use this to monitor and manage disputes filed by cardholders against payments.
+    Disputes occur when a customer contests a charge with their bank. Timely response
+    is critical—disputes have strict deadlines for submitting evidence.
+
+    Dispute lifecycle: needs_response → under_review → won/lost
+
+    Pagination: Use `page_info.end_cursor` as `after_cursor` to fetch subsequent pages.
+
+    Related tools:
+    - Use `retrieve_dispute` with a dispute ID for complete details and evidence requirements
+    - Use `retrieve_payment` to see the original disputed payment
 
     Args:
         client: JustiFi client instance.
-        limit: Number of disputes to return (default: 25, max: 100).
-        after_cursor: Cursor for pagination (get disputes after this cursor).
-        before_cursor: Cursor for pagination (get disputes before this cursor).
+        limit: Number of disputes to return per page (1-100, default: 25).
+        after_cursor: Pagination cursor for fetching the next page of results.
+        before_cursor: Pagination cursor for fetching the previous page of results.
 
     Returns:
-        JSON response with disputes list from the JustiFi API.
+        Object containing:
+        - data: Array of dispute objects with id, status, amount, reason, payment_id,
+          due_date (deadline), created_at
+        - page_info: Pagination metadata for navigating through results
 
     Raises:
         ValidationError: If limit is invalid or cursors are both provided.
@@ -56,14 +71,32 @@ async def list_disputes(
 
 @handle_tool_errors
 async def retrieve_dispute(client: JustiFiClient, dispute_id: str) -> dict[str, Any]:
-    """Retrieve a dispute by its ID.
+    """Retrieve detailed information about a specific dispute (chargeback).
+
+    Use this to get complete dispute details including the reason, evidence requirements,
+    deadline for response, and current status. Essential for preparing dispute responses
+    and understanding why a customer contested a charge.
+
+    Related tools:
+    - Use `list_disputes` first to find dispute IDs
+    - Use `retrieve_payment` to see the original payment that was disputed
 
     Args:
         client: JustiFi client instance.
-        dispute_id: The ID of the dispute to retrieve (e.g., 'dp_ABC123XYZ').
+        dispute_id: The unique identifier for the dispute (e.g., 'dp_ABC123XYZ').
+            Obtain from `list_disputes` or webhook events.
 
     Returns:
-        JSON response from the JustiFi API with dispute details.
+        Dispute object containing:
+        - id: Unique dispute identifier
+        - status: Dispute state (needs_response, under_review, won, lost)
+        - amount: Disputed amount in cents
+        - currency: Three-letter ISO currency code
+        - reason: Why the cardholder disputed (fraudulent, duplicate, product_not_received, etc.)
+        - payment_id: ID of the original disputed payment
+        - due_date: Deadline for evidence submission (date format)
+        - evidence: Object with evidence requirements and submitted documents
+        - created_at: When the dispute was filed
 
     Raises:
         ValidationError: If dispute_id is empty or invalid.

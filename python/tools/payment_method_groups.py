@@ -47,15 +47,33 @@ async def create_payment_method_group(
 ) -> dict[str, Any]:
     """Create a new payment method group to organize tokenized payment methods.
 
+    Use this to organize a customer's saved payment methods into logical groups.
+    Groups help manage multiple payment methods per customer—for example, separating
+    personal cards from business cards, or organizing by billing purpose. Useful for
+    subscription billing or marketplaces where customers have multiple payment options.
+
+    Related tools:
+    - Use `list_payment_method_groups` to see existing groups for a sub account
+    - Use `retrieve_payment_method_group` to see group details and members
+    - Use `update_payment_method_group` to modify group properties or members
+    - Use `remove_payment_method_from_group` to remove a specific payment method
+
     Args:
         client: JustiFi API client
-        sub_account_id: The sub account ID this group belongs to (required)
-        name: Name of the payment method group (required)
-        description: Optional description of the group
-        payment_method_ids: Optional list of payment method IDs to add to the group
+        sub_account_id: The sub account ID this group belongs to (e.g., 'acc_ABC123XYZ').
+            Required to scope the group to a specific merchant.
+        name: Display name for the payment method group (e.g., 'Primary Cards', 'Work Accounts').
+        description: Optional description explaining the group's purpose.
+        payment_method_ids: Optional list of payment method tokens to add initially.
+            Can also add payment methods later via `update_payment_method_group`.
 
     Returns:
-        Created payment method group object with ID, name, and metadata
+        Payment method group object containing:
+        - id: Unique group identifier
+        - name: Group display name
+        - description: Group description (if provided)
+        - payment_methods: Array of payment method objects in the group
+        - created_at: ISO 8601 timestamp
 
     Raises:
         ValidationError: If parameters are invalid
@@ -134,17 +152,30 @@ async def list_payment_method_groups(
     after_cursor: str | None = None,
     before_cursor: str | None = None,
 ) -> dict[str, Any]:
-    """List payment method groups with optional pagination.
+    """List payment method groups for a sub account with cursor-based pagination.
+
+    Use this to see all payment method groups created for a specific merchant.
+    Groups organize customers' saved payment methods for easier management.
+
+    Pagination: Use `page_info.end_cursor` as `after_cursor` to fetch subsequent pages.
+
+    Related tools:
+    - Use `retrieve_payment_method_group` with a group ID for complete details
+    - Use `create_payment_method_group` to create new groups
+    - Use `retrieve_payment_method` to see individual payment method details
 
     Args:
         client: JustiFi API client
-        sub_account_id: The sub account ID to list groups for (required)
-        limit: Number of groups to return (1-100, default: 25)
-        after_cursor: Cursor for pagination - returns results after this cursor
-        before_cursor: Cursor for pagination - returns results before this cursor
+        sub_account_id: The sub account ID to list groups for (e.g., 'acc_ABC123XYZ').
+            Required to scope results to a specific merchant.
+        limit: Number of groups to return per page (1-100, default: 25).
+        after_cursor: Pagination cursor for fetching the next page of results.
+        before_cursor: Pagination cursor for fetching the previous page of results.
 
     Returns:
-        Paginated list of payment method groups with page_info for navigation
+        Object containing:
+        - data: Array of payment method group objects with id, name, description
+        - page_info: Pagination metadata for navigating through results
 
     Raises:
         ValidationError: If parameters are invalid
@@ -210,15 +241,32 @@ async def list_payment_method_groups(
 async def retrieve_payment_method_group(
     client: JustiFiClient, sub_account_id: str, group_id: str
 ) -> dict[str, Any]:
-    """Retrieve detailed information about a specific payment method group.
+    """Retrieve detailed information about a payment method group including its members.
+
+    Use this to see all payment methods within a group, along with the group's
+    metadata. Essential for displaying a customer's organized payment options
+    or verifying group membership before processing a payment.
+
+    Related tools:
+    - Use `list_payment_method_groups` first to find group IDs
+    - Use `retrieve_payment_method` for detailed info on a specific payment method
+    - Use `update_payment_method_group` to modify group members or properties
+    - Use `remove_payment_method_from_group` to remove a specific payment method
 
     Args:
         client: JustiFi API client
-        sub_account_id: The sub account ID that owns the group (required)
-        group_id: The unique identifier for the payment method group
+        sub_account_id: The sub account ID that owns the group (e.g., 'acc_ABC123XYZ').
+        group_id: The unique identifier for the payment method group (e.g., 'pmg_ABC123XYZ').
+            Obtain from `list_payment_method_groups`.
 
     Returns:
-        Payment method group object with ID, name, payment methods, and metadata
+        Payment method group object containing:
+        - id: Unique group identifier
+        - name: Group display name
+        - description: Group description
+        - payment_methods: Array of full payment method objects in this group
+        - created_at: ISO 8601 timestamp
+        - updated_at: Last modification timestamp
 
     Raises:
         ValidationError: If parameters are invalid
@@ -264,21 +312,39 @@ async def update_payment_method_group(
     description: str | None = None,
     payment_method_ids: list[str] | None = None,
 ) -> dict[str, Any]:
-    """Update an existing payment method group.
+    """Update an existing payment method group's properties or members.
+
+    Use this to rename a group, update its description, or replace its entire
+    payment method membership. To remove a single payment method without affecting
+    others, use `remove_payment_method_from_group` instead.
+
+    Note: When providing `payment_method_ids`, this REPLACES the entire membership.
+    Any payment methods not in the new list will be removed from the group.
+
+    Related tools:
+    - Use `retrieve_payment_method_group` to see current group state before updating
+    - Use `remove_payment_method_from_group` to remove just one payment method
+    - Use `list_payment_method_groups` to find group IDs
 
     Args:
         client: JustiFi API client
-        sub_account_id: The sub account ID that owns the group (required)
-        group_id: The unique identifier for the payment method group
-        name: New name for the group (optional)
-        description: New description for the group (optional)
-        payment_method_ids: New list of payment method IDs to set in the group (optional)
+        sub_account_id: The sub account ID that owns the group (e.g., 'acc_ABC123XYZ').
+        group_id: The unique identifier for the payment method group (e.g., 'pmg_ABC123XYZ').
+        name: New display name for the group. Only updates if provided.
+        description: New description for the group. Only updates if provided.
+        payment_method_ids: Complete list of payment method tokens that should be in the group.
+            This REPLACES all existing members—omitted payment methods will be removed.
 
     Returns:
-        Updated payment method group object with ID, name, and metadata
+        Updated payment method group object containing:
+        - id: Unique group identifier
+        - name: Updated group name
+        - description: Updated description
+        - payment_methods: Array of payment method objects now in the group
+        - updated_at: Timestamp of this update
 
     Raises:
-        ValidationError: If parameters are invalid
+        ValidationError: If parameters are invalid or no update fields provided
         ToolError: If group update fails
     """
     _validate_sub_account_id(sub_account_id)
@@ -375,20 +441,34 @@ async def update_payment_method_group(
 async def remove_payment_method_from_group(
     client: JustiFiClient, sub_account_id: str, group_id: str, payment_method_id: str
 ) -> dict[str, Any]:
-    """Remove a payment method from a payment method group.
+    """Remove a single payment method from a group without affecting other members.
+
+    Use this to remove one payment method from a group while keeping all other
+    members intact. The payment method itself is not deleted—it's just removed
+    from this group's membership. Use this instead of `update_payment_method_group`
+    when you only need to remove one item.
+
+    Related tools:
+    - Use `retrieve_payment_method_group` to see current group members
+    - Use `update_payment_method_group` to replace the entire membership list
+    - Use `retrieve_payment_method` to verify the payment method exists
 
     Args:
         client: JustiFi API client
-        sub_account_id: The sub account ID that owns the group (required)
-        group_id: The unique identifier for the payment method group
-        payment_method_id: The payment method ID to remove from the group
+        sub_account_id: The sub account ID that owns the group (e.g., 'acc_ABC123XYZ').
+        group_id: The unique identifier for the payment method group (e.g., 'pmg_ABC123XYZ').
+        payment_method_id: The payment method token to remove (e.g., 'pm_ABC123XYZ').
+            The payment method must currently be in the group.
 
     Returns:
-        Updated payment method group object after removal
+        Updated payment method group object containing:
+        - id: Unique group identifier
+        - payment_methods: Array of remaining payment method objects
+        - updated_at: Timestamp of this removal
 
     Raises:
         ValidationError: If parameters are invalid
-        ToolError: If payment method removal fails
+        ToolError: If payment method removal fails (e.g., not in group)
     """
     _validate_sub_account_id(sub_account_id)
 

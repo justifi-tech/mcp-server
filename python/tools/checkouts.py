@@ -24,19 +24,40 @@ async def list_checkouts(
     status: str | None = None,
     payment_status: str | None = None,
 ) -> dict[str, Any]:
-    """List checkouts with cursor-based pagination and filtering.
+    """List checkout sessions with filtering and cursor-based pagination.
+
+    Use this to view checkout sessions created for customers. Checkouts are hosted
+    payment pages that securely collect payment information. Filter by status to
+    find abandoned checkouts (created/attempted) or successful ones (completed).
+
+    Checkout lifecycle: created → attempted (customer started) → completed/expired
+
+    Pagination: Use `page_info.end_cursor` as `after_cursor` to fetch subsequent pages.
+
+    Related tools:
+    - Use `retrieve_checkout` with a checkout ID for complete details
+    - Use `retrieve_payment` to see the payment created by a completed checkout
+    - Use `generate_unified_checkout_integration` for integration code examples
 
     Args:
         client: JustiFi client instance.
-        limit: Number of checkouts to return (default: 25, max: 100).
-        after_cursor: Cursor for pagination (get checkouts after this cursor).
-        before_cursor: Cursor for pagination (get checkouts before this cursor).
-        payment_mode: Filter by payment mode ('bnpl', 'ecom').
-        status: Filter by checkout status ('created', 'completed', 'attempted', 'expired').
-        payment_status: Filter by payment status.
+        limit: Number of checkouts to return per page (1-100, default: 25).
+        after_cursor: Pagination cursor for fetching the next page of results.
+        before_cursor: Pagination cursor for fetching the previous page of results.
+        payment_mode: Filter by payment type:
+            - 'ecom': Standard e-commerce card/bank payments
+            - 'bnpl': Buy Now Pay Later financing options
+        status: Filter by checkout session state:
+            - 'created': Session created, customer hasn't started
+            - 'attempted': Customer began but didn't complete
+            - 'completed': Payment successfully collected
+            - 'expired': Session timed out (typically 24 hours)
+        payment_status: Filter by the resulting payment's status.
 
     Returns:
-        JSON response with checkouts list from the JustiFi API.
+        Object containing:
+        - data: Array of checkout objects with id, status, amount, payment_mode, created_at
+        - page_info: Pagination metadata for navigating through results
 
     Raises:
         ValidationError: If limit is invalid or cursors are both provided.
@@ -84,14 +105,35 @@ async def list_checkouts(
 
 @handle_tool_errors
 async def retrieve_checkout(client: JustiFiClient, checkout_id: str) -> dict[str, Any]:
-    """Retrieve a checkout by its ID.
+    """Retrieve detailed information about a specific checkout session.
+
+    Use this to get complete details about a checkout session including its status,
+    configuration, and resulting payment (if completed). Essential for debugging
+    checkout issues, tracking customer progress, or retrieving payment details
+    after completion.
+
+    Related tools:
+    - Use `list_checkouts` first to find checkout IDs
+    - Use `retrieve_payment` if the checkout is completed to see payment details
+    - Use `generate_unified_checkout_integration` for integration examples
 
     Args:
         client: JustiFi client instance.
-        checkout_id: The ID of the checkout to retrieve (e.g., 'co_ABC123XYZ').
+        checkout_id: The unique identifier for the checkout (e.g., 'co_ABC123XYZ').
+            Obtain from `list_checkouts`, your checkout creation response, or webhooks.
 
     Returns:
-        JSON response from the JustiFi API with checkout details.
+        Checkout object containing:
+        - id: Unique checkout identifier
+        - status: Session state (created, attempted, completed, expired)
+        - amount: Payment amount in cents
+        - currency: Three-letter ISO currency code
+        - payment_mode: 'ecom' or 'bnpl'
+        - payment_id: ID of resulting payment (if completed)
+        - checkout_url: URL to redirect customers to for payment
+        - success_url: Where customers go after successful payment
+        - cancel_url: Where customers go if they cancel
+        - created_at: ISO 8601 timestamp
 
     Raises:
         ValidationError: If checkout_id is empty or invalid.

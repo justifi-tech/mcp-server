@@ -18,17 +18,36 @@ async def list_balance_transactions(
     before_cursor: str | None = None,
     payout_id: str | None = None,
 ) -> dict[str, Any]:
-    """List balance transactions with pagination support.
+    """List balance transactions showing money movement affecting the account balance.
+
+    Use this to understand how funds flow through the account. Each balance transaction
+    represents an event that changed the available balance: payments add funds, refunds
+    and fees subtract funds. Essential for financial reconciliation and understanding
+    what transactions are included in each payout.
+
+    Filter by payout_id to see exactly which transactions were bundled into a specific
+    payout—critical for reconciling bank deposits.
+
+    Pagination: Use `page_info.end_cursor` as `after_cursor` to fetch subsequent pages.
+
+    Related tools:
+    - Use `retrieve_balance_transaction` for complete details on a specific transaction
+    - Use `retrieve_payout` to see the payout these transactions contribute to
+    - Use `retrieve_payment` or `retrieve_refund` to see the original transaction
 
     Args:
         client: JustiFi API client
-        limit: Number of balance transactions to return (1-100, default: 25)
-        after_cursor: Cursor for pagination - returns results after this cursor
-        before_cursor: Cursor for pagination - returns results before this cursor
-        payout_id: Optional payout ID to filter transactions
+        limit: Number of transactions to return per page (1-100, default: 25).
+        after_cursor: Pagination cursor for fetching the next page of results.
+        before_cursor: Pagination cursor for fetching the previous page of results.
+        payout_id: Filter to show only transactions included in a specific payout.
+            Use this for payout reconciliation.
 
     Returns:
-        Dict containing balance transactions list and pagination info
+        Object containing:
+        - data: Array of balance transaction objects with id, amount, fee, net,
+          source_type (payment, refund, dispute, payout), source_id, created_at
+        - page_info: Pagination metadata for navigating through results
 
     Raises:
         ValidationError: If parameters are invalid
@@ -60,14 +79,35 @@ async def retrieve_balance_transaction(
     client: JustiFiClient,
     balance_transaction_id: str,
 ) -> dict[str, Any]:
-    """Retrieve a specific balance transaction by ID.
+    """Retrieve detailed information about a specific balance transaction.
+
+    Use this to get complete details about a single balance-affecting event,
+    including the gross amount, fees, net amount, and the source transaction
+    (payment, refund, etc.) that caused this balance change. Essential for
+    investigating specific line items during reconciliation.
+
+    Related tools:
+    - Use `list_balance_transactions` first to find transaction IDs
+    - Use `retrieve_payment` if source_type is 'payment' to see payment details
+    - Use `retrieve_refund` if source_type is 'refund' to see refund details
+    - Use `retrieve_payout` to see the payout this transaction belongs to
 
     Args:
         client: JustiFi API client
-        balance_transaction_id: The ID of the balance transaction to retrieve
+        balance_transaction_id: The unique identifier for the balance transaction
+            (e.g., 'bt_ABC123XYZ'). Obtain from `list_balance_transactions`.
 
     Returns:
-        Dict containing balance transaction details
+        Balance transaction object containing:
+        - id: Unique balance transaction identifier
+        - amount: Gross amount in cents (before fees)
+        - fee: Processing fees in cents
+        - net: Net amount in cents (amount - fee, added to balance)
+        - source_type: What caused this transaction (payment, refund, dispute, payout)
+        - source_id: ID of the source object (payment_id, refund_id, etc.)
+        - payout_id: ID of the payout this transaction was included in (if paid out)
+        - available_on: When funds became/become available
+        - created_at: ISO 8601 timestamp
 
     Raises:
         ValidationError: If balance_transaction_id is invalid

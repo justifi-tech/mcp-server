@@ -20,18 +20,40 @@ async def list_sub_accounts(
     after_cursor: str | None = None,
     before_cursor: str | None = None,
 ) -> dict[str, Any]:
-    """List sub accounts with optional status filtering and pagination.
+    """List sub accounts (merchants) on your platform with optional filtering.
+
+    Use this to view and manage merchants onboarded to your platform. Sub accounts
+    represent individual businesses that process payments through your JustiFi platform
+    account. Filter by status to find accounts needing attention (information_needed)
+    or ready to process (enabled).
+
+    Sub account lifecycle: created → submitted → enabled/rejected/information_needed
+
+    Pagination: Use `page_info.end_cursor` as `after_cursor` to fetch subsequent pages.
+
+    Related tools:
+    - Use `get_sub_account` with an account ID for complete details
+    - Use `get_sub_account_payout_account` to see their bank account for payouts
+    - Use `get_sub_account_settings` to view their configuration
 
     Args:
         client: JustiFi API client
-        status: Optional status filter - one of: created, submitted, information_needed,
-               rejected, approved, enabled, disabled, archived
-        limit: Number of sub accounts to return (1-100, default: 25)
-        after_cursor: Cursor for pagination - returns results after this cursor
-        before_cursor: Cursor for pagination - returns results before this cursor
+        status: Filter by onboarding/account state:
+            - 'created': Account created, application not started
+            - 'submitted': Application submitted, under review
+            - 'information_needed': Additional information required
+            - 'rejected': Application denied
+            - 'enabled': Active and can process payments
+            - 'disabled': Temporarily unable to process
+            - 'archived': Account closed
+        limit: Number of sub accounts to return per page (1-100, default: 25).
+        after_cursor: Pagination cursor for fetching the next page of results.
+        before_cursor: Pagination cursor for fetching the previous page of results.
 
     Returns:
-        Paginated list of sub accounts with page_info for navigation
+        Object containing:
+        - data: Array of sub account objects with id, name, status, created_at
+        - page_info: Pagination metadata for navigating through results
 
     Raises:
         ValidationError: If parameters are invalid
@@ -111,14 +133,32 @@ async def list_sub_accounts(
 
 
 async def get_sub_account(client: JustiFiClient, sub_account_id: str) -> dict[str, Any]:
-    """Get detailed information about a specific sub account by ID.
+    """Retrieve detailed information about a specific sub account (merchant).
+
+    Use this to get complete details about a merchant on your platform, including
+    their business information, onboarding status, and processing capabilities.
+    Essential for customer support, compliance checks, and monitoring merchant health.
+
+    Related tools:
+    - Use `list_sub_accounts` first to find sub account IDs
+    - Use `get_sub_account_payout_account` to see their linked bank account
+    - Use `get_sub_account_settings` to view their configuration
+    - Use `list_payments` filtered by sub_account to see their transactions
 
     Args:
         client: JustiFi API client
-        sub_account_id: The unique identifier for the sub account (e.g., 'acc_ABC123XYZ')
+        sub_account_id: The unique identifier for the sub account (e.g., 'acc_ABC123XYZ').
+            Obtain from `list_sub_accounts` or your onboarding records.
 
     Returns:
-        Sub account object with ID, name, status, and other details
+        Sub account object containing:
+        - id: Unique sub account identifier
+        - name: Business name
+        - status: Account state (created, submitted, enabled, disabled, etc.)
+        - platform_account_id: Your platform's account ID
+        - business_details: Legal name, address, tax ID (masked)
+        - processing_capabilities: What payment types they can accept
+        - created_at: ISO 8601 timestamp
 
     Raises:
         ValidationError: If sub_account_id is invalid
@@ -153,14 +193,31 @@ async def get_sub_account(client: JustiFiClient, sub_account_id: str) -> dict[st
 async def get_sub_account_payout_account(
     client: JustiFiClient, sub_account_id: str
 ) -> dict[str, Any]:
-    """Get information about the currently active payout bank account of a sub account.
+    """Get the linked bank account where a sub account receives payouts.
+
+    Use this to view the bank account configured for a merchant's payouts. Shows
+    masked account details for security. Essential for verifying payout destination
+    or troubleshooting payout delivery issues.
+
+    Related tools:
+    - Use `get_sub_account` for general merchant information
+    - Use `list_payouts` to see actual payouts sent to this account
+    - Use `get_sub_account_settings` for other configuration details
 
     Args:
         client: JustiFi API client
-        sub_account_id: The unique identifier for the sub account (e.g., 'acc_ABC123XYZ')
+        sub_account_id: The unique identifier for the sub account (e.g., 'acc_ABC123XYZ').
+            Obtain from `list_sub_accounts`.
 
     Returns:
-        Payout bank account object with account details
+        Payout bank account object containing:
+        - id: Bank account identifier
+        - bank_name: Name of the financial institution
+        - account_type: 'checking' or 'savings'
+        - account_number_last4: Last 4 digits of account number
+        - routing_number: Bank routing number (may be partially masked)
+        - account_owner_name: Name on the bank account
+        - is_active: Whether this is the current payout destination
 
     Raises:
         ValidationError: If sub_account_id is invalid
@@ -197,14 +254,28 @@ async def get_sub_account_payout_account(
 async def get_sub_account_settings(
     client: JustiFiClient, sub_account_id: str
 ) -> dict[str, Any]:
-    """Get information about sub account settings.
+    """Get configuration settings for a specific sub account.
+
+    Use this to view a merchant's processing settings including payout schedule,
+    statement descriptor, and enabled features. Helpful for understanding how
+    a merchant's account is configured or troubleshooting processing issues.
+
+    Related tools:
+    - Use `get_sub_account` for general merchant information and status
+    - Use `get_sub_account_payout_account` to see their bank account
 
     Args:
         client: JustiFi API client
-        sub_account_id: The unique identifier for the sub account (e.g., 'acc_ABC123XYZ')
+        sub_account_id: The unique identifier for the sub account (e.g., 'acc_ABC123XYZ').
+            Obtain from `list_sub_accounts`.
 
     Returns:
-        Sub account settings object
+        Sub account settings object containing:
+        - payout_schedule: How often payouts are sent (daily, weekly, monthly)
+        - statement_descriptor: Text that appears on customer card statements
+        - card_payments_enabled: Whether card processing is active
+        - ach_payments_enabled: Whether bank transfer processing is active
+        - additional configuration specific to the account
 
     Raises:
         ValidationError: If sub_account_id is invalid

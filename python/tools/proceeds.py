@@ -17,14 +17,33 @@ from .response_formatter import standardize_response
 
 @handle_tool_errors
 async def retrieve_proceed(client: JustiFiClient, proceed_id: str) -> dict[str, Any]:
-    """Retrieve a proceed by its ID.
+    """Retrieve detailed information about a specific proceed (platform revenue record).
+
+    Use this to get complete details about platform fee revenue. Proceeds represent
+    the platform's share of payment processing—the fees you collect on transactions
+    processed through your sub accounts. Essential for platform revenue reporting
+    and reconciliation.
+
+    Related tools:
+    - Use `list_proceeds` first to find proceed IDs
+    - Use `retrieve_payment` to see the original payment this proceed came from
+    - Use `retrieve_payout` to see when this proceed was paid out to your platform
 
     Args:
         client: JustiFi client instance.
-        proceed_id: The ID of the proceed to retrieve (e.g., 'pr_ABC123XYZ').
+        proceed_id: The ID of the proceed to retrieve (e.g., 'prc_ABC123XYZ').
+            Obtain from `list_proceeds` or webhook events.
 
     Returns:
-        JSON response from the JustiFi API with proceed details.
+        Proceed object containing:
+        - id: Unique proceed identifier
+        - amount: Platform fee amount in cents
+        - currency: Three-letter ISO currency code
+        - payment_id: The payment this proceed originated from
+        - sub_account_id: The merchant who processed the payment
+        - status: Proceed state (pending, available, paid_out)
+        - payout_id: ID of the payout this proceed was included in (if paid out)
+        - created_at: ISO 8601 timestamp
 
     Raises:
         ValidationError: If proceed_id is empty or invalid.
@@ -46,16 +65,30 @@ async def list_proceeds(
     after_cursor: str | None = None,
     before_cursor: str | None = None,
 ) -> dict[str, Any]:
-    """List proceeds with cursor-based pagination.
+    """List platform fee proceeds with cursor-based pagination.
+
+    Use this to view your platform's revenue from payment processing fees. Proceeds
+    are created automatically when payments are processed through your sub accounts—
+    they represent your platform's cut of each transaction. Essential for revenue
+    tracking, financial reporting, and reconciling platform earnings.
+
+    Pagination: Use `page_info.end_cursor` as `after_cursor` to fetch subsequent pages.
+
+    Related tools:
+    - Use `retrieve_proceed` with a proceed ID for complete details
+    - Use `list_payments` to see the payments that generated these proceeds
+    - Use `list_payouts` to see when proceeds were paid out to your platform account
 
     Args:
         client: JustiFi client instance.
-        limit: Number of proceeds to return (default: 25, max: 100).
-        after_cursor: Cursor for pagination (get proceeds after this cursor).
-        before_cursor: Cursor for pagination (get proceeds before this cursor).
+        limit: Number of proceeds to return per page (1-100, default: 25).
+        after_cursor: Pagination cursor for fetching the next page of results.
+        before_cursor: Pagination cursor for fetching the previous page of results.
 
     Returns:
-        JSON response with proceeds list from the JustiFi API.
+        Object containing:
+        - data: Array of proceed objects with id, amount, payment_id, sub_account_id, status
+        - page_info: Pagination metadata for navigating through results
 
     Raises:
         ValidationError: If limit is invalid or cursors are both provided.

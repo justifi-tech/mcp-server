@@ -79,24 +79,32 @@ class _TokenCache(BaseModel):
 class JustiFiClient:
     """JustiFi API client with OAuth2 authentication and error handling."""
 
-    def __init__(self, client_id: str, client_secret: str, base_url: str | None = None):
+    def __init__(
+        self,
+        client_id: str,
+        client_secret: str,
+        base_url: str | None = None,
+        bearer_token: str | None = None,
+    ):
         """Initialize the JustiFi client.
 
         Args:
             client_id: JustiFi client ID
             client_secret: JustiFi client secret
             base_url: Optional base URL (overrides JUSTIFI_BASE_URL env var)
+            bearer_token: Optional pre-authenticated bearer token (for OAuth flow)
 
         Raises:
             AuthenticationError: If credentials are invalid
         """
-        if not client_id or not client_secret:
+        if not bearer_token and (not client_id or not client_secret):
             raise AuthenticationError(
-                "JustiFi credentials are required. Please set JUSTIFI_CLIENT_ID and JUSTIFI_CLIENT_SECRET environment variables."
+                "JustiFi credentials are required. Please set JUSTIFI_CLIENT_ID and JUSTIFI_CLIENT_SECRET environment variables, or provide a bearer_token."
             )
 
         self.client_id = client_id
         self.client_secret = client_secret
+        self.bearer_token = bearer_token
 
         # Priority: explicit parameter > env var > default
         self.base_url = base_url or os.getenv(
@@ -107,7 +115,7 @@ class JustiFiClient:
         self.base_url = self.base_url.rstrip("/")
         if self.base_url.endswith("/v1"):
             logger.warning(f"Base URL should not include /v1 suffix: {self.base_url}")
-            self.base_url = self.base_url[:-3]  # Remove /v1 from end only
+            self.base_url = self.base_url[:-3]
 
         self._token_cache = _TokenCache()
 
@@ -122,6 +130,10 @@ class JustiFiClient:
         Raises:
             AuthenticationError: If unable to authenticate
         """
+        if self.bearer_token:
+            logger.debug("Using pre-authenticated bearer token")
+            return self.bearer_token
+
         if not self._token_cache.is_expired() and self._token_cache.token:
             logger.debug("Using cached access token")
             return self._token_cache.token

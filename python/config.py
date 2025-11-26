@@ -57,6 +57,26 @@ class JustiFiConfig(BaseModel):
     client_secret: str | None = None
     """JustiFi client secret (or from JUSTIFI_CLIENT_SECRET env var)."""
 
+    # OAuth 2.1 Configuration (optional)
+    oauth_issuer: str = Field(default="https://justifi.us.auth0.com")
+    """OAuth issuer URL (or from OAUTH_ISSUER env var)."""
+
+    oauth_audience: str = Field(default="https://api.justifi.ai")
+    """OAuth audience identifier (or from OAUTH_AUDIENCE env var)."""
+
+    oauth_scopes: list[str] = Field(default_factory=list)
+    """OAuth scopes supported by this resource (or from OAUTH_SCOPES env var, comma-separated)."""
+
+    # MCP Server OAuth Configuration
+    mcp_server_url: str | None = None
+    """Public URL of this MCP server (or from MCP_SERVER_URL env var). Used for OAuth discovery."""
+
+    oauth_client_id: str | None = None
+    """Shared OAuth client ID for MCP clients (or from OAUTH_CLIENT_ID env var)."""
+
+    oauth_client_secret: str | None = None
+    """Shared OAuth client secret for MCP clients (or from OAUTH_CLIENT_SECRET env var)."""
+
     # Tool selection (whitelist approach)
     enabled_tools: list[str] | str = Field(default=[])
     """List of enabled tool names, or 'all' to enable all tools. Default: [] (no tools enabled - secure by default)."""
@@ -73,6 +93,34 @@ class JustiFiConfig(BaseModel):
 
         if "client_secret" not in data or not data["client_secret"]:
             data["client_secret"] = os.getenv("JUSTIFI_CLIENT_SECRET")
+
+        # Load OAuth 2.1 configuration from environment
+        if "oauth_issuer" not in data:
+            env_issuer = os.getenv("OAUTH_ISSUER")
+            if env_issuer:
+                data["oauth_issuer"] = env_issuer
+
+        if "oauth_audience" not in data:
+            env_audience = os.getenv("OAUTH_AUDIENCE")
+            if env_audience:
+                data["oauth_audience"] = env_audience
+
+        if "oauth_scopes" not in data:
+            env_scopes = os.getenv("OAUTH_SCOPES")
+            if env_scopes:
+                data["oauth_scopes"] = [
+                    s.strip() for s in env_scopes.split(",") if s.strip()
+                ]
+
+        # Load MCP server OAuth configuration from environment
+        if "mcp_server_url" not in data or not data["mcp_server_url"]:
+            data["mcp_server_url"] = os.getenv("MCP_SERVER_URL")
+
+        if "oauth_client_id" not in data or not data["oauth_client_id"]:
+            data["oauth_client_id"] = os.getenv("OAUTH_CLIENT_ID")
+
+        if "oauth_client_secret" not in data or not data["oauth_client_secret"]:
+            data["oauth_client_secret"] = os.getenv("OAUTH_CLIENT_SECRET")
 
         # Handle context configuration
         if "context" in data and data["context"] is None:
@@ -91,13 +139,11 @@ class JustiFiConfig(BaseModel):
     @field_validator("client_id", "client_secret")
     @classmethod
     def validate_credentials(cls, v, info):
-        """Validate that credentials are provided."""
-        field_name = info.field_name
-        if not v:
-            raise ValueError(
-                f"{field_name} must be provided or set in "
-                f"JUSTIFI_{field_name.upper()} environment variable"
-            )
+        """Validate that credentials are provided for stdio mode.
+
+        For HTTP mode with OAuth, credentials are optional (bearer tokens used instead).
+        """
+        # Allow None - validation happens at client creation time
         return v
 
     def _discover_available_tools(self) -> set[str]:

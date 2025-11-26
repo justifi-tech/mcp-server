@@ -35,10 +35,15 @@ class TestJustiFiToolkitCriticalErrors:
     """Test toolkit critical error scenarios that users will hit."""
 
     @patch.dict("os.environ", {}, clear=True)
-    def test_toolkit_missing_credentials(self):
-        """Test toolkit initialization with missing credentials."""
-        with pytest.raises(ValueError):
-            JustiFiToolkit()
+    def test_toolkit_allows_missing_credentials(self):
+        """Test toolkit initialization allows missing credentials.
+
+        Credentials are optional in JustiFiConfig for HTTP mode with OAuth.
+        Validation happens at server level for stdio mode.
+        """
+        toolkit = JustiFiToolkit()
+        assert toolkit.config.client_id is None
+        assert toolkit.config.client_secret is None
 
     def test_execute_tool_disabled(self, restricted_config):
         """Test executing a disabled tool."""

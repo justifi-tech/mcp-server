@@ -64,19 +64,19 @@ class TestMcpServerIntegration:
         # Auto-registration should find all exported tool functions
         assert tool_count >= len(expected_tools)
 
-    def test_server_creation_without_credentials_fails(self):
-        """Test that server creation fails gracefully without credentials."""
-        # Clear credentials
+    def test_server_creation_without_credentials_fails_stdio(self):
+        """Test that server creation fails gracefully without credentials in stdio mode."""
+        # Clear credentials (defaults to stdio mode which requires credentials)
         with patch.dict(os.environ, {}, clear=True):
             from modelcontextprotocol.server import create_mcp_server
 
-            # Should raise ValidationError (which is subclass of ValueError) for missing credentials
-            with pytest.raises(ValueError, match="validation error"):
+            # Should raise ValueError for missing credentials in stdio mode
+            with pytest.raises(ValueError, match="must be configured for stdio mode"):
                 create_mcp_server()
 
-    def test_server_creation_with_partial_credentials_fails(self):
-        """Test that server creation fails with partial credentials."""
-        # Only provide client_id, not secret
+    def test_server_creation_with_partial_credentials_fails_stdio(self):
+        """Test that server creation fails with partial credentials in stdio mode."""
+        # Only provide client_id, not secret (defaults to stdio mode)
         with patch.dict(
             os.environ,
             {"JUSTIFI_CLIENT_ID": "test_client"},
@@ -84,8 +84,8 @@ class TestMcpServerIntegration:
         ):
             from modelcontextprotocol.server import create_mcp_server
 
-            # Should raise ValueError for missing secret (pattern for pydantic validation error)
-            with pytest.raises(ValueError, match="client_secret"):
+            # Should raise ValueError for missing secret in stdio mode
+            with pytest.raises(ValueError, match="must be configured for stdio mode"):
                 create_mcp_server()
 
 

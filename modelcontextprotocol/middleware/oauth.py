@@ -10,7 +10,6 @@ For stdio transport (local development), this middleware is not used.
 from __future__ import annotations
 
 import logging
-from typing import Awaitable, Callable
 
 from fastmcp import Context
 from starlette.datastructures import Headers
@@ -33,7 +32,9 @@ class OAuthMiddleware:
 
     PUBLIC_PATHS = {
         "/.well-known/oauth-protected-resource",
+        "/.well-known/oauth-authorization-server",
         "/health",
+        "/register",
     }
 
     def __init__(self, app: ASGIApp):

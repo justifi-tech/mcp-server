@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import pytest
+from fastmcp import Context
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
 from starlette.requests import Request
@@ -10,7 +11,6 @@ from starlette.responses import JSONResponse
 from starlette.routing import Route
 from starlette.testclient import TestClient
 
-from fastmcp import Context
 from modelcontextprotocol.middleware.oauth import OAuthMiddleware
 
 
@@ -57,10 +57,6 @@ class TestOAuthMiddleware:
         """Test bearer token extraction with manual Context setup."""
         from unittest.mock import Mock, patch
 
-        import contextvars
-
-        test_context = contextvars.ContextVar("test_context", default=None)
-
         mock_ctx = Mock()
         mock_ctx.metadata = {}
 
@@ -92,7 +88,6 @@ class TestOAuthMiddleware:
             )
 
             assert response.status_code == 200
-            data = response.json()
             assert mock_ctx.metadata["auth_type"] == "oauth"
             assert mock_ctx.metadata["bearer_token"] == "test_token_12345"
 
@@ -132,9 +127,9 @@ class TestOAuthMiddleware:
 
     def test_public_endpoints_skip_auth(self):
         """Test /health and /.well-known/* endpoints don't require auth."""
-        from unittest.mock import Mock, patch
+        from unittest.mock import patch
 
-        with patch("modelcontextprotocol.middleware.oauth.Context") as MockContext:
+        with patch("modelcontextprotocol.middleware.oauth.Context"):
             from starlette.applications import Starlette
             from starlette.middleware import Middleware
             from starlette.responses import PlainTextResponse
@@ -202,6 +197,5 @@ class TestOAuthMiddleware:
             )
 
             assert response.status_code == 200
-            data = response.json()
             assert mock_ctx.metadata["auth_type"] == "client_credentials"
             assert mock_ctx.metadata.get("bearer_token") is None

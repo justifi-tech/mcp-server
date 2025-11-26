@@ -38,13 +38,16 @@ class TestContextConfig:
 class TestJustiFiConfig:
     """Test JustiFiConfig critical functionality."""
 
-    def test_missing_credentials(self):
-        """Test validation of required credentials."""
-        with (
-            patch.dict(os.environ, {}, clear=True),
-            pytest.raises(ValueError, match="client_id must be provided"),
-        ):
-            JustiFiConfig()
+    def test_missing_credentials_allowed(self):
+        """Test that missing credentials are allowed in config.
+
+        Credentials are optional in JustiFiConfig for HTTP mode with OAuth.
+        Validation happens at server level for stdio mode.
+        """
+        with patch.dict(os.environ, {}, clear=True):
+            config = JustiFiConfig()
+            assert config.client_id is None
+            assert config.client_secret is None
 
     def test_enabled_tools_list(self):
         """Test enabled_tools with list of tool names."""

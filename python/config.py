@@ -67,6 +67,16 @@ class JustiFiConfig(BaseModel):
     oauth_scopes: list[str] = Field(default_factory=list)
     """OAuth scopes supported by this resource (or from OAUTH_SCOPES env var, comma-separated)."""
 
+    # MCP Server OAuth Configuration
+    mcp_server_url: str | None = None
+    """Public URL of this MCP server (or from MCP_SERVER_URL env var). Used for OAuth discovery."""
+
+    oauth_client_id: str | None = None
+    """Shared OAuth client ID for MCP clients (or from OAUTH_CLIENT_ID env var)."""
+
+    oauth_client_secret: str | None = None
+    """Shared OAuth client secret for MCP clients (or from OAUTH_CLIENT_SECRET env var)."""
+
     # Tool selection (whitelist approach)
     enabled_tools: list[str] | str = Field(default=[])
     """List of enabled tool names, or 'all' to enable all tools. Default: [] (no tools enabled - secure by default)."""
@@ -101,6 +111,16 @@ class JustiFiConfig(BaseModel):
                 data["oauth_scopes"] = [
                     s.strip() for s in env_scopes.split(",") if s.strip()
                 ]
+
+        # Load MCP server OAuth configuration from environment
+        if "mcp_server_url" not in data or not data["mcp_server_url"]:
+            data["mcp_server_url"] = os.getenv("MCP_SERVER_URL")
+
+        if "oauth_client_id" not in data or not data["oauth_client_id"]:
+            data["oauth_client_id"] = os.getenv("OAUTH_CLIENT_ID")
+
+        if "oauth_client_secret" not in data or not data["oauth_client_secret"]:
+            data["oauth_client_secret"] = os.getenv("OAUTH_CLIENT_SECRET")
 
         # Handle context configuration
         if "context" in data and data["context"] is None:

@@ -8,7 +8,11 @@ from starlette.responses import JSONResponse, PlainTextResponse, Response
 
 from python.config import JustiFiConfig
 
-from .oauth_metadata import get_protected_resource_metadata
+from .dcr import handle_client_registration
+from .oauth_metadata import (
+    get_authorization_server_metadata,
+    get_protected_resource_metadata,
+)
 
 
 def create_mcp_server() -> FastMCP:
@@ -33,18 +37,22 @@ def create_mcp_server() -> FastMCP:
 
     register_tools(mcp, config)
 
-    register_oauth_metadata_route(mcp, config)
+    register_oauth_routes(mcp, config)
 
     register_health_check_route(mcp)
 
     return mcp
 
 
-def register_oauth_metadata_route(mcp: FastMCP, config: JustiFiConfig) -> None:
-    """Register OAuth 2.0 Protected Resource Metadata endpoint per RFC 9728.
+def register_oauth_routes(mcp: FastMCP, config: JustiFiConfig) -> None:
+    """Register OAuth 2.0 discovery and registration endpoints.
 
-    This endpoint does NOT require authentication and provides metadata about
-    the OAuth authorization servers and scopes supported by this resource.
+    Registers:
+    - /.well-known/oauth-protected-resource (RFC 9728)
+    - /.well-known/oauth-authorization-server (RFC 8414)
+    - /register (RFC 7591 - credential discovery)
+
+    None of these endpoints require authentication.
 
     Args:
         mcp: FastMCP server instance
@@ -52,10 +60,25 @@ def register_oauth_metadata_route(mcp: FastMCP, config: JustiFiConfig) -> None:
     """
 
     @mcp.custom_route("/.well-known/oauth-protected-resource", methods=["GET"])
-    async def oauth_metadata_endpoint(request: Request) -> Response:
+    async def protected_resource_metadata_endpoint(request: Request) -> Response:
         """OAuth 2.0 Protected Resource Metadata endpoint (RFC 9728)."""
         metadata = get_protected_resource_metadata(config)
         return JSONResponse(metadata)
+
+    @mcp.custom_route("/.well-known/oauth-authorization-server", methods=["GET"])
+    async def authorization_server_metadata_endpoint(request: Request) -> Response:
+        """OAuth 2.0 Authorization Server Metadata endpoint (RFC 8414)."""
+        metadata = get_authorization_server_metadata(config)
+        return JSONResponse(metadata)
+
+    @mcp.custom_route("/register", methods=["POST"])
+    async def client_registration_endpoint(request: Request) -> Response:
+        """OAuth 2.0 Dynamic Client Registration endpoint (RFC 7591).
+
+        Returns shared credentials for MCP client compatibility.
+        Actual redirect_uri validation is performed by Auth0.
+        """
+        return await handle_client_registration(request, config)
 
 
 def register_health_check_route(mcp: FastMCP) -> None:

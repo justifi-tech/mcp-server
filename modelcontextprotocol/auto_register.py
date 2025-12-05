@@ -9,7 +9,9 @@ import logging
 from collections.abc import Callable
 from typing import Any, get_type_hints
 
-from fastmcp import Context, FastMCP
+from fastmcp import FastMCP
+from fastmcp.server.dependencies import get_http_headers
+from mcp.server.auth.middleware.auth_context import get_access_token
 
 from python.config import JustiFiConfig
 from python.core import JustiFiClient
@@ -170,31 +172,26 @@ def create_mcp_function(
 
     async def mcp_tool_wrapper(*args, **kwargs) -> dict[str, Any]:
         """Dynamically created MCP tool wrapper with per-request client."""
-        ctx = Context.get_current()
+        access_token = get_access_token()
 
-        auth_type = ctx.metadata.get("auth_type")
-        bearer_token = ctx.metadata.get("bearer_token")
-        client_id = ctx.metadata.get("client_id")
-        client_secret = ctx.metadata.get("client_secret")
+        # Get HTTP headers - FastMCP normalizes header names to lowercase
+        headers: dict[str, str] = get_http_headers()
+        platform_account_id = headers.get("sub-account")
 
-        if auth_type == "oauth" and bearer_token:
+        if access_token and access_token.token:
             client = JustiFiClient(
                 client_id=config.client_id or "",
                 client_secret=config.client_secret or "",
                 base_url=config.get_effective_base_url(),
-                bearer_token=bearer_token,
-            )
-        elif auth_type == "client_credentials" and client_id and client_secret:
-            client = JustiFiClient(
-                client_id=client_id,
-                client_secret=client_secret,
-                base_url=config.get_effective_base_url(),
+                bearer_token=access_token.token,
+                platform_account_id=platform_account_id,
             )
         else:
             client = JustiFiClient(
                 client_id=config.client_id or "",
                 client_secret=config.client_secret or "",
                 base_url=config.get_effective_base_url(),
+                platform_account_id=platform_account_id,
             )
 
         return await wrap_tool_call(tool_name, tool_func, client, *args, **kwargs)

@@ -1,9 +1,3 @@
-"""Middleware components for JustiFi MCP Server.
+"""Middleware components for JustiFi MCP Server."""
 
-This module contains middleware components used for request processing,
-including OAuth authentication middleware.
-"""
-
-from .oauth import OAuthMiddleware
-
-__all__ = ["OAuthMiddleware"]
+__all__: list[str] = []

@@ -13,7 +13,11 @@ from .base import ToolError, ValidationError
 from .response_formatter import standardize_response
 
 
-async def retrieve_payment(client: JustiFiClient, payment_id: str) -> dict[str, Any]:
+async def retrieve_payment(
+    client: JustiFiClient,
+    payment_id: str,
+    sub_account_id: str | None = None,
+) -> dict[str, Any]:
     """Retrieve detailed information about a specific payment by ID.
 
     Use this to get complete payment details including status, amount, payment method,
@@ -29,6 +33,8 @@ async def retrieve_payment(client: JustiFiClient, payment_id: str) -> dict[str, 
         client: JustiFi API client
         payment_id: The unique identifier for the payment (e.g., 'py_ABC123XYZ').
             Obtain this from `list_payments`, checkout completion, or webhook events.
+        sub_account_id: Optional sub-account ID. Overrides the default
+            platform_account_id if provided.
 
     Returns:
         Payment object containing:
@@ -61,7 +67,9 @@ async def retrieve_payment(client: JustiFiClient, payment_id: str) -> dict[str, 
 
     try:
         # Call JustiFi API to retrieve payment
-        result = await client.request("GET", f"/v1/payments/{payment_id}")
+        result = await client.request(
+            "GET", f"/v1/payments/{payment_id}", sub_account_id=sub_account_id
+        )
         return standardize_response(result, "retrieve_payment")
 
     except Exception as e:
@@ -76,6 +84,7 @@ async def list_payments(
     limit: int = 25,
     after_cursor: str | None = None,
     before_cursor: str | None = None,
+    sub_account_id: str | None = None,
 ) -> dict[str, Any]:
     """List payments with cursor-based pagination.
 
@@ -99,6 +108,9 @@ async def list_payments(
             Returns payments created before the cursor position.
         before_cursor: Pagination cursor from previous response's `page_info.start_cursor`.
             Returns payments created after the cursor position (for reverse pagination).
+        sub_account_id: Optional sub-account ID to scope payments. Overrides the
+            default platform_account_id if provided. Falls back to the Sub-Account
+            header value when not specified.
 
     Returns:
         Object containing:
@@ -149,7 +161,9 @@ async def list_payments(
             params["before_cursor"] = before_cursor
 
         # Call JustiFi API to list payments
-        result = await client.request("GET", "/v1/payments", params=params)
+        result = await client.request(
+            "GET", "/v1/payments", params=params, sub_account_id=sub_account_id
+        )
         return standardize_response(result, "list_payments")
 
     except Exception as e:

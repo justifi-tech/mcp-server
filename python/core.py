@@ -85,6 +85,7 @@ class JustiFiClient:
         client_secret: str,
         base_url: str | None = None,
         bearer_token: str | None = None,
+        platform_account_id: str | None = None,
     ):
         """Initialize the JustiFi client.
 
@@ -93,6 +94,9 @@ class JustiFiClient:
             client_secret: JustiFi client secret
             base_url: Optional base URL (overrides JUSTIFI_BASE_URL env var)
             bearer_token: Optional pre-authenticated bearer token (for OAuth flow)
+            platform_account_id: Optional default sub-account ID for API requests.
+                Used as the Sub-Account header when no sub_account_id is provided
+                to individual requests.
 
         Raises:
             AuthenticationError: If credentials are invalid
@@ -105,6 +109,7 @@ class JustiFiClient:
         self.client_id = client_id
         self.client_secret = client_secret
         self.bearer_token = bearer_token
+        self.platform_account_id = platform_account_id
 
         # Priority: explicit parameter > env var > default
         self.base_url = base_url or os.getenv(
@@ -120,6 +125,8 @@ class JustiFiClient:
         self._token_cache = _TokenCache()
 
         logger.debug(f"JustiFi client initialized with base URL: {self.base_url}")
+        if platform_account_id:
+            logger.debug(f"Default platform account ID: {platform_account_id}")
 
     async def get_access_token(self) -> str:
         """Get a valid access token, refreshing if necessary.
@@ -206,6 +213,7 @@ class JustiFiClient:
         idempotency_key: str | None = None,
         extra_headers: dict[str, str] | None = None,
         retries: int = 3,
+        sub_account_id: str | None = None,
     ) -> dict[str, Any]:
         """Make an authenticated request to the JustiFi API with retry logic.
 
@@ -217,6 +225,9 @@ class JustiFiClient:
             idempotency_key: Optional idempotency key
             extra_headers: Additional headers to include in the request
             retries: Number of retry attempts for transient errors
+            sub_account_id: Optional sub-account ID for this request. If provided,
+                sets the Sub-Account header. Falls back to platform_account_id if
+                not provided.
 
         Returns:
             API response data
@@ -226,6 +237,21 @@ class JustiFiClient:
             APIError: For API-related errors
             RateLimitError: For rate limiting
         """
+        effective_sub_account = sub_account_id or self.platform_account_id
+        if effective_sub_account:
+            if extra_headers is None:
+                extra_headers = {}
+            if "Sub-Account" not in extra_headers:
+                extra_headers["Sub-Account"] = effective_sub_account
+                if sub_account_id:
+                    logger.debug(
+                        f"Using request-specific sub-account: {sub_account_id}"
+                    )
+                elif self.platform_account_id:
+                    logger.debug(
+                        f"Using platform default sub-account: {self.platform_account_id}"
+                    )
+
         url = f"{self.base_url}{endpoint}"
         logger.debug(f"Making {method} request to: {url}")
 
@@ -295,102 +321,84 @@ class JustiFiClient:
         )
 
     async def _handle_client_error(self, error: httpx.HTTPStatusError) -> None:
-        """Handle 4xx client errors with specific guidance."""
+        """Handle 4xx client errors - pass through JustiFi errors."""
         try:
             error_data = error.response.json()
         except Exception:
             error_data = {}
 
         status_code = error.response.status_code
-        logger.error(
-            f"Client error {status_code}: {error_data.get('message', 'Unknown error')}"
-        )
 
-        if status_code == 400:
-            raise ValidationError(
-                f"Invalid request: {error_data.get('message', 'Bad request')}. Please check your input parameters.",
-                error_code="invalid_request",
-                details=error_data,
-            )
-        elif status_code == 401:
-            # Token might be expired, clear cache and raise auth error
+        # Extract error info from JustiFi response (nested under "error" key)
+        justifi_error = (
+            error_data.get("error", error_data)
+            if isinstance(error_data, dict)
+            else error_data
+        )
+        if isinstance(justifi_error, dict):
+            error_code = justifi_error.get("code", f"http_{status_code}")
+            error_message = justifi_error.get("message", error.response.text)
+        else:
+            error_code = f"http_{status_code}"
+            error_message = str(justifi_error) if justifi_error else error.response.text
+
+        logger.error(f"JustiFi API error {status_code}: {error_code} - {error_message}")
+
+        if status_code == 401:
             logger.warning("Authentication failed - clearing token cache")
             self._token_cache = _TokenCache()
             raise AuthenticationError(
-                "Authentication failed. Your session may have expired. Please try again.",
-                error_code="token_expired",
-            )
-        elif status_code == 403:
-            raise AuthenticationError(
-                "Access denied. Your account may not have permission for this operation.",
-                error_code="access_denied",
-                details=error_data,
-            )
-        elif status_code == 404:
-            raise ValidationError(
-                f"Resource not found: {error_data.get('message', 'The requested resource does not exist')}",
-                error_code="not_found",
-                details=error_data,
-            )
-        elif status_code == 422:
-            raise ValidationError(
-                f"Validation error: {error_data.get('message', 'Invalid data provided')}",
-                error_code="validation_failed",
-                details=error_data,
+                error_message, error_code=error_code, details=error_data
             )
         elif status_code == 429:
             raise RateLimitError(
-                "Rate limit exceeded. Please wait a moment before trying again.",
+                error_message,
                 status_code=429,
-                error_code="rate_limit",
+                error_code=error_code,
                 details=error_data,
+            )
+        elif status_code in (400, 404, 422):
+            raise ValidationError(
+                error_message, error_code=error_code, details=error_data
             )
         else:
             raise APIError(
-                f"Client error {status_code}: {error_data.get('message', 'Unknown error')}",
+                error_message,
                 status_code=status_code,
-                error_code="client_error",
+                error_code=error_code,
                 details=error_data,
             )
 
     async def _handle_server_error(self, error: httpx.HTTPStatusError) -> None:
-        """Handle 5xx server errors."""
+        """Handle 5xx server errors - pass through JustiFi errors."""
         try:
             error_data = error.response.json()
         except Exception:
             error_data = {}
 
         status_code = error.response.status_code
-        logger.error(
-            f"Server error {status_code}: {error_data.get('message', 'Unknown error')}"
-        )
 
-        if status_code == 500:
-            raise APIError(
-                "JustiFi API is experiencing issues. Please try again in a few moments.",
-                status_code=500,
-                error_code="server_error",
-                details=error_data,
-            )
-        elif status_code == 502:
-            raise APIError(
-                "JustiFi API is temporarily unavailable. Please try again later.",
-                status_code=502,
-                error_code="bad_gateway",
-            )
-        elif status_code == 503:
-            raise APIError(
-                "JustiFi API is under maintenance. Please try again later.",
-                status_code=503,
-                error_code="service_unavailable",
-            )
+        # Extract error info from JustiFi response
+        justifi_error = (
+            error_data.get("error", error_data)
+            if isinstance(error_data, dict)
+            else error_data
+        )
+        if isinstance(justifi_error, dict):
+            error_code = justifi_error.get("code", f"http_{status_code}")
+            error_message = justifi_error.get("message", error.response.text)
         else:
-            raise APIError(
-                f"JustiFi API error {status_code}. Please contact support if this persists.",
-                status_code=status_code,
-                error_code="server_error",
-                details=error_data,
-            )
+            error_code = f"http_{status_code}"
+            error_message = str(justifi_error) if justifi_error else error.response.text
+
+        logger.error(f"JustiFi API error {status_code}: {error_code} - {error_message}")
+
+        raise APIError(
+            error_message,
+            status_code=status_code,
+            error_code=error_code,
+            details=error_data,
+        )
 
     async def _make_request(
         self,

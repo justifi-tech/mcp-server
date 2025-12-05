@@ -13,7 +13,9 @@ from .base import ToolError, ValidationError
 
 
 async def retrieve_payment_method(
-    client: JustiFiClient, payment_method_token: str
+    client: JustiFiClient,
+    payment_method_token: str,
+    sub_account_id: str | None = None,
 ) -> dict[str, Any]:
     """Retrieve detailed information about a tokenized payment method.
 
@@ -34,6 +36,8 @@ async def retrieve_payment_method(
         client: JustiFi API client
         payment_method_token: The unique token for the payment method (e.g., 'pm_ABC123XYZ').
             Obtain from payment responses, checkout completion, or tokenization flows.
+        sub_account_id: Optional sub-account ID. Overrides the default
+            platform_account_id if provided.
 
     Returns:
         Payment method object containing:
@@ -66,7 +70,9 @@ async def retrieve_payment_method(
     try:
         # Call JustiFi API to retrieve payment method
         result = await client.request(
-            "GET", f"/v1/payment_methods/{payment_method_token}"
+            "GET",
+            f"/v1/payment_methods/{payment_method_token}",
+            sub_account_id=sub_account_id,
         )
         return result
 

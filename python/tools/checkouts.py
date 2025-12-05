@@ -23,6 +23,7 @@ async def list_checkouts(
     payment_mode: str | None = None,
     status: str | None = None,
     payment_status: str | None = None,
+    sub_account_id: str | None = None,
 ) -> dict[str, Any]:
     """List checkout sessions with filtering and cursor-based pagination.
 
@@ -53,6 +54,8 @@ async def list_checkouts(
             - 'completed': Payment successfully collected
             - 'expired': Session timed out (typically 24 hours)
         payment_status: Filter by the resulting payment's status.
+        sub_account_id: Optional sub-account ID. Overrides the default
+            platform_account_id if provided.
 
     Returns:
         Object containing:
@@ -100,11 +103,17 @@ async def list_checkouts(
     if payment_status:
         params["payment_status"] = payment_status
 
-    return await client.request("GET", "/v1/checkouts", params=params)
+    return await client.request(
+        "GET", "/v1/checkouts", params=params, sub_account_id=sub_account_id
+    )
 
 
 @handle_tool_errors
-async def retrieve_checkout(client: JustiFiClient, checkout_id: str) -> dict[str, Any]:
+async def retrieve_checkout(
+    client: JustiFiClient,
+    checkout_id: str,
+    sub_account_id: str | None = None,
+) -> dict[str, Any]:
     """Retrieve detailed information about a specific checkout session.
 
     Use this to get complete details about a checkout session including its status,
@@ -121,6 +130,8 @@ async def retrieve_checkout(client: JustiFiClient, checkout_id: str) -> dict[str
         client: JustiFi client instance.
         checkout_id: The unique identifier for the checkout (e.g., 'co_ABC123XYZ').
             Obtain from `list_checkouts`, your checkout creation response, or webhooks.
+        sub_account_id: Optional sub-account ID. Overrides the default
+            platform_account_id if provided.
 
     Returns:
         Checkout object containing:
@@ -144,4 +155,6 @@ async def retrieve_checkout(client: JustiFiClient, checkout_id: str) -> dict[str
             "checkout_id cannot be empty", field="checkout_id", value=checkout_id
         )
 
-    return await client.request("GET", f"/v1/checkouts/{checkout_id}")
+    return await client.request(
+        "GET", f"/v1/checkouts/{checkout_id}", sub_account_id=sub_account_id
+    )

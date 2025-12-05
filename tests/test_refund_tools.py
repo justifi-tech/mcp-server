@@ -199,7 +199,7 @@ class TestRetrieveRefund:
         with pytest.raises(ToolError) as exc_info:
             await retrieve_refund(mock_client, "re_nonexistent")
 
-        assert "Resource not found" in str(exc_info.value)
+        assert "Not found" in str(exc_info.value)
 
 
 class TestListPaymentRefunds:

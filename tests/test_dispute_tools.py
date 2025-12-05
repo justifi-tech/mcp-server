@@ -116,4 +116,4 @@ class TestRetrieveDispute:
 
         with pytest.raises(ToolError) as exc_info:
             await retrieve_dispute(mock_client, "dp_nonexistent")
-        assert "Resource not found" in str(exc_info.value)
+        assert "Dispute not found" in str(exc_info.value)

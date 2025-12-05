@@ -145,4 +145,4 @@ class TestRetrieveCheckout:
 
         with pytest.raises(ToolError) as exc_info:
             await retrieve_checkout(mock_client, "co_nonexistent")
-        assert "Resource not found" in str(exc_info.value)
+        assert "Checkout not found" in str(exc_info.value)

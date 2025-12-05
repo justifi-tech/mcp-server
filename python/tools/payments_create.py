@@ -21,6 +21,7 @@ async def create_payment(
     description: str | None = None,
     currency: str = "usd",
     metadata: dict[str, Any] | None = None,
+    sub_account_id: str | None = None,
 ) -> dict[str, Any]:
     """Create a payment using an existing payment method.
 
@@ -31,6 +32,8 @@ async def create_payment(
         description: Optional description for the payment
         currency: Currency code (default: 'usd')
         metadata: Optional metadata dictionary
+        sub_account_id: Optional sub-account ID. Overrides the default
+            platform_account_id if provided.
 
     Returns:
         Payment object with ID, status, amount, and details
@@ -95,7 +98,9 @@ async def create_payment(
             payload["metadata"] = metadata
 
         # Call JustiFi API to create payment
-        result = await client.request("POST", "/v1/payments", data=payload)
+        result = await client.request(
+            "POST", "/v1/payments", data=payload, sub_account_id=sub_account_id
+        )
         return standardize_response(result, "create_payment")
 
     except Exception as e:
@@ -118,6 +123,7 @@ async def tokenize_payment_method(
     address_state: str | None = None,
     address_postal_code: str | None = None,
     address_country: str = "US",
+    sub_account_id: str | None = None,
 ) -> dict[str, Any]:
     """Tokenize a payment method (card) for secure storage and future use.
 
@@ -134,6 +140,8 @@ async def tokenize_payment_method(
         address_state: State/province
         address_postal_code: Postal/zip code
         address_country: Country code (default: 'US')
+        sub_account_id: Optional sub-account ID. Overrides the default
+            platform_account_id if provided.
 
     Returns:
         Payment method object with token ID and card details
@@ -223,7 +231,9 @@ async def tokenize_payment_method(
         }
 
         # Call JustiFi API to tokenize payment method
-        result = await client.request("POST", "/v1/payment_methods", data=payload)
+        result = await client.request(
+            "POST", "/v1/payment_methods", data=payload, sub_account_id=sub_account_id
+        )
         return standardize_response(result, "tokenize_payment_method")
 
     except Exception as e:
@@ -250,6 +260,7 @@ async def create_payment_with_card(
     address_postal_code: str | None = None,
     address_country: str = "US",
     metadata: dict[str, Any] | None = None,
+    sub_account_id: str | None = None,
 ) -> dict[str, Any]:
     """Create a payment directly with card details (tokenizes and charges in one step).
 
@@ -270,6 +281,8 @@ async def create_payment_with_card(
         address_postal_code: Postal/zip code
         address_country: Country code (default: 'US')
         metadata: Optional metadata dictionary
+        sub_account_id: Optional sub-account ID. Overrides the default
+            platform_account_id if provided.
 
     Returns:
         Payment object with ID, status, amount, and details
@@ -312,6 +325,7 @@ async def create_payment_with_card(
         address_state=address_state,
         address_postal_code=address_postal_code,
         address_country=address_country,
+        sub_account_id=sub_account_id,
     )
 
     # Extract payment method ID from response
@@ -330,4 +344,5 @@ async def create_payment_with_card(
         description=description,
         currency=currency,
         metadata=metadata,
+        sub_account_id=sub_account_id,
     )

@@ -209,35 +209,92 @@ uv run pytest tests/test_main.py -v
 
 ## 🔌 MCP Integration
 
-### Cursor IDE
+The JustiFi MCP server supports two deployment modes:
+1. **Local (stdio)** - Server runs as a subprocess of your AI client
+2. **HTTP/SSE (remote)** - Server runs as a standalone HTTP service, connected via mcp-remote
 
-#### Method 1: NPX (Recommended)
-Add to your `cursor_mcp_config.json`:
+### Remote Server Setup (HTTP Mode)
+
+For remote/HTTP deployments, start the MCP server first:
+
+```bash
+# Set credentials
+export JUSTIFI_CLIENT_ID="your_client_id"
+export JUSTIFI_CLIENT_SECRET="your_client_secret"
+
+# Start HTTP server (default port 3010)
+MCP_TRANSPORT=http MCP_PORT=3010 python main.py
+```
+
+The server will be available at `http://localhost:3010/mcp`.
+
+#### Sub-Account Header (Platform Accounts)
+
+Platform accounts must specify a `Sub-Account` header to indicate which account's data to access:
+
+- **Full platform access**: Use your platform account ID (e.g., `acc_platform_xxx`) to access data across all your sub-accounts
+- **Single sub-account access**: Use a specific sub-account ID (e.g., `acc_merchant_xxx`) to restrict access to only that merchant's data
+
+When using mcp-remote, pass the header via the `--header` flag:
+
+```bash
+# Full platform access
+npx mcp-remote http://localhost:3010/mcp 61539 --header "Sub-Account: acc_your_platform_id"
+
+# Restricted to single sub-account
+npx mcp-remote http://localhost:3010/mcp 61539 --header "Sub-Account: acc_specific_merchant_id"
+```
+
+The port `61539` is the local callback port for mcp-remote's OAuth flow.
+
+Individual tool calls can override this default with the `sub_account_id` parameter.
+
+---
+
+### Claude Code
+
+Claude Code connects to MCP servers via the `claude mcp add` command.
+
+#### Remote Mode (Recommended for Platform Accounts)
+
+Connect to a running HTTP server with the Sub-Account header to scope API access:
+
+```bash
+claude mcp add justifi -- npx mcp-remote http://localhost:3010/mcp 61539 --header "Sub-Account: acc_your_account_id"
+```
+
+The port `61539` is the local callback port for mcp-remote. This uses mcp-remote as a proxy to handle JustiFi's authentication, scoped to the specified account.
+
+#### Local Mode
+
+For direct local execution without the HTTP server:
+
+```bash
+claude mcp add justifi -- npx @justifi/mcp-server
+```
+
+Requires credentials in your environment:
+```bash
+export JUSTIFI_CLIENT_ID="your_client_id"
+export JUSTIFI_CLIENT_SECRET="your_client_secret"
+```
+
+---
+
+### Claude Desktop
+
+Config file locations:
+- **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- **Windows**: `%APPDATA%/Claude/claude_desktop_config.json`
+- **Linux**: `~/.config/Claude/claude_desktop_config.json`
+
+#### Method 1: Local (NPX - Recommended)
 ```json
 {
   "mcpServers": {
     "justifi": {
       "command": "npx",
       "args": ["@justifi/mcp-server"],
-      "env": {
-        "JUSTIFI_CLIENT_ID": "your_client_id",
-        "JUSTIFI_CLIENT_SECRET": "your_client_secret",
-        "JUSTIFI_ENVIRONMENT": "sandbox"
-      }
-    }
-  }
-}
-```
-
-#### Method 2: Local Development
-Add to your `cursor_mcp_config.json`:
-```json
-{
-  "mcpServers": {
-    "justifi": {
-      "command": "python",
-      "args": ["main.py"],
-      "cwd": "/path/to/mcp-servers",
       "env": {
         "JUSTIFI_CLIENT_ID": "your_client_id",
         "JUSTIFI_CLIENT_SECRET": "your_client_secret"
@@ -247,16 +304,34 @@ Add to your `cursor_mcp_config.json`:
 }
 ```
 
-### Claude Desktop
+#### Method 2: Remote with Sub-Account Header
+```json
+{
+  "mcpServers": {
+    "justifi": {
+      "command": "npx",
+      "args": [
+        "mcp-remote",
+        "http://localhost:3010/mcp",
+        "61539",
+        "--header",
+        "Sub-Account: ${SUB_ACCOUNT_ID}"
+      ],
+      "env": {
+        "SUB_ACCOUNT_ID": "acc_your_sub_account_id"
+      }
+    }
+  }
+}
+```
 
-Claude Desktop supports MCP servers through its configuration file. Choose one of these methods:
+---
 
-#### Method 1: NPX (Recommended)
-Configure Claude Desktop by editing your config file:
-- **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
-- **Windows**: `%APPDATA%/Claude/claude_desktop_config.json`  
-- **Linux**: `~/.config/Claude/claude_desktop_config.json`
+### Cursor IDE
 
+Config file: `~/.cursor/mcp.json` or project-level `.cursor/mcp.json`
+
+#### Method 1: Local (NPX - Recommended)
 ```json
 {
   "mcpServers": {
@@ -265,70 +340,161 @@ Configure Claude Desktop by editing your config file:
       "args": ["@justifi/mcp-server"],
       "env": {
         "JUSTIFI_CLIENT_ID": "your_client_id",
-        "JUSTIFI_CLIENT_SECRET": "your_client_secret",
-        "JUSTIFI_ENVIRONMENT": "sandbox"
+        "JUSTIFI_CLIENT_SECRET": "your_client_secret"
       }
     }
   }
 }
 ```
 
-#### Method 2: Direct Python Execution (Local Development)
-1. **Start the server** in stdio mode:
-   ```bash
-   cd /path/to/mcp-servers
-   python main.py
-   ```
+#### Method 2: Remote with Sub-Account Header
+```json
+{
+  "mcpServers": {
+    "justifi": {
+      "command": "npx",
+      "args": [
+        "mcp-remote",
+        "http://localhost:3010/mcp",
+        "61539",
+        "--header",
+        "Sub-Account: ${SUB_ACCOUNT_ID}"
+      ],
+      "env": {
+        "SUB_ACCOUNT_ID": "acc_your_sub_account_id"
+      }
+    }
+  }
+}
+```
 
-2. **Configure Claude Desktop** with direct Python execution:
-   ```json
-   {
-     "mcpServers": {
-       "justifi": {
-         "command": "python",
-         "args": ["/path/to/mcp-servers/main.py"],
-         "env": {
-           "JUSTIFI_CLIENT_ID": "your_client_id",
-           "JUSTIFI_CLIENT_SECRET": "your_client_secret",
-           "JUSTIFI_ENABLED_TOOLS": "all"
-         }
-       }
-     }
-   }
-   ```
+---
 
-#### Method 3: HTTP Mode with mcp-remote
-1. **Start the server** in HTTP mode:
-   ```bash
-   cd /path/to/mcp-servers
-   MCP_TRANSPORT=http MCP_PORT=3000 python main.py
-   ```
+### VS Code (Copilot/Continue)
 
-2. **Configure Claude Desktop** to use mcp-remote:
-   ```json
-   {
-     "mcpServers": {
-       "justifi": {
-         "command": "npx",
-         "args": [
-           "-y",
-           "mcp-remote",
-           "http://localhost:3000/mcp"
-         ]
-       }
-     }
-   }
-   ```
+Add to VS Code `settings.json` or use the MCP extension configuration:
 
-3. **Set environment variables** in your shell before starting the server:
-   ```bash
-   export JUSTIFI_CLIENT_ID="your_client_id"
-   export JUSTIFI_CLIENT_SECRET="your_client_secret"
-   export JUSTIFI_ENABLED_TOOLS="all"
-   ```
+#### Local Mode
+```json
+{
+  "mcp.servers": {
+    "justifi": {
+      "command": "npx",
+      "args": ["@justifi/mcp-server"],
+      "env": {
+        "JUSTIFI_CLIENT_ID": "your_client_id",
+        "JUSTIFI_CLIENT_SECRET": "your_client_secret"
+      }
+    }
+  }
+}
+```
 
-#### Verification
-After configuration, restart Claude Desktop and you should see JustiFi payment tools available in your conversations. You can test with prompts like:
+#### Remote Mode with Sub-Account
+```json
+{
+  "mcp.servers": {
+    "justifi": {
+      "command": "npx",
+      "args": [
+        "mcp-remote",
+        "http://localhost:3010/mcp",
+        "61539",
+        "--header",
+        "Sub-Account: ${SUB_ACCOUNT_ID}"
+      ],
+      "env": {
+        "SUB_ACCOUNT_ID": "acc_your_sub_account_id"
+      }
+    }
+  }
+}
+```
+
+---
+
+### Windsurf
+
+#### Local Mode
+```json
+{
+  "mcpServers": {
+    "justifi": {
+      "command": "npx",
+      "args": ["@justifi/mcp-server"],
+      "env": {
+        "JUSTIFI_CLIENT_ID": "your_client_id",
+        "JUSTIFI_CLIENT_SECRET": "your_client_secret"
+      }
+    }
+  }
+}
+```
+
+#### Remote Mode with Sub-Account
+```json
+{
+  "mcpServers": {
+    "justifi": {
+      "command": "npx",
+      "args": [
+        "mcp-remote",
+        "http://localhost:3010/mcp",
+        "61539",
+        "--header",
+        "Sub-Account: ${SUB_ACCOUNT_ID}"
+      ],
+      "env": {
+        "SUB_ACCOUNT_ID": "acc_your_sub_account_id"
+      }
+    }
+  }
+}
+```
+
+---
+
+### OpenAI Codex CLI
+
+#### Local Mode
+```bash
+export JUSTIFI_CLIENT_ID="your_client_id"
+export JUSTIFI_CLIENT_SECRET="your_client_secret"
+
+codex --mcp-server "npx @justifi/mcp-server"
+```
+
+#### Remote Mode with Sub-Account
+```bash
+export SUB_ACCOUNT_ID="acc_your_sub_account_id"
+
+codex --mcp-server "npx mcp-remote http://localhost:3010/mcp 61539 --header Sub-Account: $SUB_ACCOUNT_ID"
+```
+
+---
+
+### Generic MCP Client Configuration
+
+#### Local (subprocess)
+```bash
+npx @justifi/mcp-server
+```
+
+#### Remote (HTTP via mcp-remote)
+```bash
+npx mcp-remote http://your-server:3010/mcp 61539
+```
+
+#### Remote with Sub-Account
+```bash
+npx mcp-remote http://your-server:3010/mcp 61539 --header "Sub-Account: acc_your_sub_account_id"
+```
+
+---
+
+### Verification
+
+After configuration, test with prompts like:
 - "List recent payouts"
 - "Get the status of payout po_ABC123"
 - "Show me payment details for py_XYZ789"
@@ -356,10 +522,6 @@ JUSTIFI_ENABLED_TOOLS="retrieve_payout,get_payout_status"    # Custom combinatio
 Optional Configuration:
 ```bash
 JUSTIFI_BASE_URL=https://api.justifi.ai    # Default. Set custom URL if needed
-```
-
-```bash
-LANGCHAIN_TRACING_V2=true                   # Enable tracing
 ```
 
 **Note**: No AI model API keys needed! Those are handled by MCP clients, not this server.

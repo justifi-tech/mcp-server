@@ -17,6 +17,7 @@ async def list_balance_transactions(
     after_cursor: str | None = None,
     before_cursor: str | None = None,
     payout_id: str | None = None,
+    sub_account_id: str | None = None,
 ) -> dict[str, Any]:
     """List balance transactions showing money movement affecting the account balance.
 
@@ -42,6 +43,8 @@ async def list_balance_transactions(
         before_cursor: Pagination cursor for fetching the previous page of results.
         payout_id: Filter to show only transactions included in a specific payout.
             Use this for payout reconciliation.
+        sub_account_id: Optional sub-account ID. Overrides the default
+            platform_account_id if provided.
 
     Returns:
         Object containing:
@@ -70,7 +73,9 @@ async def list_balance_transactions(
     if payout_id:
         params["payout_id"] = payout_id
 
-    response = await client.request("GET", "/v1/balance_transactions", params=params)
+    response = await client.request(
+        "GET", "/v1/balance_transactions", params=params, sub_account_id=sub_account_id
+    )
     return response
 
 
@@ -78,6 +83,7 @@ async def list_balance_transactions(
 async def retrieve_balance_transaction(
     client: JustiFiClient,
     balance_transaction_id: str,
+    sub_account_id: str | None = None,
 ) -> dict[str, Any]:
     """Retrieve detailed information about a specific balance transaction.
 
@@ -96,6 +102,8 @@ async def retrieve_balance_transaction(
         client: JustiFi API client
         balance_transaction_id: The unique identifier for the balance transaction
             (e.g., 'bt_ABC123XYZ'). Obtain from `list_balance_transactions`.
+        sub_account_id: Optional sub-account ID. Overrides the default
+            platform_account_id if provided.
 
     Returns:
         Balance transaction object containing:
@@ -123,6 +131,8 @@ async def retrieve_balance_transaction(
         )
 
     response = await client.request(
-        "GET", f"/v1/balance_transactions/{balance_transaction_id}"
+        "GET",
+        f"/v1/balance_transactions/{balance_transaction_id}",
+        sub_account_id=sub_account_id,
     )
     return response

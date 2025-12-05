@@ -16,6 +16,7 @@ async def list_refunds(
     limit: int = 25,
     after_cursor: str | None = None,
     before_cursor: str | None = None,
+    sub_account_id: str | None = None,
 ) -> dict[str, Any]:
     """List all refunds across your account with cursor-based pagination.
 
@@ -35,6 +36,8 @@ async def list_refunds(
         limit: Number of refunds to return per page (1-100, default: 25).
         after_cursor: Pagination cursor for fetching the next page of results.
         before_cursor: Pagination cursor for fetching the previous page of results.
+        sub_account_id: Optional sub-account ID. Overrides the default
+            platform_account_id if provided.
 
     Returns:
         Object containing:
@@ -60,7 +63,9 @@ async def list_refunds(
     if before_cursor:
         params["before_cursor"] = before_cursor
 
-    response = await client.request("GET", "/v1/refunds", params=params)
+    response = await client.request(
+        "GET", "/v1/refunds", params=params, sub_account_id=sub_account_id
+    )
     return response
 
 
@@ -68,6 +73,7 @@ async def list_refunds(
 async def retrieve_refund(
     client: JustiFiClient,
     refund_id: str,
+    sub_account_id: str | None = None,
 ) -> dict[str, Any]:
     """Retrieve detailed information about a specific refund by ID.
 
@@ -84,6 +90,8 @@ async def retrieve_refund(
         client: JustiFi API client
         refund_id: The unique identifier for the refund (e.g., 're_ABC123XYZ').
             Obtain this from `list_refunds`, `list_payment_refunds`, or webhook events.
+        sub_account_id: Optional sub-account ID. Overrides the default
+            platform_account_id if provided.
 
     Returns:
         Refund object containing:
@@ -105,7 +113,9 @@ async def retrieve_refund(
     if isinstance(refund_id, str) and not refund_id.strip():
         raise ValidationError("refund_id cannot be empty or contain only whitespace")
 
-    response = await client.request("GET", f"/v1/refunds/{refund_id}")
+    response = await client.request(
+        "GET", f"/v1/refunds/{refund_id}", sub_account_id=sub_account_id
+    )
     return response
 
 
@@ -113,6 +123,7 @@ async def retrieve_refund(
 async def list_payment_refunds(
     client: JustiFiClient,
     payment_id: str,
+    sub_account_id: str | None = None,
 ) -> dict[str, Any]:
     """List all refunds associated with a specific payment.
 
@@ -133,6 +144,8 @@ async def list_payment_refunds(
         client: JustiFi API client
         payment_id: The unique identifier for the payment (e.g., 'py_ABC123XYZ').
             Obtain this from `list_payments` or webhook events.
+        sub_account_id: Optional sub-account ID. Overrides the default
+            platform_account_id if provided.
 
     Returns:
         Object containing:
@@ -152,7 +165,9 @@ async def list_payment_refunds(
         raise ValidationError("payment_id cannot be empty or contain only whitespace")
 
     # Get payment data which includes refunds array
-    payment_response = await client.request("GET", f"/v1/payments/{payment_id}")
+    payment_response = await client.request(
+        "GET", f"/v1/payments/{payment_id}", sub_account_id=sub_account_id
+    )
 
     # Extract refunds from payment response
     refunds = payment_response.get("data", {}).get("refunds", [])

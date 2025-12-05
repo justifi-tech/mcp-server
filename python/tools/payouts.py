@@ -16,7 +16,11 @@ from .response_formatter import standardize_response
 
 
 @handle_tool_errors
-async def retrieve_payout(client: JustiFiClient, payout_id: str) -> dict[str, Any]:
+async def retrieve_payout(
+    client: JustiFiClient,
+    payout_id: str,
+    sub_account_id: str | None = None,
+) -> dict[str, Any]:
     """Retrieve detailed information about a specific payout by ID.
 
     Use this to get complete details about funds transferred to a merchant's bank account,
@@ -33,6 +37,8 @@ async def retrieve_payout(client: JustiFiClient, payout_id: str) -> dict[str, An
         client: JustiFi client instance.
         payout_id: The ID of the payout to retrieve (e.g., 'po_ABC123XYZ').
             Obtain this from `list_payouts` or webhook events.
+        sub_account_id: Optional sub-account ID. Overrides the default
+            platform_account_id if provided.
 
     Returns:
         Payout object containing:
@@ -53,7 +59,9 @@ async def retrieve_payout(client: JustiFiClient, payout_id: str) -> dict[str, An
             "payout_id cannot be empty", field="payout_id", value=payout_id
         )
 
-    result = await client.request("GET", f"/v1/payouts/{payout_id}")
+    result = await client.request(
+        "GET", f"/v1/payouts/{payout_id}", sub_account_id=sub_account_id
+    )
     return standardize_response(result, "retrieve_payout")
 
 
@@ -63,6 +71,7 @@ async def list_payouts(
     limit: int = 25,
     after_cursor: str | None = None,
     before_cursor: str | None = None,
+    sub_account_id: str | None = None,
 ) -> dict[str, Any]:
     """List payouts with cursor-based pagination.
 
@@ -83,6 +92,8 @@ async def list_payouts(
         limit: Number of payouts to return per page (1-100, default: 25).
         after_cursor: Pagination cursor for fetching the next page of results.
         before_cursor: Pagination cursor for fetching the previous page of results.
+        sub_account_id: Optional sub-account ID. Overrides the default
+            platform_account_id if provided.
 
     Returns:
         Object containing:
@@ -108,12 +119,18 @@ async def list_payouts(
     if before_cursor:
         params["before_cursor"] = before_cursor
 
-    result = await client.request("GET", "/v1/payouts", params=params)
+    result = await client.request(
+        "GET", "/v1/payouts", params=params, sub_account_id=sub_account_id
+    )
     return standardize_response(result, "list_payouts")
 
 
 @handle_tool_errors
-async def get_payout_status(client: JustiFiClient, payout_id: str) -> str:
+async def get_payout_status(
+    client: JustiFiClient,
+    payout_id: str,
+    sub_account_id: str | None = None,
+) -> str:
     """Get the current status of a specific payout.
 
     Use this for quick status checks when you only need to know the payout state,
@@ -129,6 +146,8 @@ async def get_payout_status(client: JustiFiClient, payout_id: str) -> str:
     Args:
         client: JustiFi client instance.
         payout_id: The ID of the payout to check (e.g., 'po_ABC123XYZ').
+        sub_account_id: Optional sub-account ID. Overrides the default
+            platform_account_id if provided.
 
     Returns:
         Status string: 'scheduled' (queued), 'in_transit' (sent to bank),
@@ -138,7 +157,9 @@ async def get_payout_status(client: JustiFiClient, payout_id: str) -> str:
         ValidationError: If payout_id is empty or invalid.
         ToolError: For API errors or missing response fields.
     """
-    payout_data = await retrieve_payout(client, payout_id)
+    payout_data = await retrieve_payout(
+        client, payout_id, sub_account_id=sub_account_id
+    )
 
     try:
         status: str = payout_data["data"]["status"]
@@ -148,7 +169,11 @@ async def get_payout_status(client: JustiFiClient, payout_id: str) -> str:
 
 
 @handle_tool_errors
-async def get_recent_payouts(client: JustiFiClient, limit: int = 10) -> dict[str, Any]:
+async def get_recent_payouts(
+    client: JustiFiClient,
+    limit: int = 10,
+    sub_account_id: str | None = None,
+) -> dict[str, Any]:
     """Get the most recent payouts for a quick overview.
 
     Use this for dashboards or quick checks on recent payout activity. Returns the
@@ -163,6 +188,8 @@ async def get_recent_payouts(client: JustiFiClient, limit: int = 10) -> dict[str
         client: JustiFi client instance.
         limit: Number of recent payouts to return (1-25, default: 10).
             Keep this small for overview displays; use `list_payouts` for larger queries.
+        sub_account_id: Optional sub-account ID. Overrides the default
+            platform_account_id if provided.
 
     Returns:
         Object containing:
@@ -181,7 +208,7 @@ async def get_recent_payouts(client: JustiFiClient, limit: int = 10) -> dict[str
             value=limit,
         )
 
-    response = await list_payouts(client, limit=limit)
+    response = await list_payouts(client, limit=limit, sub_account_id=sub_account_id)
 
     try:
         payouts_data: list[dict[str, Any]] = response["data"]

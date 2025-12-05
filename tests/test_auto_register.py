@@ -203,8 +203,6 @@ class TestCreateMcpFunction:
         self, mock_config, mock_token_response
     ):
         """Test that created MCP function properly calls wrap_tool_call."""
-        from unittest.mock import Mock
-
         from python.tools.payouts import retrieve_payout
 
         respx.post("https://api.justifi.ai/oauth/token").mock(
@@ -222,11 +220,11 @@ class TestCreateMcpFunction:
                 "modelcontextprotocol.auto_register.wrap_tool_call",
                 new_callable=AsyncMock,
             ) as mock_wrap,
-            patch("modelcontextprotocol.auto_register.Context") as MockContext,
+            patch(
+                "modelcontextprotocol.auto_register.get_access_token"
+            ) as mock_get_token,
         ):
-            mock_ctx = Mock()
-            mock_ctx.metadata = {}
-            MockContext.get_current.return_value = mock_ctx
+            mock_get_token.return_value = None
 
             mock_wrap.return_value = {"test": "result"}
 

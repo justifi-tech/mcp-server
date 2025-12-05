@@ -134,7 +134,7 @@ async def create_payment_method_group(
             "POST",
             "/v1/payment_method_groups",
             data=payload,
-            extra_headers={"Sub-Account": sub_account_id.strip()},
+            sub_account_id=sub_account_id.strip(),
         )
         return standardize_response(result, "create_payment_method_group")
 
@@ -227,7 +227,7 @@ async def list_payment_method_groups(
             "GET",
             "/v1/payment_method_groups",
             params=params,
-            extra_headers={"Sub-Account": sub_account_id.strip()},
+            sub_account_id=sub_account_id.strip(),
         )
         return standardize_response(result, "list_payment_method_groups")
 
@@ -293,7 +293,7 @@ async def retrieve_payment_method_group(
         result = await client.request(
             "GET",
             f"/v1/payment_method_groups/{group_id}",
-            extra_headers={"Sub-Account": sub_account_id.strip()},
+            sub_account_id=sub_account_id.strip(),
         )
         return standardize_response(result, "retrieve_payment_method_group")
 
@@ -427,7 +427,7 @@ async def update_payment_method_group(
             "PATCH",
             f"/v1/payment_method_groups/{group_id}",
             data=payload,
-            extra_headers={"Sub-Account": sub_account_id.strip()},
+            sub_account_id=sub_account_id.strip(),
         )
         return standardize_response(result, "update_payment_method_group")
 
@@ -505,7 +505,7 @@ async def remove_payment_method_from_group(
         result = await client.request(
             "DELETE",
             f"/v1/payment_method_groups/{group_id}/payment_methods/{payment_method_id}",
-            extra_headers={"Sub-Account": sub_account_id.strip()},
+            sub_account_id=sub_account_id.strip(),
         )
         return standardize_response(result, "remove_payment_method_from_group")
 

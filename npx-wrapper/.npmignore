@@ -14,7 +14,7 @@ dist/
 *.egg-info/
 *.tgz
 
-# Old wrapper files (being replaced)
+# Legacy wrapper files
 wrapper.js
 install.js
 

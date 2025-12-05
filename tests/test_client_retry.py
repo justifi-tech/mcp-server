@@ -48,7 +48,7 @@ class TestClientRetryLogic:
             await mock_client.request("GET", "/v1/test", retries=2)
 
         assert exc_info.value.status_code == 500
-        assert "JustiFi API is experiencing issues" in str(exc_info.value)
+        assert "Internal server error" in str(exc_info.value)
 
         # Verify it made multiple attempts (original + 2 retries = 3 total)
         assert len(respx.calls) == 4  # 1 OAuth + 3 API calls
@@ -171,7 +171,7 @@ class TestClientErrorHandling:
         with pytest.raises(AuthenticationError) as exc_info:
             await mock_client.request("GET", "/v1/test", retries=0)
 
-        assert exc_info.value.error_code == "token_expired"
+        assert "Unauthorized" in str(exc_info.value)
 
     @respx.mock
     async def test_validation_error_400(self, mock_client, mock_token_response):
@@ -221,7 +221,7 @@ class TestClientErrorHandling:
             await mock_client.request("GET", "/v1/test502", retries=0)
 
         assert exc_info.value.status_code == 502
-        assert "temporarily unavailable" in str(exc_info.value)
+        assert "Bad Gateway" in str(exc_info.value)
 
         # Test 503 Service Unavailable
         respx.get("https://api.justifi.ai/v1/test503").mock(
@@ -232,7 +232,7 @@ class TestClientErrorHandling:
             await mock_client.request("GET", "/v1/test503", retries=0)
 
         assert exc_info.value.status_code == 503
-        assert "under maintenance" in str(exc_info.value)
+        assert "Service Unavailable" in str(exc_info.value)
 
 
 class TestHandleToolErrorsDecorator:

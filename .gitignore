@@ -103,3 +103,6 @@ ISSUE_DESCRIPTION.md
 # Empty or placeholder package.json files in root
 package.json
 package-lock.json
+
+# Plugin/tool generated files
+plugin-redoc-*.yaml

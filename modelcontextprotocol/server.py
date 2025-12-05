@@ -4,21 +4,15 @@ import os
 
 from fastmcp import FastMCP
 from starlette.requests import Request
-from starlette.responses import JSONResponse, PlainTextResponse, Response
+from starlette.responses import PlainTextResponse, Response
 
 from python.config import JustiFiConfig
 
 from .dcr import handle_client_registration
-from .oauth_metadata import (
-    get_authorization_server_metadata,
-    get_protected_resource_metadata,
-)
 
 
 def create_mcp_server() -> FastMCP:
     """Create and configure the FastMCP server with all JustiFi tools."""
-    mcp: FastMCP = FastMCP("JustiFi Payment Server")
-
     config = JustiFiConfig()
 
     # For stdio mode, credentials are required
@@ -30,10 +24,11 @@ def create_mcp_server() -> FastMCP:
                 "JustiFi client_id and client_secret must be configured for stdio mode"
             )
 
+    auth_provider = None
     if transport == "http":
-        from .middleware.oauth import OAuthMiddleware
+        auth_provider = create_auth_provider(config)
 
-        mcp.add_middleware(OAuthMiddleware)
+    mcp: FastMCP = FastMCP("JustiFi Payment Server", auth=auth_provider)
 
     register_tools(mcp, config)
 
@@ -44,32 +39,97 @@ def create_mcp_server() -> FastMCP:
     return mcp
 
 
+def create_auth_provider(config: JustiFiConfig):
+    """Create OAuth auth provider for HTTP transport.
+
+    Uses FastMCP's built-in JWTVerifier with Auth0's JWKS endpoint
+    for token validation, wrapped in RemoteAuthProvider for proper
+    OAuth 2.0 Protected Resource Metadata (RFC 9728).
+
+    Args:
+        config: JustiFi configuration with OAuth settings
+
+    Returns:
+        RemoteAuthProvider configured for Auth0 JWT validation
+    """
+    from fastmcp.server.auth import JWTVerifier, RemoteAuthProvider
+    from pydantic import AnyHttpUrl
+
+    jwks_uri = f"{config.oauth_issuer.rstrip('/')}/.well-known/jwks.json"
+
+    token_verifier = JWTVerifier(
+        jwks_uri=jwks_uri,
+        issuer=config.oauth_issuer,
+        audience=config.oauth_audience,
+        required_scopes=config.oauth_scopes if config.oauth_scopes else None,
+    )
+
+    if not config.mcp_server_url:
+        raise ValueError(
+            "MCP_SERVER_URL must be configured for HTTP transport with OAuth"
+        )
+
+    return RemoteAuthProvider(
+        token_verifier=token_verifier,
+        authorization_servers=[AnyHttpUrl(config.mcp_server_url)],
+        base_url=config.mcp_server_url,
+        resource_name="JustiFi MCP Server",
+        resource_documentation=AnyHttpUrl("https://developer.justifi.ai"),
+    )
+
+
 def register_oauth_routes(mcp: FastMCP, config: JustiFiConfig) -> None:
     """Register OAuth 2.0 discovery and registration endpoints.
 
-    Registers:
-    - /.well-known/oauth-protected-resource (RFC 9728)
-    - /.well-known/oauth-authorization-server (RFC 8414)
-    - /register (RFC 7591 - credential discovery)
+    Note: Protected resource metadata (RFC 9728) is automatically handled by
+    FastMCP's RemoteAuthProvider. We add authorization server metadata here
+    because MCP clients expect to find it at the MCP server URL.
 
-    None of these endpoints require authentication.
+    Registers:
+    - /.well-known/oauth-authorization-server (RFC 8414 - points to Auth0)
+    - /register (RFC 7591 - credential discovery for shared OAuth credentials)
 
     Args:
         mcp: FastMCP server instance
         config: JustiFi configuration with OAuth settings
     """
+    from starlette.responses import JSONResponse
 
-    @mcp.custom_route("/.well-known/oauth-protected-resource", methods=["GET"])
-    async def protected_resource_metadata_endpoint(request: Request) -> Response:
-        """OAuth 2.0 Protected Resource Metadata endpoint (RFC 9728)."""
-        metadata = get_protected_resource_metadata(config)
-        return JSONResponse(metadata)
+    def get_authorization_server_metadata() -> dict:
+        """Build OAuth 2.0 Authorization Server Metadata (RFC 8414)."""
+        auth0_base = config.oauth_issuer.rstrip("/")
+
+        metadata: dict = {
+            "issuer": config.oauth_issuer,
+            "authorization_endpoint": f"{auth0_base}/authorize",
+            "token_endpoint": f"{auth0_base}/oauth/token",
+            "response_types_supported": ["code"],
+            "grant_types_supported": ["authorization_code", "refresh_token"],
+            "code_challenge_methods_supported": ["S256"],
+            "token_endpoint_auth_methods_supported": [
+                "client_secret_basic",
+                "client_secret_post",
+            ],
+        }
+
+        if config.mcp_server_url:
+            mcp_base = config.mcp_server_url.rstrip("/")
+            metadata["registration_endpoint"] = f"{mcp_base}/register"
+
+        if config.oauth_scopes:
+            metadata["scopes_supported"] = config.oauth_scopes
+
+        return metadata
 
     @mcp.custom_route("/.well-known/oauth-authorization-server", methods=["GET"])
     async def authorization_server_metadata_endpoint(request: Request) -> Response:
         """OAuth 2.0 Authorization Server Metadata endpoint (RFC 8414)."""
-        metadata = get_authorization_server_metadata(config)
-        return JSONResponse(metadata)
+        return JSONResponse(get_authorization_server_metadata())
+
+    @mcp.custom_route("/.well-known/oauth-authorization-server/mcp", methods=["GET"])
+    async def authorization_server_metadata_mcp_endpoint(request: Request) -> Response:
+        """OAuth 2.0 Authorization Server Metadata for /mcp path (RFC 8414)."""
+        return JSONResponse(get_authorization_server_metadata())
 
     @mcp.custom_route("/register", methods=["POST"])
     async def client_registration_endpoint(request: Request) -> Response:

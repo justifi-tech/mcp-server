@@ -24,6 +24,7 @@ async def create_checkout(
     cancel_url: str | None = None,
     metadata: dict[str, Any] | None = None,
     expires_at: str | None = None,
+    sub_account_id: str | None = None,
 ) -> dict[str, Any]:
     """Create a checkout session for payment processing.
 
@@ -40,6 +41,8 @@ async def create_checkout(
         cancel_url: URL to redirect to if payment is cancelled
         metadata: Optional metadata dictionary
         expires_at: Optional expiration timestamp (ISO 8601 format)
+        sub_account_id: Optional sub-account ID. Overrides the default
+            platform_account_id if provided.
 
     Returns:
         Checkout object with ID, URL, and details
@@ -132,7 +135,9 @@ async def create_checkout(
             payload["expires_at"] = expires_at
 
         # Call JustiFi API to create checkout
-        result = await client.request("POST", "/v1/checkouts", data=payload)
+        result = await client.request(
+            "POST", "/v1/checkouts", data=payload, sub_account_id=sub_account_id
+        )
         return standardize_response(result, "create_checkout")
 
     except Exception as e:
@@ -148,6 +153,7 @@ async def update_checkout(
     description: str | None = None,
     metadata: dict[str, Any] | None = None,
     expires_at: str | None = None,
+    sub_account_id: str | None = None,
 ) -> dict[str, Any]:
     """Update an existing checkout session.
 
@@ -157,6 +163,8 @@ async def update_checkout(
         description: Updated description
         metadata: Updated metadata dictionary
         expires_at: Updated expiration timestamp (ISO 8601 format)
+        sub_account_id: Optional sub-account ID. Overrides the default
+            platform_account_id if provided.
 
     Returns:
         Updated checkout object
@@ -222,7 +230,10 @@ async def update_checkout(
 
         # Call JustiFi API to update checkout
         result = await client.request(
-            "PATCH", f"/v1/checkouts/{checkout_id}", data=payload
+            "PATCH",
+            f"/v1/checkouts/{checkout_id}",
+            data=payload,
+            sub_account_id=sub_account_id,
         )
         return standardize_response(result, "update_checkout")
 
@@ -237,6 +248,7 @@ async def complete_checkout(
     client: JustiFiClient,
     checkout_id: str,
     payment_method_id: str,
+    sub_account_id: str | None = None,
 ) -> dict[str, Any]:
     """Complete a checkout session with a payment method.
 
@@ -244,6 +256,8 @@ async def complete_checkout(
         client: JustiFi API client
         checkout_id: The checkout ID to complete
         payment_method_id: ID of payment method to use for payment
+        sub_account_id: Optional sub-account ID. Overrides the default
+            platform_account_id if provided.
 
     Returns:
         Completed checkout object with payment details
@@ -279,7 +293,10 @@ async def complete_checkout(
 
         # Call JustiFi API to complete checkout
         result = await client.request(
-            "POST", f"/v1/checkouts/{checkout_id}/complete", data=payload
+            "POST",
+            f"/v1/checkouts/{checkout_id}/complete",
+            data=payload,
+            sub_account_id=sub_account_id,
         )
         return standardize_response(result, "complete_checkout")
 
@@ -293,12 +310,15 @@ async def complete_checkout(
 async def expire_checkout(
     client: JustiFiClient,
     checkout_id: str,
+    sub_account_id: str | None = None,
 ) -> dict[str, Any]:
     """Expire a checkout session manually.
 
     Args:
         client: JustiFi API client
         checkout_id: The checkout ID to expire
+        sub_account_id: Optional sub-account ID. Overrides the default
+            platform_account_id if provided.
 
     Returns:
         Expired checkout object
@@ -321,7 +341,11 @@ async def expire_checkout(
 
     try:
         # Call JustiFi API to expire checkout
-        result = await client.request("POST", f"/v1/checkouts/{checkout_id}/expire")
+        result = await client.request(
+            "POST",
+            f"/v1/checkouts/{checkout_id}/expire",
+            sub_account_id=sub_account_id,
+        )
         return standardize_response(result, "expire_checkout")
 
     except Exception as e:

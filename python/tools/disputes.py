@@ -20,6 +20,7 @@ async def list_disputes(
     limit: int = 25,
     after_cursor: str | None = None,
     before_cursor: str | None = None,
+    sub_account_id: str | None = None,
 ) -> dict[str, Any]:
     """List payment disputes (chargebacks) with cursor-based pagination.
 
@@ -40,6 +41,8 @@ async def list_disputes(
         limit: Number of disputes to return per page (1-100, default: 25).
         after_cursor: Pagination cursor for fetching the next page of results.
         before_cursor: Pagination cursor for fetching the previous page of results.
+        sub_account_id: Optional sub-account ID. Overrides the default
+            platform_account_id if provided.
 
     Returns:
         Object containing:
@@ -66,11 +69,17 @@ async def list_disputes(
     if before_cursor:
         params["before_cursor"] = before_cursor
 
-    return await client.request("GET", "/v1/disputes", params=params)
+    return await client.request(
+        "GET", "/v1/disputes", params=params, sub_account_id=sub_account_id
+    )
 
 
 @handle_tool_errors
-async def retrieve_dispute(client: JustiFiClient, dispute_id: str) -> dict[str, Any]:
+async def retrieve_dispute(
+    client: JustiFiClient,
+    dispute_id: str,
+    sub_account_id: str | None = None,
+) -> dict[str, Any]:
     """Retrieve detailed information about a specific dispute (chargeback).
 
     Use this to get complete dispute details including the reason, evidence requirements,
@@ -85,6 +94,8 @@ async def retrieve_dispute(client: JustiFiClient, dispute_id: str) -> dict[str, 
         client: JustiFi client instance.
         dispute_id: The unique identifier for the dispute (e.g., 'dp_ABC123XYZ').
             Obtain from `list_disputes` or webhook events.
+        sub_account_id: Optional sub-account ID. Overrides the default
+            platform_account_id if provided.
 
     Returns:
         Dispute object containing:
@@ -107,4 +118,6 @@ async def retrieve_dispute(client: JustiFiClient, dispute_id: str) -> dict[str, 
             "dispute_id cannot be empty", field="dispute_id", value=dispute_id
         )
 
-    return await client.request("GET", f"/v1/disputes/{dispute_id}")
+    return await client.request(
+        "GET", f"/v1/disputes/{dispute_id}", sub_account_id=sub_account_id
+    )

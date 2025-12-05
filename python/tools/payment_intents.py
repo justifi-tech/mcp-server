@@ -23,6 +23,7 @@ async def create_payment_intent(
     capture_method: str = "automatic",
     confirmation_method: str = "automatic",
     metadata: dict[str, Any] | None = None,
+    sub_account_id: str | None = None,
 ) -> dict[str, Any]:
     """Create a payment intent for deferred or manual capture.
 
@@ -38,6 +39,8 @@ async def create_payment_intent(
         capture_method: 'automatic' or 'manual' (default: 'automatic')
         confirmation_method: 'automatic' or 'manual' (default: 'automatic')
         metadata: Optional metadata dictionary
+        sub_account_id: Optional sub-account ID. Overrides the default
+            platform_account_id if provided.
 
     Returns:
         Payment intent object with ID, status, amount, and details
@@ -118,7 +121,9 @@ async def create_payment_intent(
             payload["metadata"] = metadata
 
         # Call JustiFi API to create payment intent
-        result = await client.request("POST", "/v1/payment_intents", data=payload)
+        result = await client.request(
+            "POST", "/v1/payment_intents", data=payload, sub_account_id=sub_account_id
+        )
         return standardize_response(result, "create_payment_intent")
 
     except Exception as e:
@@ -132,6 +137,7 @@ async def capture_payment_intent(
     client: JustiFiClient,
     intent_id: str,
     amount: int | None = None,
+    sub_account_id: str | None = None,
 ) -> dict[str, Any]:
     """Capture a payment intent that was created with manual capture.
 
@@ -139,6 +145,8 @@ async def capture_payment_intent(
         client: JustiFi API client
         intent_id: The payment intent ID to capture
         amount: Optional amount to capture (defaults to full authorized amount)
+        sub_account_id: Optional sub-account ID. Overrides the default
+            platform_account_id if provided.
 
     Returns:
         Updated payment intent object showing captured status
@@ -176,7 +184,10 @@ async def capture_payment_intent(
 
         # Call JustiFi API to capture payment intent
         result = await client.request(
-            "POST", f"/v1/payment_intents/{intent_id}/capture", data=payload
+            "POST",
+            f"/v1/payment_intents/{intent_id}/capture",
+            data=payload,
+            sub_account_id=sub_account_id,
         )
         return standardize_response(result, "capture_payment_intent")
 
@@ -191,6 +202,7 @@ async def cancel_payment_intent(
     client: JustiFiClient,
     intent_id: str,
     cancellation_reason: str | None = None,
+    sub_account_id: str | None = None,
 ) -> dict[str, Any]:
     """Cancel a payment intent that hasn't been captured.
 
@@ -198,6 +210,8 @@ async def cancel_payment_intent(
         client: JustiFi API client
         intent_id: The payment intent ID to cancel
         cancellation_reason: Optional reason for cancellation
+        sub_account_id: Optional sub-account ID. Overrides the default
+            platform_account_id if provided.
 
     Returns:
         Updated payment intent object showing cancelled status
@@ -234,7 +248,10 @@ async def cancel_payment_intent(
 
         # Call JustiFi API to cancel payment intent
         result = await client.request(
-            "POST", f"/v1/payment_intents/{intent_id}/cancel", data=payload
+            "POST",
+            f"/v1/payment_intents/{intent_id}/cancel",
+            data=payload,
+            sub_account_id=sub_account_id,
         )
         return standardize_response(result, "cancel_payment_intent")
 
@@ -249,6 +266,7 @@ async def confirm_payment_intent(
     client: JustiFiClient,
     intent_id: str,
     payment_method_id: str | None = None,
+    sub_account_id: str | None = None,
 ) -> dict[str, Any]:
     """Confirm a payment intent that was created with manual confirmation.
 
@@ -256,6 +274,8 @@ async def confirm_payment_intent(
         client: JustiFi API client
         intent_id: The payment intent ID to confirm
         payment_method_id: Optional payment method ID (if not already attached)
+        sub_account_id: Optional sub-account ID. Overrides the default
+            platform_account_id if provided.
 
     Returns:
         Updated payment intent object showing confirmed status
@@ -292,7 +312,10 @@ async def confirm_payment_intent(
 
         # Call JustiFi API to confirm payment intent
         result = await client.request(
-            "POST", f"/v1/payment_intents/{intent_id}/confirm", data=payload
+            "POST",
+            f"/v1/payment_intents/{intent_id}/confirm",
+            data=payload,
+            sub_account_id=sub_account_id,
         )
         return standardize_response(result, "confirm_payment_intent")
 
